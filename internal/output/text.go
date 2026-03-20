@@ -34,7 +34,7 @@ func renderSemanticDiffSection(diffs []diff.Diff, color bool) string {
 	} else {
 		for _, d := range diffs {
 			marker := colorizeAction(diffMarker(d.Type), d.Type, color)
-			path := d.Path
+			path := humanizeDiffPath(d.Path)
 			if path == "" {
 				path = "(root)"
 			}
@@ -109,4 +109,35 @@ func diffMarker(typ diff.DiffType) string {
 	default:
 		return "?"
 	}
+}
+
+func humanizeDiffPath(path string) string {
+	const prefix = "paths."
+	if !strings.HasPrefix(path, prefix) {
+		return path
+	}
+
+	parts := strings.Split(path[len(prefix):], ".")
+	if len(parts) < 2 {
+		return path
+	}
+
+	apiPath := parts[0]
+	method := strings.ToUpper(parts[1])
+
+	switch {
+	case len(parts) == 2:
+		return method + " " + apiPath
+	case len(parts) >= 4 && parts[2] == "requestBody" && parts[3] == "required":
+		return method + " " + apiPath + " request body required"
+	case len(parts) >= 7 && parts[2] == "responses" && parts[4] == "content":
+		statusCode := parts[3]
+		contentType := parts[5]
+		detail := strings.Join(parts[6:], ".")
+		if detail == "schema.type" {
+			return method + " " + apiPath + " response " + statusCode + " " + contentType + " schema type"
+		}
+	}
+
+	return path
 }
