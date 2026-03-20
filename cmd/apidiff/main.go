@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/rea9r/apidiff/internal/app"
@@ -10,10 +9,15 @@ import (
 func main() {
 	code, out, err := app.Run(os.Args[1:])
 	if out != "" {
-		fmt.Fprint(os.Stdout, out)
+		if writeErr := writeStdout(out); writeErr != nil {
+			_ = writeStderr("error: " + writeErr.Error() + "\n")
+			os.Exit(2)
+		}
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if writeErr := writeStderr(err.Error() + "\n"); writeErr != nil {
+			os.Exit(2)
+		}
 	}
 	os.Exit(code)
 }
