@@ -6,7 +6,7 @@ on:
 
 jobs:
   success-case:
-    name: Success case (non-breaking changes)
+    name: Non-breaking pass (expected)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -92,7 +92,7 @@ jobs:
           path: apidiff-success-result.json
 
   failure-case:
-    name: Failure case (breaking changes)
+    name: Breaking-change detection (expected)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
