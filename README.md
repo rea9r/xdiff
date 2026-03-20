@@ -16,3 +16,11 @@ Exit code:
 - `0`: no differences
 - `1`: differences found
 - `2`: execution error
+
+## Development Checks
+
+```bash
+go fmt ./...
+go test ./...
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run --config=.golangci.yml
+```
