@@ -8,7 +8,10 @@ import (
 )
 
 func main() {
-	code, err := app.Run(os.Args[1:])
+	code, out, err := app.Run(os.Args[1:])
+	if out != "" {
+		fmt.Fprint(os.Stdout, out)
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}

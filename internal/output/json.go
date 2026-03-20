@@ -30,7 +30,7 @@ type jsonResult struct {
 func FormatJSON(diffs []diff.Diff) (string, error) {
 	result := jsonResult{
 		Diffs:   make([]jsonDiff, 0, len(diffs)),
-		Summary: jsonSummary{},
+		Summary: toJSONSummary(diff.Summarize(diffs)),
 	}
 
 	for _, d := range diffs {
@@ -45,17 +45,6 @@ func FormatJSON(diffs []diff.Diff) (string, error) {
 			jd.NewType = diff.ValueType(d.NewValue)
 		}
 		result.Diffs = append(result.Diffs, jd)
-
-		switch d.Type {
-		case diff.Added:
-			result.Summary.Added++
-		case diff.Removed:
-			result.Summary.Removed++
-		case diff.Changed:
-			result.Summary.Changed++
-		case diff.TypeChanged:
-			result.Summary.TypeChanged++
-		}
 	}
 
 	data, err := json.MarshalIndent(result, "", "  ")
@@ -63,4 +52,13 @@ func FormatJSON(diffs []diff.Diff) (string, error) {
 		return "", err
 	}
 	return string(data) + "\n", nil
+}
+
+func toJSONSummary(summary diff.Summary) jsonSummary {
+	return jsonSummary{
+		Added:       summary.Added,
+		Removed:     summary.Removed,
+		Changed:     summary.Changed,
+		TypeChanged: summary.TypeChanged,
+	}
 }

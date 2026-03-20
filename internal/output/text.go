@@ -9,12 +9,7 @@ import (
 )
 
 func FormatText(diffs []diff.Diff) string {
-	counts := map[diff.DiffType]int{
-		diff.Added:       0,
-		diff.Removed:     0,
-		diff.Changed:     0,
-		diff.TypeChanged: 0,
-	}
+	summary := diff.Summarize(diffs)
 
 	var b strings.Builder
 
@@ -22,8 +17,6 @@ func FormatText(diffs []diff.Diff) string {
 		b.WriteString("No differences.\n")
 	} else {
 		for _, d := range diffs {
-			counts[d.Type]++
-
 			action := strings.ToUpper(string(d.Type))
 			path := d.Path
 			if path == "" {
@@ -36,10 +29,10 @@ func FormatText(diffs []diff.Diff) string {
 	}
 
 	b.WriteString("\nSummary:\n")
-	fmt.Fprintf(&b, "  added: %d\n", counts[diff.Added])
-	fmt.Fprintf(&b, "  removed: %d\n", counts[diff.Removed])
-	fmt.Fprintf(&b, "  changed: %d\n", counts[diff.Changed])
-	fmt.Fprintf(&b, "  type_changed: %d\n", counts[diff.TypeChanged])
+	fmt.Fprintf(&b, "  added: %d\n", summary.Added)
+	fmt.Fprintf(&b, "  removed: %d\n", summary.Removed)
+	fmt.Fprintf(&b, "  changed: %d\n", summary.Changed)
+	fmt.Fprintf(&b, "  type_changed: %d\n", summary.TypeChanged)
 
 	return b.String()
 }
