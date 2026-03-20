@@ -11,7 +11,11 @@ func TestRun_WithDiff_DefaultText(t *testing.T) {
 	oldPath := writeTempJSON(t, `{"user":{"name":"Taro","age":"20"}}`, "old.json")
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
 
-	code, out, err := Run([]string{oldPath, newPath})
+	code, out, err := RunWithOptions(Options{
+		Format:  "text",
+		OldPath: oldPath,
+		NewPath: newPath,
+	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
 	}
@@ -27,7 +31,11 @@ func TestRun_NoDiff_JSONFormat(t *testing.T) {
 	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
-	code, out, err := Run([]string{"--format", "json", oldPath, newPath})
+	code, out, err := RunWithOptions(Options{
+		Format:  "json",
+		OldPath: oldPath,
+		NewPath: newPath,
+	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
 	}
@@ -43,10 +51,12 @@ func TestRun_OnlyBreakingAndIgnorePath(t *testing.T) {
 	oldPath := writeTempJSON(t, `{"user":{"email":"a@example.com","age":"20"}}`, "old.json")
 	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
 
-	code, out, err := Run([]string{
-		"--only-breaking",
-		"--ignore-path", "user.email",
-		oldPath, newPath,
+	code, out, err := RunWithOptions(Options{
+		Format:       "text",
+		IgnorePaths:  []string{"user.email"},
+		OnlyBreaking: true,
+		OldPath:      oldPath,
+		NewPath:      newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -63,7 +73,43 @@ func TestRun_OnlyBreakingAndIgnorePath(t *testing.T) {
 }
 
 func TestRun_InvalidPath(t *testing.T) {
-	code, out, err := Run([]string{"not-found-old.json", "not-found-new.json"})
+	code, out, err := RunWithOptions(Options{
+		Format:  "text",
+		OldPath: "not-found-old.json",
+		NewPath: "not-found-new.json",
+	})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if code != exitError {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitError)
+	}
+	if out != "" {
+		t.Fatalf("expected empty output on error, got: %q", out)
+	}
+}
+
+func TestRun_InvalidFormat(t *testing.T) {
+	code, out, err := RunWithOptions(Options{
+		Format:  "yaml",
+		OldPath: "old.json",
+		NewPath: "new.json",
+	})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if code != exitError {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitError)
+	}
+	if out != "" {
+		t.Fatalf("expected empty output on error, got: %q", out)
+	}
+}
+
+func TestRun_MissingPaths(t *testing.T) {
+	code, out, err := RunWithOptions(Options{
+		Format: "text",
+	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}

@@ -9,14 +9,6 @@ import (
 	"github.com/rea9r/apidiff/internal/output"
 )
 
-func Run(args []string) (int, string, error) {
-	cfg, err := parseArgs(args)
-	if err != nil {
-		return exitError, "", err
-	}
-	return RunWithOptions(cfg.toOptions())
-}
-
 func RunWithOptions(opts Options) (int, string, error) {
 	if err := validateOptions(opts); err != nil {
 		return exitError, "", err
