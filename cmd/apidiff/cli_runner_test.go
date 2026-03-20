@@ -35,6 +35,54 @@ func TestRunCLI_InvalidFormat(t *testing.T) {
 	}
 }
 
+func TestRunCLI_InvalidScope(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
+
+	code, err := runCLI([]string{"--scope", "all", oldPath, newPath})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), "invalid scope") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCLI_InvalidView(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
+
+	code, err := runCLI([]string{"--view", "side-by-side", oldPath, newPath})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), "invalid view mode") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCLI_InvalidSummary(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
+
+	code, err := runCLI([]string{"--summary", "sometimes", oldPath, newPath})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), "invalid summary mode") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
 func TestRunCLI_URL_MissingArgs(t *testing.T) {
 	code, err := runCLI([]string{"url"})
 	if err == nil {

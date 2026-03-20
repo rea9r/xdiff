@@ -61,3 +61,27 @@ func actionColor(typ diff.DiffType) string {
 		return ""
 	}
 }
+
+func colorizeUnified(s string, useColor bool) string {
+	if !useColor {
+		return s
+	}
+
+	lines := strings.SplitAfter(s, "\n")
+	var b strings.Builder
+	for _, line := range lines {
+		switch {
+		case strings.HasPrefix(line, "+++"), strings.HasPrefix(line, "---"):
+			b.WriteString(colorMagenta + line + colorReset)
+		case strings.HasPrefix(line, "@@"):
+			b.WriteString(colorYellow + line + colorReset)
+		case strings.HasPrefix(line, "+"):
+			b.WriteString(colorGreen + line + colorReset)
+		case strings.HasPrefix(line, "-"):
+			b.WriteString(colorRed + line + colorReset)
+		default:
+			b.WriteString(line)
+		}
+	}
+	return b.String()
+}

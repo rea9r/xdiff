@@ -22,7 +22,7 @@ func TestRun_WithDiff_DefaultText(t *testing.T) {
 	if code != exitDiffFound {
 		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
 	}
-	if !strings.Contains(out, "CHANGED") || !strings.Contains(out, "TYPE_CHANGED") {
+	if !strings.Contains(out, "~ user.name") || !strings.Contains(out, "! user.age") {
 		t.Fatalf("unexpected output: %s", out)
 	}
 }
@@ -42,7 +42,7 @@ func TestRun_NoDiff_JSONFormat(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
 	}
-	if !strings.Contains(out, `"diffs": []`) || !strings.Contains(out, `"type_changed": 0`) {
+	if !strings.Contains(out, `"summary"`) || !strings.Contains(out, `"type_changed": 0`) {
 		t.Fatalf("unexpected output: %s", out)
 	}
 }
@@ -67,7 +67,7 @@ func TestRun_OnlyBreakingAndIgnorePath(t *testing.T) {
 	if strings.Contains(out, "user.email") {
 		t.Fatalf("ignored path should not appear in output: %s", out)
 	}
-	if !strings.Contains(out, "TYPE_CHANGED") || !strings.Contains(out, "user.age") {
+	if !strings.Contains(out, "! user.age") {
 		t.Fatalf("expected type_changed output, got: %s", out)
 	}
 }
@@ -118,6 +118,30 @@ func TestRun_MissingPaths(t *testing.T) {
 	}
 	if out != "" {
 		t.Fatalf("expected empty output on error, got: %q", out)
+	}
+}
+
+func TestRun_ScopeBothText(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, out, err := RunWithOptions(Options{
+		Format:  "text",
+		Scope:   "both",
+		OldPath: oldPath,
+		NewPath: newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+	if !strings.Contains(out, "=== OLD ===") || !strings.Contains(out, "=== NEW ===") {
+		t.Fatalf("expected old/new sections, got: %s", out)
+	}
+	if !strings.Contains(out, "~ user.name") {
+		t.Fatalf("expected diff section, got: %s", out)
 	}
 }
 

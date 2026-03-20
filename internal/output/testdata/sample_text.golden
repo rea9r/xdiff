@@ -1,7 +1,7 @@
-ADDED        user.phone                     "090"
-REMOVED      user.email                     "a@example.com"
-CHANGED      user.name                      "Taro" -> "Hanako"
-TYPE_CHANGED user.age                       string -> number
++ user.phone: "090"
+- user.email: "a@example.com"
+~ user.name: "Taro" -> "Hanako"
+! user.age: string -> number
 
 Summary:
   added: 1

@@ -23,28 +23,52 @@ type jsonSummary struct {
 }
 
 type jsonResult struct {
-	Diffs   []jsonDiff  `json:"diffs"`
-	Summary jsonSummary `json:"summary"`
+	Old     any          `json:"old,omitempty"`
+	New     any          `json:"new,omitempty"`
+	Diffs   []jsonDiff   `json:"diffs,omitempty"`
+	Summary *jsonSummary `json:"summary,omitempty"`
 }
 
 func FormatJSON(diffs []diff.Diff) (string, error) {
-	result := jsonResult{
-		Diffs:   make([]jsonDiff, 0, len(diffs)),
-		Summary: toJSONSummary(diff.Summarize(diffs)),
+	return RenderJSONWithOptions(nil, nil, diffs, JSONOptions{Scope: ScopeDiff})
+}
+
+type JSONOptions struct {
+	Scope string
+}
+
+func RenderJSONWithOptions(oldValue, newValue any, diffs []diff.Diff, opts JSONOptions) (string, error) {
+	scope := opts.Scope
+	if scope == "" {
+		scope = ScopeDiff
 	}
 
-	for _, d := range diffs {
-		jd := jsonDiff{
-			Type:     d.Type,
-			Path:     d.Path,
-			OldValue: d.OldValue,
-			NewValue: d.NewValue,
+	result := jsonResult{
+		Diffs: make([]jsonDiff, 0, len(diffs)),
+	}
+	if scope == ScopeBoth {
+		result.Old = oldValue
+		result.New = newValue
+	}
+
+	if scope == ScopeDiff || scope == ScopeBoth {
+		result.Summary = toJSONSummaryPtr(diff.Summarize(diffs))
+
+		for _, d := range diffs {
+			jd := jsonDiff{
+				Type:     d.Type,
+				Path:     d.Path,
+				OldValue: d.OldValue,
+				NewValue: d.NewValue,
+			}
+			if d.Type == diff.TypeChanged {
+				jd.OldType = diff.ValueType(d.OldValue)
+				jd.NewType = diff.ValueType(d.NewValue)
+			}
+			result.Diffs = append(result.Diffs, jd)
 		}
-		if d.Type == diff.TypeChanged {
-			jd.OldType = diff.ValueType(d.OldValue)
-			jd.NewType = diff.ValueType(d.NewValue)
-		}
-		result.Diffs = append(result.Diffs, jd)
+	} else {
+		result.Diffs = nil
 	}
 
 	data, err := json.MarshalIndent(result, "", "  ")
@@ -54,8 +78,8 @@ func FormatJSON(diffs []diff.Diff) (string, error) {
 	return string(data) + "\n", nil
 }
 
-func toJSONSummary(summary diff.Summary) jsonSummary {
-	return jsonSummary{
+func toJSONSummaryPtr(summary diff.Summary) *jsonSummary {
+	return &jsonSummary{
 		Added:       summary.Added,
 		Removed:     summary.Removed,
 		Changed:     summary.Changed,

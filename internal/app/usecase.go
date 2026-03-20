@@ -38,9 +38,12 @@ func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 		OnlyBreaking: opts.OnlyBreaking,
 	})
 
-	out, err := output.FormatWithOptions(diffs, output.Options{
-		Format: opts.Format,
-		Color:  output.ShouldUseColor(opts.NoColor),
+	out, err := output.FormatResultWithOptions(oldValue, newValue, diffs, output.Options{
+		Format:  opts.Format,
+		Color:   output.ShouldUseColor(opts.NoColor),
+		Scope:   opts.Scope,
+		View:    opts.View,
+		Summary: opts.Summary,
 	})
 	if err != nil {
 		return exitError, "", err
@@ -62,6 +65,15 @@ func validateFileOptions(opts Options) error {
 func validateCompareOptions(opts CompareOptions) error {
 	if !output.IsSupportedFormat(opts.Format) {
 		return fmt.Errorf("invalid format %q (allowed: text, json)", opts.Format)
+	}
+	if opts.Scope != "" && !output.IsSupportedScope(opts.Scope) {
+		return fmt.Errorf("invalid scope %q (allowed: diff, both)", opts.Scope)
+	}
+	if opts.View != "" && !output.IsSupportedView(opts.View) {
+		return fmt.Errorf("invalid view mode %q (allowed: unified, semantic)", opts.View)
+	}
+	if opts.Summary != "" && !output.IsSupportedSummary(opts.Summary) {
+		return fmt.Errorf("invalid summary mode %q (allowed: auto, always, never)", opts.Summary)
 	}
 	return nil
 }

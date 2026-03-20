@@ -37,6 +37,9 @@ Common flags (`apidiff` and `apidiff url`):
 | Flag | Description | Default |
 | --- | --- | --- |
 | `--format text\|json` | Output format | `text` |
+| `--scope diff\|both` | Output scope (`diff`: diff only, `both`: old/new + diff) | `diff` |
+| `--view unified\|semantic` | Text diff style (`unified` is Git-like line diff) | `unified` |
+| `--summary auto\|always\|never` | Summary visibility (`auto`: semantic=on, unified=off) | `auto` |
 | `--ignore-path <path>` | Ignore exact diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
 | `--no-color` | Disable colored text output | `false` |
@@ -66,6 +69,24 @@ Show only breaking changes:
 
 ```bash
 go run ./cmd/apidiff --only-breaking testdata/old.json testdata/new.json
+```
+
+Show full context (old/new + diff):
+
+```bash
+go run ./cmd/apidiff --scope both testdata/old.json testdata/new.json
+```
+
+Use semantic diff view (path-based):
+
+```bash
+go run ./cmd/apidiff --view semantic testdata/old.json testdata/new.json
+```
+
+Force summary on unified view:
+
+```bash
+go run ./cmd/apidiff --view unified --summary always testdata/old.json testdata/new.json
 ```
 
 URL comparison with auth header and timeout:
