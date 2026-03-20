@@ -153,6 +153,45 @@ func TestRunCLI_URL_SuccessDiffFound(t *testing.T) {
 	}
 }
 
+func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, err := runCLI([]string{"--fail-on", "none", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
+	}
+}
+
+func TestRunCLI_FailOnBreaking_ChangedOnlyReturnsZero(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, err := runCLI([]string{"--fail-on", "breaking", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
+	}
+}
+
+func TestRunCLI_FailOnBreaking_BreakingDiffReturnsOne(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"age":"20"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"age":20}}`, "new.json")
+
+	code, err := runCLI([]string{"--fail-on", "breaking", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
 func writeCLIJSON(t *testing.T, content string, fileName string) string {
 	t.Helper()
 
