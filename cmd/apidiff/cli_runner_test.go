@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,6 +60,32 @@ func TestRunCLI_URL_InvalidHeader(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid header") {
 		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCLI_URL_SuccessDiffFound(t *testing.T) {
+	oldServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"user":{"name":"Taro"}}`))
+	}))
+	defer oldServer.Close()
+
+	newServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"user":{"name":"Hanako"}}`))
+	}))
+	defer newServer.Close()
+
+	code, err := runCLI([]string{
+		"url",
+		oldServer.URL,
+		newServer.URL,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
 	}
 }
 
