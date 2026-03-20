@@ -12,11 +12,21 @@ permissions:
   pull-requests: write
 
 jobs:
-  success-case:
-    name: Non-breaking pass (expected)
+  compare-cases:
+    name: Case: ${{ matrix.case_name }}
     runs-on: ubuntu-latest
-    outputs:
-      exit_code: ${{ steps.diff.outputs.exit_code }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case_name: Non-breaking pass (expected)
+            scenario: non-breaking
+            expected_exit: "0"
+            artifact_name: apidiff-success-result
+          - case_name: Breaking-change detection (expected)
+            scenario: breaking
+            expected_exit: "1"
+            artifact_name: apidiff-failure-result
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -33,99 +43,51 @@ jobs:
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - id: diff
-        name: Compare mock API responses (non-breaking)
+        name: Compare mock API responses
         run: |
           set -euo pipefail
-          EXIT_CODE="$(scripts/ci/mock_api_compare.sh non-breaking apidiff-success-result.json)"
+          output_file="apidiff-${{ matrix.scenario }}-result.json"
+          exit_code="$(scripts/ci/mock_api_compare.sh "${{ matrix.scenario }}" "$output_file")"
 
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-          echo "apidiff exit code: $EXIT_CODE"
+          echo "output_file=$output_file" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          echo "apidiff exit code: $exit_code"
 
       - name: Validate expected exit code
         run: |
-          if [ "${{ steps.diff.outputs.exit_code }}" != "0" ]; then
-            echo "Expected exit code 0 for non-breaking case."
+          if [ "${{ steps.diff.outputs.exit_code }}" != "${{ matrix.expected_exit }}" ]; then
+            echo "Expected exit code ${{ matrix.expected_exit }} for scenario ${{ matrix.scenario }}."
             exit 1
           fi
 
-      - name: Upload success artifact
+      - name: Prepare artifact files
+        run: |
+          set -euo pipefail
+          artifact_dir="artifacts/${{ matrix.scenario }}"
+          mkdir -p "$artifact_dir"
+          cp "${{ steps.diff.outputs.output_file }}" "$artifact_dir/result.json"
+          printf '%s\n' "${{ steps.diff.outputs.exit_code }}" > "$artifact_dir/exit_code.txt"
+          printf '%s\n' "${{ matrix.expected_exit }}" > "$artifact_dir/expected_exit.txt"
+
+      - name: Upload case artifact
         uses: actions/upload-artifact@v6
         with:
-          name: apidiff-success-result
-          path: apidiff-success-result.json
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/${{ matrix.scenario }}
 
-      - name: Add success summary
+      - name: Add case summary
         run: |
           {
-            echo "## apidiff success case"
+            echo "## apidiff case: ${{ matrix.case_name }}"
             echo
-            echo "- expected exit code: \`0\`"
+            echo "- expected exit code: \`${{ matrix.expected_exit }}\`"
             echo "- observed exit code: \`${{ steps.diff.outputs.exit_code }}\`"
-            echo "- artifact: \`apidiff-success-result\`"
+            echo "- artifact: \`${{ matrix.artifact_name }}\`"
             echo
             echo "<details><summary>JSON output</summary>"
             echo
             echo '```json'
-            cat apidiff-success-result.json
-            echo '```'
-            echo "</details>"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  failure-case:
-    name: Breaking-change detection (expected)
-    runs-on: ubuntu-latest
-    outputs:
-      exit_code: ${{ steps.diff.outputs.exit_code }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: "1.26"
-
-      - name: Install apidiff
-        run: go install ./cmd/apidiff
-
-      - name: Add Go bin to PATH
-        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
-      - id: diff
-        name: Compare mock API responses (breaking)
-        run: |
-          set -euo pipefail
-          EXIT_CODE="$(scripts/ci/mock_api_compare.sh breaking apidiff-failure-result.json)"
-
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-          echo "apidiff exit code: $EXIT_CODE"
-
-      - name: Validate expected exit code
-        run: |
-          if [ "${{ steps.diff.outputs.exit_code }}" != "1" ]; then
-            echo "Expected exit code 1 for breaking case."
-            exit 1
-          fi
-
-      - name: Upload failure artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: apidiff-failure-result
-          path: apidiff-failure-result.json
-
-      - name: Add failure summary
-        run: |
-          {
-            echo "## apidiff breaking-change detection case"
-            echo
-            echo "- expected exit code: \`1\`"
-            echo "- observed exit code: \`${{ steps.diff.outputs.exit_code }}\`"
-            echo "- artifact: \`apidiff-failure-result\`"
-            echo
-            echo "<details><summary>JSON output</summary>"
-            echo
-            echo '```json'
-            cat apidiff-failure-result.json
+            cat "${{ steps.diff.outputs.output_file }}"
             echo '```'
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -134,9 +96,7 @@ jobs:
     name: Consolidated PR comment
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    needs:
-      - success-case
-      - failure-case
+    needs: compare-cases
     steps:
       - name: Download success artifact
         uses: actions/download-artifact@v6
@@ -161,10 +121,15 @@ jobs:
           payload_file="$(mktemp)"
           comments_json="$(mktemp)"
 
-          success_summary="$(jq '.summary // {}' artifacts/success/apidiff-success-result.json)"
-          failure_summary="$(jq '.summary // {}' artifacts/failure/apidiff-failure-result.json)"
-          success_top_diffs="$(jq '(.diffs // [])[:3]' artifacts/success/apidiff-success-result.json)"
-          failure_top_diffs="$(jq '(.diffs // [])[:3]' artifacts/failure/apidiff-failure-result.json)"
+          success_summary="$(jq '.summary // {}' artifacts/success/result.json)"
+          success_top_diffs="$(jq '(.diffs // [])[:3]' artifacts/success/result.json)"
+          success_expected="$(cat artifacts/success/expected_exit.txt)"
+          success_observed="$(cat artifacts/success/exit_code.txt)"
+
+          failure_summary="$(jq '.summary // {}' artifacts/failure/result.json)"
+          failure_top_diffs="$(jq '(.diffs // [])[:3]' artifacts/failure/result.json)"
+          failure_expected="$(cat artifacts/failure/expected_exit.txt)"
+          failure_observed="$(cat artifacts/failure/exit_code.txt)"
 
           {
             echo "$marker"
@@ -172,8 +137,8 @@ jobs:
             echo
             echo "| Case | Expected | Observed |"
             echo "| --- | --- | --- |"
-            echo "| Non-breaking pass | \`0\` | \`${{ needs.success-case.outputs.exit_code }}\` |"
-            echo "| Breaking-change detection | \`1\` | \`${{ needs.failure-case.outputs.exit_code }}\` |"
+            echo "| Non-breaking pass | \`${success_expected}\` | \`${success_observed}\` |"
+            echo "| Breaking-change detection | \`${failure_expected}\` | \`${failure_observed}\` |"
             echo
             echo "<details><summary>Success case summary</summary>"
             echo
