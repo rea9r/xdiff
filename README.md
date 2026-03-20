@@ -93,7 +93,7 @@ apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.exampl
 
 Default output (GitHub-like patch):
 
-```text
+```diff
 --- old
 +++ new
 @@ -1,12 +1,13 @@
