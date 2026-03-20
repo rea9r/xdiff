@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/rea9r/apidiff/internal/output"
 )
 
 func parseArgs(args []string) (config, error) {
@@ -13,7 +15,7 @@ func parseArgs(args []string) (config, error) {
 	fs := flag.NewFlagSet("apidiff", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
-	format := fs.String("format", "text", "output format: text or json")
+	format := fs.String("format", output.TextFormat, "output format: text or json")
 	var ignorePaths multiValueFlag
 	fs.Var(&ignorePaths, "ignore-path", "ignore diff by exact path (can be specified multiple times)")
 	onlyBreaking := fs.Bool("only-breaking", false, "show only breaking changes")
@@ -21,7 +23,7 @@ func parseArgs(args []string) (config, error) {
 		return config{}, fmt.Errorf("failed to parse args: %w", err)
 	}
 
-	if *format != "text" && *format != "json" {
+	if !output.IsSupportedFormat(*format) {
 		return config{}, fmt.Errorf("invalid --format %q (allowed: text, json)", *format)
 	}
 
