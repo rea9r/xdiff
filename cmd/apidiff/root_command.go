@@ -7,7 +7,7 @@ func newRootCommand(exitCode *int) *cobra.Command {
 
 	root := &cobra.Command{
 		Use:           "apidiff [flags] old.json new.json",
-		Short:         "Compare API responses (JSON files or URLs)",
+		Short:         "Compare API responses (JSON files/URLs) and OpenAPI specs",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.ExactArgs(2),
@@ -16,5 +16,6 @@ func newRootCommand(exitCode *int) *cobra.Command {
 
 	bindCommonFlags(root.Flags(), commonFlags)
 	root.AddCommand(newURLCommand(commonFlags, exitCode))
+	root.AddCommand(newSpecCommand(commonFlags, exitCode))
 	return root
 }

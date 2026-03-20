@@ -66,6 +66,30 @@ func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 	return exitOK, out, nil
 }
 
+func RunWithDiffs(diffs []diff.Diff, opts CompareOptions) (int, string, error) {
+	if err := validateCompareOptions(opts); err != nil {
+		return exitError, "", err
+	}
+
+	filtered := diff.ApplyOptions(diffs, diff.Options{
+		IgnorePaths:  opts.IgnorePaths,
+		OnlyBreaking: opts.OnlyBreaking,
+	})
+
+	out, err := output.FormatWithOptions(filtered, output.Options{
+		Format: opts.Format,
+		Color:  output.ShouldUseColor(opts.NoColor),
+	})
+	if err != nil {
+		return exitError, "", err
+	}
+
+	if HasFailureByMode(filtered, opts.FailOn) {
+		return exitDiffFound, out, nil
+	}
+	return exitOK, out, nil
+}
+
 func validateFileOptions(opts Options) error {
 	if opts.OldPath == "" || opts.NewPath == "" {
 		return errors.New("old and new file paths are required")

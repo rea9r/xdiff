@@ -105,6 +105,32 @@ func TestRunCLI_URL_SuccessDiffFound(t *testing.T) {
 	}
 }
 
+func TestRunCLI_Spec_NonBreaking(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{}}}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{},"post":{}}}}`, "new.json")
+
+	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
+	}
+}
+
+func TestRunCLI_Spec_Breaking(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{},"post":{}}}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{}}}}`, "new.json")
+
+	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
 func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")

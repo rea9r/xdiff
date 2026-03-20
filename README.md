@@ -38,9 +38,15 @@ Compare JSON from URLs:
 apidiff url [flags] <old-url> <new-url>
 ```
 
+Compare OpenAPI specs (JSON or YAML):
+
+```bash
+apidiff spec [flags] <old-spec> <new-spec>
+```
+
 ## Flags
 
-Common flags (`apidiff` and `apidiff url`):
+Common flags (`apidiff`, `apidiff url`, and `apidiff spec`):
 
 | Flag | Description | Default |
 | --- | --- | --- |
@@ -87,6 +93,12 @@ URL comparison with auth header and timeout:
 
 ```bash
 apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
+```
+
+OpenAPI spec comparison (JSON or YAML):
+
+```bash
+apidiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
 ```
 
 ## Output Samples
