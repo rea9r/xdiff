@@ -10,7 +10,7 @@ import (
 )
 
 func RunWithOptions(opts Options) (int, string, error) {
-	if err := validateOptions(opts); err != nil {
+	if err := validateFileOptions(opts); err != nil {
 		return exitError, "", err
 	}
 
@@ -21,6 +21,14 @@ func RunWithOptions(opts Options) (int, string, error) {
 
 	newValue, err := input.LoadJSONFile(opts.NewPath)
 	if err != nil {
+		return exitError, "", err
+	}
+
+	return RunWithValues(oldValue, newValue, opts.CompareOptions())
+}
+
+func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, error) {
+	if err := validateCompareOptions(opts); err != nil {
 		return exitError, "", err
 	}
 
@@ -41,10 +49,14 @@ func RunWithOptions(opts Options) (int, string, error) {
 	return exitOK, out, nil
 }
 
-func validateOptions(opts Options) error {
+func validateFileOptions(opts Options) error {
 	if opts.OldPath == "" || opts.NewPath == "" {
 		return errors.New("old and new file paths are required")
 	}
+	return validateCompareOptions(opts.CompareOptions())
+}
+
+func validateCompareOptions(opts CompareOptions) error {
 	if !output.IsSupportedFormat(opts.Format) {
 		return fmt.Errorf("invalid format %q (allowed: text, json)", opts.Format)
 	}

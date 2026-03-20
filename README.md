@@ -9,6 +9,7 @@ go run ./cmd/apidiff testdata/old.json testdata/new.json
 go run ./cmd/apidiff --format json testdata/old.json testdata/new.json
 go run ./cmd/apidiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
 go run ./cmd/apidiff --only-breaking testdata/old.json testdata/new.json
+go run ./cmd/apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
 ```
 
 Exit code:
