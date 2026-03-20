@@ -31,13 +31,13 @@ read_case_data() {
 }
 
 build_comment_body() {
-  marker="<!-- apidiff-example-report -->"
+  marker="<!-- xdiff-example-report -->"
   body_file="$(mktemp)"
   payload_file="$(mktemp)"
 
   {
     echo "$marker"
-    echo "## apidiff example report"
+    echo "## xdiff example report"
     echo
     echo "| Case | Expected | Observed |"
     echo "| --- | --- | --- |"
@@ -80,7 +80,7 @@ upsert_comment() {
   comments_json="$(mktemp)"
   gh api "repos/${repo}/issues/${pr_number}/comments" > "$comments_json"
   comment_id="$(
-    jq -r '.[] | select((.body // "") | contains("<!-- apidiff-example-report -->")) | .id' "$comments_json" | head -n 1
+    jq -r '.[] | select((.body // "") | contains("<!-- xdiff-example-report -->")) | .id' "$comments_json" | head -n 1
   )"
 
   if [ -n "$comment_id" ]; then

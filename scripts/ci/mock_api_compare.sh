@@ -78,12 +78,12 @@ start_mock_servers() {
   new_url="http://127.0.0.1:${new_port}/user.json"
 }
 
-run_apidiff() {
+run_xdiff() {
   wait_for_server "$old_url" "$old_log"
   wait_for_server "$new_url" "$new_log"
 
   set +e
-  apidiff \
+  xdiff \
     url \
     --format json \
     --fail-on breaking \
@@ -99,7 +99,7 @@ main() {
   parse_args "$@"
   set_payloads
   start_mock_servers
-  run_apidiff
+  run_xdiff
 }
 
 main "$@"

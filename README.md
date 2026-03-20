@@ -1,27 +1,29 @@
-# apidiff
+# xdiff
 
-API response diff tool written in Go.
+Structured data diff tool written in Go.
 
-`apidiff` compares JSON responses and reports differences with clear exit codes.
+`xdiff` compares JSON/OpenAPI inputs and reports differences with clear exit codes.
+
+Legacy command compatibility is currently kept as `apidiff` (`cmd/apidiff`).
 
 ## Quick Start
 
 Install once:
 
 ```bash
-go install ./cmd/apidiff
+go install ./cmd/xdiff
 ```
 
 Then run:
 
 ```bash
-apidiff testdata/old.json testdata/new.json
+xdiff testdata/old.json testdata/new.json
 ```
 
 Compare two URLs:
 
 ```bash
-apidiff url https://old.example.com/api https://new.example.com/api
+xdiff url https://old.example.com/api https://new.example.com/api
 ```
 
 ## Command Reference
@@ -29,24 +31,24 @@ apidiff url https://old.example.com/api https://new.example.com/api
 Compare local JSON files:
 
 ```bash
-apidiff [flags] old.json new.json
+xdiff [flags] old.json new.json
 ```
 
 Compare JSON from URLs:
 
 ```bash
-apidiff url [flags] <old-url> <new-url>
+xdiff url [flags] <old-url> <new-url>
 ```
 
 Compare OpenAPI specs (JSON or YAML):
 
 ```bash
-apidiff spec [flags] <old-spec> <new-spec>
+xdiff spec [flags] <old-spec> <new-spec>
 ```
 
 ## Flags
 
-Common flags (`apidiff`, `apidiff url`, and `apidiff spec`):
+Common flags (`xdiff`, `xdiff url`, and `xdiff spec`):
 
 | Flag | Description | Default |
 | --- | --- | --- |
@@ -68,37 +70,37 @@ URL command only:
 Output JSON for CI:
 
 ```bash
-apidiff --format json testdata/old.json testdata/new.json
+xdiff --format json testdata/old.json testdata/new.json
 ```
 
 Ignore noisy fields:
 
 ```bash
-apidiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
+xdiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
 ```
 
 Show only breaking changes:
 
 ```bash
-apidiff --only-breaking testdata/old.json testdata/new.json
+xdiff --only-breaking testdata/old.json testdata/new.json
 ```
 
 Fail only when breaking changes are detected:
 
 ```bash
-apidiff --fail-on breaking testdata/old.json testdata/new.json
+xdiff --fail-on breaking testdata/old.json testdata/new.json
 ```
 
 URL comparison with auth header and timeout:
 
 ```bash
-apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
+xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
 ```
 
 OpenAPI spec comparison (JSON or YAML):
 
 ```bash
-apidiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
+xdiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
 ```
 
 Current `spec` comparison scope:
@@ -190,10 +192,10 @@ Machine-readable output (`--format json`):
 
 ## CI Example (GitHub Actions)
 
-This repository includes a working example workflow: [`.github/workflows/apidiff-example.yml`](.github/workflows/apidiff-example.yml)
-- It runs `apidiff url` against two mock HTTP APIs inside CI.
+This repository includes a working example workflow: [`.github/workflows/xdiff-example.yml`](.github/workflows/xdiff-example.yml)
+- It runs `xdiff url` against two mock HTTP APIs inside CI.
 - Mock API startup and comparison logic is shared via `scripts/ci/mock_api_compare.sh`.
-- Consolidated PR comment logic is shared via `scripts/ci/post_apidiff_comment.sh`.
+- Consolidated PR comment logic is shared via `scripts/ci/post_xdiff_comment.sh`.
 - Success/failure example cases are implemented as a matrix job for maintainability.
 - It includes a success case (`non-breaking`, expected exit code `0`).
 - It includes a failure-detection case (`breaking`, expected exit code `1`).
@@ -210,11 +212,11 @@ For practical production patterns, see:
 Core command used in the workflow:
 
 ```bash
-apidiff url \
+xdiff url \
   --format json \
   --fail-on breaking \
   http://127.0.0.1:18081/user.json \
-  http://127.0.0.1:18082/user.json > apidiff-result.json
+  http://127.0.0.1:18082/user.json > xdiff-result.json
 ```
 
 Use the workflow file as the source of truth for a runnable setup.

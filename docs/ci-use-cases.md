@@ -1,6 +1,6 @@
 # CI Use Cases
 
-Practical CI patterns for using `apidiff` in production workflows.
+Practical CI patterns for using `xdiff` in production workflows.
 
 ## 1. Protect backward compatibility in pull requests (recommended)
 
@@ -27,7 +27,7 @@ jobs:
         with:
           go-version: "1.26"
 
-      - run: go install ./cmd/apidiff
+      - run: go install ./cmd/xdiff
 
       - name: Start API (example)
         run: |
@@ -41,11 +41,11 @@ jobs:
 
       - name: Fail only on breaking changes
         run: |
-          apidiff \
+          xdiff \
             --format json \
             --fail-on breaking \
             old.json \
-            new.json > apidiff-result.json
+            new.json > xdiff-result.json
 ```
 
 ## 2. Monitor drift between staging and production (reporting use case)
@@ -75,22 +75,22 @@ jobs:
         with:
           go-version: "1.26"
 
-      - run: go install ./cmd/apidiff
+      - run: go install ./cmd/xdiff
 
       - name: Compare staging/prod
         run: |
-          apidiff url \
+          xdiff url \
             --format json \
             --fail-on none \
             --header "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
             "https://stg.example.com/api/v1/users/1" \
-            "https://api.example.com/api/v1/users/1" > apidiff-result.json
+            "https://api.example.com/api/v1/users/1" > xdiff-result.json
 
       - name: Upload diff result
         uses: actions/upload-artifact@v6
         with:
-          name: apidiff-result
-          path: apidiff-result.json
+          name: xdiff-result
+          path: xdiff-result.json
 ```
 
 ## Operational tips

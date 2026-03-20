@@ -4,7 +4,7 @@ Use these scenarios as a lightweight user-facing quality loop.
 
 ## Goal
 
-Verify that `apidiff` helps users answer three questions quickly:
+Verify that `xdiff` helps users answer three questions quickly:
 - Did the check pass or fail?
 - Why did it pass or fail?
 - What changed (and what matters)?
@@ -14,7 +14,7 @@ Verify that `apidiff` helps users answer three questions quickly:
 Command:
 
 ```bash
-apidiff testdata/old.json testdata/new.json
+xdiff testdata/old.json testdata/new.json
 ```
 
 Checkpoints:
@@ -27,7 +27,7 @@ Checkpoints:
 Command:
 
 ```bash
-apidiff url https://old.example.com/api https://new.example.com/api
+xdiff url https://old.example.com/api https://new.example.com/api
 ```
 
 Checkpoints:
@@ -39,7 +39,7 @@ Checkpoints:
 Command:
 
 ```bash
-apidiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
+xdiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
 ```
 
 Checkpoints:
@@ -51,7 +51,7 @@ Checkpoints:
 Command:
 
 ```bash
-apidiff --format json --fail-on breaking testdata/old.json testdata/new.json
+xdiff --format json --fail-on breaking testdata/old.json testdata/new.json
 ```
 
 Checkpoints:
