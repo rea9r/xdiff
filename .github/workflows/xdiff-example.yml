@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   compare-cases:
-    name: Case: ${{ matrix.case_name }}
+    name: "Case: ${{ matrix.case_name }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
