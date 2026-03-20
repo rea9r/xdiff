@@ -101,6 +101,11 @@ OpenAPI spec comparison (JSON or YAML):
 apidiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
 ```
 
+Current `spec` comparison scope:
+- path/method added or removed
+- `requestBody.required` changes
+- response schema `type` changes (per status/content type)
+
 ## Output Samples
 
 Default output (GitHub-like patch):

@@ -131,6 +131,32 @@ func TestRunCLI_Spec_Breaking(t *testing.T) {
 	}
 }
 
+func TestRunCLI_Spec_Breaking_RequestBodyRequired(t *testing.T) {
+	oldPath := fixturePath("testdata/spec/required_old.yaml")
+	newPath := fixturePath("testdata/spec/required_new.yaml")
+
+	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
+func TestRunCLI_Spec_Breaking_ResponseTypeChanged(t *testing.T) {
+	oldPath := fixturePath("testdata/spec/response_type_old.yaml")
+	newPath := fixturePath("testdata/spec/response_type_new.yaml")
+
+	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
 func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")

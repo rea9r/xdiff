@@ -30,6 +30,100 @@ func TestComparePathsMethods(t *testing.T) {
 	}
 }
 
+func TestComparePathsMethods_RequestBodyRequiredBecomesBreaking(t *testing.T) {
+	oldSpec := map[string]any{
+		"paths": map[string]any{
+			"/users": map[string]any{
+				"post": map[string]any{
+					"requestBody": map[string]any{
+						"required": false,
+					},
+				},
+			},
+		},
+	}
+	newSpec := map[string]any{
+		"paths": map[string]any{
+			"/users": map[string]any{
+				"post": map[string]any{
+					"requestBody": map[string]any{
+						"required": true,
+					},
+				},
+			},
+		},
+	}
+
+	got := ComparePathsMethods(oldSpec, newSpec)
+	want := []diff.Diff{
+		{
+			Type:     diff.Removed,
+			Path:     "paths./users.post.requestBody.required",
+			OldValue: "optional",
+			NewValue: nil,
+		},
+	}
+
+	if d := cmp.Diff(want, got); d != "" {
+		t.Fatalf("ComparePathsMethods mismatch (-want +got):\n%s", d)
+	}
+}
+
+func TestComparePathsMethods_ResponseSchemaTypeChanged(t *testing.T) {
+	oldSpec := map[string]any{
+		"paths": map[string]any{
+			"/users": map[string]any{
+				"get": map[string]any{
+					"responses": map[string]any{
+						"200": map[string]any{
+							"content": map[string]any{
+								"application/json": map[string]any{
+									"schema": map[string]any{
+										"type": "object",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	newSpec := map[string]any{
+		"paths": map[string]any{
+			"/users": map[string]any{
+				"get": map[string]any{
+					"responses": map[string]any{
+						"200": map[string]any{
+							"content": map[string]any{
+								"application/json": map[string]any{
+									"schema": map[string]any{
+										"type": "array",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := ComparePathsMethods(oldSpec, newSpec)
+	want := []diff.Diff{
+		{
+			Type:     diff.TypeChanged,
+			Path:     "paths./users.get.responses.200.content.application/json.schema.type",
+			OldValue: "object",
+			NewValue: "array",
+		},
+	}
+
+	if d := cmp.Diff(want, got); d != "" {
+		t.Fatalf("ComparePathsMethods mismatch (-want +got):\n%s", d)
+	}
+}
+
 func specWithPaths(pathMethods map[string][]string) map[string]any {
 	paths := map[string]any{}
 	for path, methods := range pathMethods {
