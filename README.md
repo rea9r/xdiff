@@ -179,7 +179,7 @@ This repository includes a working example workflow: [`.github/workflows/apidiff
 - It includes a failure-detection case (`breaking`, expected exit code `1`).
 - It publishes JSON outputs as workflow artifacts.
 - It writes observed/expected exit codes and JSON output to Job Summary.
-- On pull requests, it also posts/updates a PR comment with the result summary.
+- On pull requests, it posts/updates a single consolidated PR comment with both cases.
 - On direct pushes to `main`, it runs without PR comments and keeps results in artifacts/summary.
 
 For practical production patterns, see:
