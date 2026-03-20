@@ -3,7 +3,7 @@ package output
 import (
 	"encoding/json"
 
-	"github.com/rea9r/apidiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/diff"
 )
 
 type jsonDiff struct {

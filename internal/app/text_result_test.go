@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rea9r/apidiff/internal/diff"
-	"github.com/rea9r/apidiff/internal/output"
+	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/output"
 )
 
 func TestDecorateTextResult_Pass(t *testing.T) {

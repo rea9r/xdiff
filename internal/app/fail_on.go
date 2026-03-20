@@ -1,6 +1,6 @@
 package app
 
-import "github.com/rea9r/apidiff/internal/diff"
+import "github.com/rea9r/xdiff/internal/diff"
 
 const (
 	FailOnAny      = "any"

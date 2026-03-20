@@ -3,7 +3,7 @@ package output
 import (
 	"fmt"
 
-	"github.com/rea9r/apidiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/diff"
 )
 
 const (

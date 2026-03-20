@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/rea9r/apidiff/internal/app"
-	"github.com/rea9r/apidiff/internal/input"
-	"github.com/rea9r/apidiff/internal/spec"
+	"github.com/rea9r/xdiff/internal/app"
+	"github.com/rea9r/xdiff/internal/input"
+	"github.com/rea9r/xdiff/internal/spec"
 	"github.com/spf13/cobra"
 )
 

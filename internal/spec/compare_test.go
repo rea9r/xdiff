@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/rea9r/apidiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/diff"
 )
 
 func TestComparePathsMethods(t *testing.T) {

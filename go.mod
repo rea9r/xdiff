@@ -1,4 +1,4 @@
-module github.com/rea9r/apidiff
+module github.com/rea9r/xdiff
 
 go 1.26.1
 

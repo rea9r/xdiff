@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rea9r/apidiff/internal/app"
-	"github.com/rea9r/apidiff/internal/input"
+	"github.com/rea9r/xdiff/internal/app"
+	"github.com/rea9r/xdiff/internal/input"
 	"github.com/spf13/cobra"
 )
 

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/rea9r/apidiff/internal/diff"
-	"github.com/rea9r/apidiff/internal/input"
-	"github.com/rea9r/apidiff/internal/output"
+	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/input"
+	"github.com/rea9r/xdiff/internal/output"
 )
 
 type ValueLoader func() (any, error)

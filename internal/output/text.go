@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/rea9r/apidiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/diff"
 )
 
 func FormatText(diffs []diff.Diff) string {

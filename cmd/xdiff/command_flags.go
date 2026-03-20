@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/rea9r/apidiff/internal/output"
+	"github.com/rea9r/xdiff/internal/output"
 	"github.com/spf13/pflag"
 )
 

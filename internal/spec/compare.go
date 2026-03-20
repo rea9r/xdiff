@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rea9r/apidiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/diff"
 )
 
 var supportedMethods = map[string]struct{}{
