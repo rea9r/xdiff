@@ -38,6 +38,12 @@ Compare local JSON files:
 xdiff [flags] old.json new.json
 ```
 
+Compare local text files:
+
+```bash
+xdiff text [flags] old.txt new.txt
+```
+
 Compare JSON from URLs:
 
 ```bash
@@ -87,6 +93,12 @@ Show only breaking changes:
 
 ```bash
 xdiff --only-breaking testdata/old.json testdata/new.json
+```
+
+Compare text files:
+
+```bash
+xdiff text old.txt new.txt
 ```
 
 Fail only when breaking changes are detected:

@@ -125,6 +125,32 @@ func TestRunCLI_URL_SuccessDiffFound(t *testing.T) {
 	}
 }
 
+func TestRunCLI_Text_SuccessDiffFound(t *testing.T) {
+	oldPath := writeCLIFile(t, "hello\nworld\n", "old.txt")
+	newPath := writeCLIFile(t, "hello\ngopher\n", "new.txt")
+
+	code, err := runCLI([]string{"text", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
+func TestRunCLI_Text_JSONFormat(t *testing.T) {
+	oldPath := writeCLIFile(t, "a\n", "old.txt")
+	newPath := writeCLIFile(t, "b\n", "new.txt")
+
+	code, err := runCLI([]string{"text", "--format", "json", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
 func TestRunCLI_Spec_NonBreaking(t *testing.T) {
 	oldPath := fixturePath("testdata/spec/non_breaking_old.yaml")
 	newPath := fixturePath("testdata/spec/non_breaking_new.yaml")

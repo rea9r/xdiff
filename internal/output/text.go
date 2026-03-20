@@ -50,6 +50,19 @@ func renderUnifiedDiffSection(oldValue, newValue any, color bool) string {
 	oldText := prettyJSON(oldValue)
 	newText := prettyJSON(newValue)
 
+	return renderUnifiedText(oldText, newText, color)
+}
+
+func RenderUnifiedText(oldText, newText string) string {
+	return RenderUnifiedTextWithColor(oldText, newText, false)
+}
+
+func RenderUnifiedTextWithColor(oldText, newText string, color bool) string {
+	return renderUnifiedText(oldText, newText, color)
+}
+
+func renderUnifiedText(oldText, newText string, color bool) string {
+
 	ud := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(oldText),
 		B:        difflib.SplitLines(newText),

@@ -18,8 +18,7 @@ xdiff testdata/old.json testdata/new.json
 ```
 
 Checkpoints:
-- First line starts with `Result:`
-- Policy line is visible (`--fail-on`)
+- Diff output starts with unified headers (`--- old`, `+++ new`)
 - Diff body is still readable (Git-style patch)
 
 ## Scenario 2: URL diff (runtime behavior check)
@@ -32,7 +31,7 @@ xdiff url https://old.example.com/api https://new.example.com/api
 
 Checkpoints:
 - Network errors are actionable
-- Success/failure reason is obvious without reading full diff
+- Exit code behavior matches `--fail-on` mode
 
 ## Scenario 3: OpenAPI spec diff (contract review)
 
@@ -63,4 +62,3 @@ Checkpoints:
 - Run all scenarios before release-oriented commits.
 - If output changes, update snapshots/examples in `README.md`.
 - Prefer small UX improvements with measurable impact on these scenarios.
-

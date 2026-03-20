@@ -22,6 +22,9 @@ func TestBuildExampleOutput_Default(t *testing.T) {
 	if !strings.Contains(out, "Expected output:") {
 		t.Fatalf("missing expected output section: %q", out)
 	}
+	if strings.Contains(out, "Result:") || strings.Contains(out, "Policy:") {
+		t.Fatalf("expected output should not include summary header: %q", out)
+	}
 	if !strings.Contains(out, "Sample command exit code (with current --fail-on): 1") {
 		t.Fatalf("missing sample exit code line: %q", out)
 	}
