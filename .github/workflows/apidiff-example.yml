@@ -36,53 +36,7 @@ jobs:
         name: Compare mock API responses (non-breaking)
         run: |
           set -euo pipefail
-
-          mkdir -p old-api new-api
-          cat > old-api/user.json <<'JSON'
-          {"user":{"name":"Taro","age":"20"}}
-          JSON
-          cat > new-api/user.json <<'JSON'
-          {"user":{"name":"Hanako","age":"20"}}
-          JSON
-
-          python3 -m http.server 18081 --bind 127.0.0.1 --directory old-api >/tmp/old-api.log 2>&1 &
-          OLD_PID=$!
-          python3 -m http.server 18082 --bind 127.0.0.1 --directory new-api >/tmp/new-api.log 2>&1 &
-          NEW_PID=$!
-
-          cleanup() {
-            kill "$OLD_PID" "$NEW_PID" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          wait_for_server() {
-            local url="$1"
-            local log_file="$2"
-            for _ in $(seq 1 30); do
-              if curl -fsS "$url" >/dev/null; then
-                return 0
-              fi
-              sleep 0.2
-            done
-
-            echo "Server did not become ready: $url"
-            echo "--- $log_file ---"
-            cat "$log_file" || true
-            return 1
-          }
-
-          wait_for_server "http://127.0.0.1:18081/user.json" "/tmp/old-api.log"
-          wait_for_server "http://127.0.0.1:18082/user.json" "/tmp/new-api.log"
-
-          set +e
-          apidiff \
-            url \
-            --format json \
-            --fail-on breaking \
-            http://127.0.0.1:18081/user.json \
-            http://127.0.0.1:18082/user.json > apidiff-success-result.json
-          EXIT_CODE=$?
-          set -e
+          EXIT_CODE="$(scripts/ci/mock_api_compare.sh non-breaking apidiff-success-result.json)"
 
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           echo "apidiff exit code: $EXIT_CODE"
@@ -141,53 +95,7 @@ jobs:
         name: Compare mock API responses (breaking)
         run: |
           set -euo pipefail
-
-          mkdir -p old-api new-api
-          cat > old-api/user.json <<'JSON'
-          {"user":{"name":"Taro","age":"20","email":"taro@example.com"}}
-          JSON
-          cat > new-api/user.json <<'JSON'
-          {"user":{"name":"Hanako","age":"20","phone":"090-xxxx-xxxx"}}
-          JSON
-
-          python3 -m http.server 18081 --bind 127.0.0.1 --directory old-api >/tmp/old-api.log 2>&1 &
-          OLD_PID=$!
-          python3 -m http.server 18082 --bind 127.0.0.1 --directory new-api >/tmp/new-api.log 2>&1 &
-          NEW_PID=$!
-
-          cleanup() {
-            kill "$OLD_PID" "$NEW_PID" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          wait_for_server() {
-            local url="$1"
-            local log_file="$2"
-            for _ in $(seq 1 30); do
-              if curl -fsS "$url" >/dev/null; then
-                return 0
-              fi
-              sleep 0.2
-            done
-
-            echo "Server did not become ready: $url"
-            echo "--- $log_file ---"
-            cat "$log_file" || true
-            return 1
-          }
-
-          wait_for_server "http://127.0.0.1:18081/user.json" "/tmp/old-api.log"
-          wait_for_server "http://127.0.0.1:18082/user.json" "/tmp/new-api.log"
-
-          set +e
-          apidiff \
-            url \
-            --format json \
-            --fail-on breaking \
-            http://127.0.0.1:18081/user.json \
-            http://127.0.0.1:18082/user.json > apidiff-failure-result.json
-          EXIT_CODE=$?
-          set -e
+          EXIT_CODE="$(scripts/ci/mock_api_compare.sh breaking apidiff-failure-result.json)"
 
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           echo "apidiff exit code: $EXIT_CODE"
