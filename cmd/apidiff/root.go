@@ -8,9 +8,8 @@ func runCLI(args []string) (int, error) {
 	root := newRootCommand(&exitCode)
 	root.SetArgs(args)
 	if err := root.Execute(); err != nil {
-		var rerr *runError
-		if errors.As(err, &rerr) {
-			return rerr.code, rerr.err
+		if runErr, ok := errors.AsType[*runError](err); ok {
+			return runErr.code, runErr.err
 		}
 		return 2, err
 	}
