@@ -4,8 +4,6 @@ Structured data diff tool written in Go.
 
 `xdiff` compares JSON/OpenAPI inputs and reports differences with clear exit codes.
 
-Legacy command compatibility is currently kept as `apidiff` (`cmd/apidiff`).
-
 ## Quick Start
 
 Install once:
