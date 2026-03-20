@@ -173,7 +173,7 @@ Machine-readable output (`--format json`):
 
 ## CI Example (GitHub Actions)
 
-This repository includes a working workflow: [`.github/workflows/apidiff.yml`](.github/workflows/apidiff.yml)
+This repository includes a working example workflow: [`.github/workflows/apidiff-example.yml`](.github/workflows/apidiff-example.yml)
 - It runs `apidiff url` against two mock HTTP APIs inside CI.
 - It always publishes `apidiff-result.json` as an artifact.
 - It writes the JSON output into the job summary for quick review.

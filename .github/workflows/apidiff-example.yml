@@ -1,4 +1,4 @@
-name: apidiff
+name: apidiff-example
 
 on:
   pull_request:
@@ -19,6 +19,9 @@ jobs:
 
       - name: Install apidiff
         run: go install ./cmd/apidiff
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - id: diff
         name: Compare mock API responses
@@ -43,8 +46,24 @@ jobs:
           }
           trap cleanup EXIT
 
-          curl -fsS http://127.0.0.1:18081/user.json >/dev/null
-          curl -fsS http://127.0.0.1:18082/user.json >/dev/null
+          wait_for_server() {
+            local url="$1"
+            local log_file="$2"
+            for _ in $(seq 1 30); do
+              if curl -fsS "$url" >/dev/null; then
+                return 0
+              fi
+              sleep 0.2
+            done
+
+            echo "Server did not become ready: $url"
+            echo "--- $log_file ---"
+            cat "$log_file" || true
+            return 1
+          }
+
+          wait_for_server "http://127.0.0.1:18081/user.json" "/tmp/old-api.log"
+          wait_for_server "http://127.0.0.1:18082/user.json" "/tmp/new-api.log"
 
           set +e
           apidiff \
