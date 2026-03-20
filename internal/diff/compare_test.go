@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestCompare(t *testing.T) {
@@ -69,16 +72,8 @@ func TestCompare(t *testing.T) {
 			newValue := mustParseJSON(t, tt.new)
 
 			got := Compare(oldValue, newValue)
-
-			if len(got) != len(tt.want) {
-				t.Fatalf("diff count mismatch: got=%d want=%d, got=%+v", len(got), len(tt.want), got)
-			}
-
-			for i := range tt.want {
-				if got[i].Type != tt.want[i].Type || got[i].Path != tt.want[i].Path {
-					t.Fatalf("diff mismatch at index %d: got={Type:%s Path:%s} want={Type:%s Path:%s}",
-						i, got[i].Type, got[i].Path, tt.want[i].Type, tt.want[i].Path)
-				}
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(Diff{}, "OldValue", "NewValue")); diff != "" {
+				t.Fatalf("diff mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

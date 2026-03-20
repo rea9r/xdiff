@@ -1,8 +1,9 @@
 package app
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestParseArgs(t *testing.T) {
@@ -92,8 +93,8 @@ func TestParseArgs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("parseArgs returned error: %v", err)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("config mismatch: got=%+v want=%+v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(config{})); diff != "" {
+				t.Fatalf("config mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

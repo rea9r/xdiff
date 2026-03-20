@@ -1,6 +1,10 @@
 package diff
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestIsBreaking(t *testing.T) {
 	tests := []struct {
@@ -17,8 +21,8 @@ func TestIsBreaking(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := IsBreaking(tt.typ)
-			if got != tt.want {
-				t.Fatalf("IsBreaking(%s) = %v, want %v", tt.typ, got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatalf("IsBreaking(%s) mismatch (-want +got):\n%s", tt.typ, diff)
 			}
 		})
 	}

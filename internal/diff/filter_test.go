@@ -1,6 +1,10 @@
 package diff
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestFilterIgnoredPaths(t *testing.T) {
 	diffs := []Diff{
@@ -10,12 +14,11 @@ func TestFilterIgnoredPaths(t *testing.T) {
 	}
 
 	got := FilterIgnoredPaths(diffs, []string{"user.updated_at", "meta.request_id"})
-
-	if len(got) != 1 {
-		t.Fatalf("filtered diff count mismatch: got=%d want=1", len(got))
+	want := []Diff{
+		{Type: Changed, Path: "user.name"},
 	}
-	if got[0].Path != "user.name" {
-		t.Fatalf("remaining diff path mismatch: got=%s want=user.name", got[0].Path)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("filtered diff mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -25,8 +28,8 @@ func TestFilterIgnoredPaths_NoIgnores(t *testing.T) {
 	}
 
 	got := FilterIgnoredPaths(diffs, nil)
-	if len(got) != len(diffs) {
-		t.Fatalf("expected same diff count: got=%d want=%d", len(got), len(diffs))
+	if diff := cmp.Diff(diffs, got); diff != "" {
+		t.Fatalf("filtered diff mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -39,13 +42,11 @@ func TestFilterOnlyBreaking(t *testing.T) {
 	}
 
 	got := FilterOnlyBreaking(diffs)
-	if len(got) != 2 {
-		t.Fatalf("filtered diff count mismatch: got=%d want=2", len(got))
+	want := []Diff{
+		{Type: Removed, Path: "user.email"},
+		{Type: TypeChanged, Path: "user.age"},
 	}
-	if got[0].Type != Removed {
-		t.Fatalf("expected first diff type removed, got=%s", got[0].Type)
-	}
-	if got[1].Type != TypeChanged {
-		t.Fatalf("expected second diff type type_changed, got=%s", got[1].Type)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("filtered diff mismatch (-want +got):\n%s", diff)
 	}
 }

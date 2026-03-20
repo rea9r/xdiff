@@ -1,6 +1,10 @@
 package diff
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestSummarize(t *testing.T) {
 	diffs := []Diff{
@@ -20,7 +24,7 @@ func TestSummarize(t *testing.T) {
 		TypeChanged: 2,
 	}
 
-	if got != want {
-		t.Fatalf("summary mismatch: got=%+v want=%+v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("summary mismatch (-want +got):\n%s", diff)
 	}
 }
