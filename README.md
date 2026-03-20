@@ -1,8 +1,8 @@
 # xdiff
 
-Structured data diff tool written in Go.
+Data diff tool written in Go.
 
-`xdiff` compares JSON/OpenAPI inputs and reports differences with clear exit codes.
+`xdiff` compares JSON/text/OpenAPI inputs and reports differences with clear exit codes.
 
 ## Quick Start
 
