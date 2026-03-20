@@ -1,0 +1,8 @@
+{
+  "user": {
+    "name": "Taro",
+    "email": "taro@example.com",
+    "age": "20"
+  },
+  "items": ["a", "b"]
+}

@@ -1,0 +1,8 @@
+{
+  "user": {
+    "name": "Hanako",
+    "age": 20,
+    "phone": "090-xxxx-xxxx"
+  },
+  "items": ["a", "c", "d"]
+}
