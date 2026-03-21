@@ -61,27 +61,27 @@ func ComparePathsMethods(oldSpec, newSpec any) []delta.Diff {
 		sort.Strings(methods)
 
 		for _, m := range methods {
+			ref := operationPath(p, m)
 			oldOp, hasOld := oldMethods[m]
 			newOp, hasNew := newMethods[m]
-			methodPath := "paths." + p + "." + m
 			switch {
 			case !hasOld && hasNew:
 				diffs = append(diffs, delta.Diff{
 					Type:     delta.Added,
-					Path:     methodPath,
+					Path:     ref.raw(),
 					OldValue: nil,
 					NewValue: "operation",
 				})
 			case hasOld && !hasNew:
 				diffs = append(diffs, delta.Diff{
 					Type:     delta.Removed,
-					Path:     methodPath,
+					Path:     ref.raw(),
 					OldValue: "operation",
 					NewValue: nil,
 				})
 			default:
-				diffs = append(diffs, compareRequestBodyRequirement(methodPath, oldOp, newOp)...)
-				diffs = append(diffs, compareResponseSchemaTypes(methodPath, oldOp, newOp)...)
+				diffs = append(diffs, compareRequestBodyRequirement(ref, oldOp, newOp)...)
+				diffs = append(diffs, compareResponseSchemaTypes(ref, oldOp, newOp)...)
 			}
 		}
 	}
@@ -127,14 +127,14 @@ func extractPathMethods(spec any) map[string]map[string]operationSnapshot {
 	return result
 }
 
-func compareRequestBodyRequirement(methodPath string, oldOp, newOp operationSnapshot) []delta.Diff {
+func compareRequestBodyRequirement(ref pathRef, oldOp, newOp operationSnapshot) []delta.Diff {
 	oldRequired := oldOp.RequestBodyRequired
 	newRequired := newOp.RequestBodyRequired
 	if oldRequired == newRequired {
 		return nil
 	}
 
-	path := methodPath + ".requestBody.required"
+	path := requestBodyRequiredPath(ref.apiPath, ref.method).raw()
 	if !oldRequired && newRequired {
 		// Optional request body support disappeared: treat as breaking.
 		return []delta.Diff{{
@@ -154,7 +154,7 @@ func compareRequestBodyRequirement(methodPath string, oldOp, newOp operationSnap
 	}}
 }
 
-func compareResponseSchemaTypes(methodPath string, oldOp, newOp operationSnapshot) []delta.Diff {
+func compareResponseSchemaTypes(ref pathRef, oldOp, newOp operationSnapshot) []delta.Diff {
 	var diffs []delta.Diff
 
 	statusSet := map[string]struct{}{}
@@ -192,7 +192,7 @@ func compareResponseSchemaTypes(methodPath string, oldOp, newOp operationSnapsho
 		for _, contentType := range contentTypes {
 			oldType, hasOld := oldContent[contentType]
 			newType, hasNew := newContent[contentType]
-			path := methodPath + ".responses." + status + ".content." + contentType + ".schema.type"
+			path := responseSchemaTypePath(ref.apiPath, ref.method, status, contentType).raw()
 			switch {
 			case !hasOld && hasNew:
 				diffs = append(diffs, delta.Diff{
