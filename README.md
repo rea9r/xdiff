@@ -184,6 +184,7 @@ Notes for `--text-style`:
 - `patch` uses unified patch output when that style is supported.
 - `semantic` always renders structured diffs.
 - `patch` is invalid for `xdiff spec`, and also invalid with semantic-only filters such as `--ignore-path`, `--only-breaking`, or `--ignore-order`.
+- For incompatible combinations, the CLI prints a suggested next step.
 
 Force semantic text output for JSON comparison:
 

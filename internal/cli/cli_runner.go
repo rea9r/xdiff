@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/rea9r/xdiff/internal/runner"
 )
 
 func Execute(args []string, stdout, stderr io.Writer) int {
@@ -17,6 +19,13 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 
 	code, err := runCLI(args, stdout)
 	if err != nil {
+		var hintErr *runner.UserHintError
+		if errors.As(err, &hintErr) {
+			if _, writeErr := io.WriteString(stderr, formatHintError(hintErr)); writeErr != nil {
+				return 2
+			}
+			return code
+		}
 		if _, writeErr := io.WriteString(stderr, err.Error()+"\n"); writeErr != nil {
 			return 2
 		}
@@ -76,4 +85,22 @@ func writeRunnerResult(w io.Writer, code int, out string, err error) error {
 		return asRunError(code, err)
 	}
 	return nil
+}
+
+func formatHintError(err *runner.UserHintError) string {
+	if err == nil {
+		return ""
+	}
+
+	out := err.Message + "\n"
+	if len(err.Hints) == 0 {
+		return out
+	}
+
+	out += "\nTry one of these:\n"
+	for _, h := range err.Hints {
+		out += "  " + h + "\n"
+	}
+
+	return out
 }

@@ -180,13 +180,25 @@ func validateFileOptions(opts Options) error {
 
 func validateCompareOptions(opts CompareOptions) error {
 	if !output.IsSupportedFormat(opts.Format) {
-		return fmt.Errorf("invalid output format %q (allowed: text, json)", opts.Format)
+		return newUserHintError(
+			fmt.Sprintf("invalid output format %q", opts.Format),
+			"allowed values: text, json",
+			"try --output-format text",
+		)
 	}
 	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {
-		return fmt.Errorf("invalid fail-on mode %q (allowed: none, breaking, any)", opts.FailOn)
+		return newUserHintError(
+			fmt.Sprintf("invalid fail-on mode %q", opts.FailOn),
+			"allowed values: none, breaking, any",
+			"try --fail-on any",
+		)
 	}
 	if !isSupportedTextStyle(opts.TextStyle) {
-		return fmt.Errorf("invalid text style %q (allowed: auto, patch, semantic)", opts.TextStyle)
+		return newUserHintError(
+			fmt.Sprintf("invalid text style %q", opts.TextStyle),
+			"allowed values: auto, patch, semantic",
+			"try --text-style auto",
+		)
 	}
 	return nil
 }

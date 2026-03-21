@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -295,6 +296,29 @@ func TestRunCLI_InvalidTextStyle(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), `invalid text style "fancy"`) {
 		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestExecute_PrintsHintsForPatchAndIgnoreOrderConflict(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"items":[1,2,3]}`, "old.json")
+	newPath := writeCLIJSON(t, `{"items":[3,2,1]}`, "new.json")
+
+	var stderr bytes.Buffer
+	code := Execute(
+		[]string{"--text-style", "patch", "--ignore-order", oldPath, newPath},
+		io.Discard,
+		&stderr,
+	)
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+
+	msg := stderr.String()
+	if !strings.Contains(msg, `text style "patch" cannot be used with --ignore-path, --only-breaking, or --ignore-order`) {
+		t.Fatalf("unexpected stderr: %q", msg)
+	}
+	if !strings.Contains(msg, "Try one of these:") {
+		t.Fatalf("expected hint header, got: %q", msg)
 	}
 }
 
