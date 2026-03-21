@@ -12,6 +12,11 @@ import (
 
 type ValueLoader func() (any, error)
 
+type loadResult struct {
+	value any
+	err   error
+}
+
 func RunJSONFiles(opts Options) (int, string, error) {
 	if err := validateFileOptions(opts); err != nil {
 		return exitError, "", err
@@ -29,17 +34,30 @@ func RunJSONFiles(opts Options) (int, string, error) {
 }
 
 func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int, string, error) {
-	oldValue, err := oldLoader()
-	if err != nil {
-		return exitError, "", err
+	oldCh := make(chan loadResult, 1)
+	newCh := make(chan loadResult, 1)
+
+	go func() {
+		v, err := oldLoader()
+		oldCh <- loadResult{value: v, err: err}
+	}()
+
+	go func() {
+		v, err := newLoader()
+		newCh <- loadResult{value: v, err: err}
+	}()
+
+	oldRes := <-oldCh
+	newRes := <-newCh
+
+	if oldRes.err != nil {
+		return exitError, "", oldRes.err
+	}
+	if newRes.err != nil {
+		return exitError, "", newRes.err
 	}
 
-	newValue, err := newLoader()
-	if err != nil {
-		return exitError, "", err
-	}
-
-	return RunJSONValues(oldValue, newValue, opts)
+	return RunJSONValues(oldRes.value, newRes.value, opts)
 }
 
 func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, error) {

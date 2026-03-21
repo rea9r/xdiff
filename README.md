@@ -65,6 +65,12 @@ Arguments:
 - `<old-url>`: base endpoint URL
 - `<new-url>`: endpoint URL to compare
 
+Notes:
+- Requests are sent with `GET`.
+- Comparison uses the decoded JSON response body.
+- Both responses must be `2xx`.
+- Response headers and status codes are not diff targets.
+
 Compare OpenAPI specs (JSON or YAML):
 
 ```bash
@@ -138,6 +144,9 @@ URL comparison with auth header and timeout:
 ```bash
 xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
 ```
+
+URL comparison compares JSON response bodies returned by `GET` requests.
+Non-2xx responses are treated as execution errors.
 
 OpenAPI spec comparison (JSON or YAML):
 
