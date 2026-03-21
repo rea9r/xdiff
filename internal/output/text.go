@@ -9,23 +9,37 @@ import (
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
+type SemanticTextOptions struct {
+	UseColor      bool
+	PathFormatter func(string) string
+}
+
 func FormatText(diffs []delta.Diff) string {
-	return RenderSemanticTextWithColor(diffs, false)
+	return RenderSemanticText(diffs, SemanticTextOptions{})
+}
+
+func RenderSemanticText(diffs []delta.Diff, opts SemanticTextOptions) string {
+	return renderSemanticDiffSection(diffs, opts)
 }
 
 func RenderSemanticTextWithColor(diffs []delta.Diff, color bool) string {
-	return renderSemanticDiffSection(diffs, color)
+	return RenderSemanticText(diffs, SemanticTextOptions{
+		UseColor: color,
+	})
 }
 
-func renderSemanticDiffSection(diffs []delta.Diff, color bool) string {
+func renderSemanticDiffSection(diffs []delta.Diff, opts SemanticTextOptions) string {
 	var b strings.Builder
 
 	if len(diffs) == 0 {
 		b.WriteString("No differences.\n")
 	} else {
 		for _, d := range diffs {
-			marker := colorizeAction(diffMarker(d.Type), d.Type, color)
+			marker := colorizeAction(diffMarker(d.Type), d.Type, opts.UseColor)
 			path := d.Path
+			if opts.PathFormatter != nil {
+				path = opts.PathFormatter(path)
+			}
 			if path == "" {
 				path = "(root)"
 			}

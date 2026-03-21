@@ -29,8 +29,11 @@ func newSpecCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				return asRunError(2, err)
 			}
 
-			diffs := openapi.LabelDiffPaths(openapi.ComparePathsMethods(oldSpec, newSpec))
-			code, out, err := runner.RunDeltaDiffs(diffs, common.compareOptions())
+			diffs := openapi.ComparePathsMethods(oldSpec, newSpec)
+			opts := common.compareOptions()
+			opts.PathFormatter = openapi.HumanizePath
+
+			code, out, err := runner.RunDeltaDiffs(diffs, opts)
 			if err := writeRunnerResult(common.stdout, code, out, err); err != nil {
 				return err
 			}

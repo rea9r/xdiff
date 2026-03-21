@@ -27,3 +27,22 @@ func TestRenderSemanticTextWithColor_UsesRawPath(t *testing.T) {
 		t.Fatalf("expected raw path output, got: %q", got)
 	}
 }
+
+func TestRenderSemanticText_AppliesPathFormatter(t *testing.T) {
+	diffs := []delta.Diff{
+		{Type: delta.Added, Path: "paths./users.post", NewValue: "operation"},
+	}
+
+	got := RenderSemanticText(diffs, SemanticTextOptions{
+		PathFormatter: func(path string) string {
+			if path == "paths./users.post" {
+				return "POST /users"
+			}
+			return path
+		},
+	})
+
+	if got != "+ POST /users: \"operation\"\n" {
+		t.Fatalf("expected humanized path output, got: %q", got)
+	}
+}

@@ -2,26 +2,42 @@ package openapi
 
 import (
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func TestLabelDiffPaths(t *testing.T) {
-	in := []delta.Diff{
-		{Type: delta.Added, Path: "paths./users.post", NewValue: "operation"},
-		{Type: delta.Removed, Path: "paths./users.post.requestBody.required", OldValue: "optional"},
-		{Type: delta.TypeChanged, Path: "paths./users.get.responses.200.content.application/json.schema.type", OldValue: "object", NewValue: "array"},
+func TestHumanizePath(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "operation",
+			in:   "paths./users.post",
+			want: "POST /users",
+		},
+		{
+			name: "request body required",
+			in:   "paths./users.post.requestBody.required",
+			want: "POST /users request body required",
+		},
+		{
+			name: "response schema type",
+			in:   "paths./users.get.responses.200.content.application/json.schema.type",
+			want: "GET /users response 200 application/json schema type",
+		},
+		{
+			name: "unparseable path stays raw",
+			in:   "user.name",
+			want: "user.name",
+		},
 	}
 
-	got := LabelDiffPaths(in)
-	want := []delta.Diff{
-		{Type: delta.Added, Path: "POST /users", NewValue: "operation"},
-		{Type: delta.Removed, Path: "POST /users request body required", OldValue: "optional"},
-		{Type: delta.TypeChanged, Path: "GET /users response 200 application/json schema type", OldValue: "object", NewValue: "array"},
-	}
-
-	if d := cmp.Diff(want, got); d != "" {
-		t.Fatalf("LabelDiffPaths mismatch (-want +got):\n%s", d)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := HumanizePath(tt.in)
+			if got != tt.want {
+				t.Fatalf("HumanizePath() mismatch: got=%q want=%q", got, tt.want)
+			}
+		})
 	}
 }

@@ -83,7 +83,7 @@ Common options (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 | --- | --- | --- |
 | `--output-format text\|json` | Output format | `text` |
 | `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
-| `--ignore-path <path>` | Ignore exact diff path (repeatable) | none |
+| `--ignore-path <path>` | Ignore an exact canonical diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
 | `--no-color` | Disable colored text output | `false` |
 
@@ -137,6 +137,14 @@ OpenAPI spec comparison (JSON or YAML):
 ```bash
 xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
 ```
+
+For OpenAPI comparison, `--ignore-path` matches canonical paths such as:
+
+- `paths./users.post`
+- `paths./users.post.requestBody.required`
+- `paths./users.get.responses.200.content.application/json.schema.type`
+
+Text output may show human-readable OpenAPI labels, but `--ignore-path` and `--output-format json` use canonical paths.
 
 Current `spec` comparison scope:
 - path/method added or removed

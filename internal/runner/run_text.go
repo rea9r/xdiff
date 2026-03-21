@@ -42,7 +42,10 @@ func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, e
 		if len(filtered) == 0 {
 			out = "No differences.\n"
 		} else if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
-			out = output.RenderSemanticTextWithColor(filtered, opts.UseColor)
+			out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
+				UseColor:      opts.UseColor,
+				PathFormatter: opts.PathFormatter,
+			})
 		} else {
 			out = output.RenderUnifiedTextWithColor(oldText, newText, opts.UseColor)
 		}
