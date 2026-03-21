@@ -8,15 +8,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const urlHelpExamples = `  # Compare two JSON endpoints
+  xdiff url https://old.example.com/api https://new.example.com/api
+
+  # Compare with auth header and timeout
+  xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api`
+
 func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 	urlFlags := urlFlagValues{
 		timeout: 5 * time.Second,
 	}
 
 	cmd := &cobra.Command{
-		Use:   "url [flags] <old-url> <new-url>",
-		Short: "Compare JSON responses from two URLs",
-		Args:  cobra.ExactArgs(2),
+		Use:     "url [flags] <old-url> <new-url>",
+		Short:   "Compare JSON responses from two URLs",
+		Example: urlHelpExamples,
+		Args:    cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, positionalArgs []string) error {
 			load := func(rawURL string) runner.ValueLoader {
 				return func() (any, error) {

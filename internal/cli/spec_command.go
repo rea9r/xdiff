@@ -7,11 +7,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const specHelpExamples = `  # Compare two OpenAPI specs
+  xdiff spec old-openapi.yaml new-openapi.yaml
+
+  # Fail only on breaking changes
+  xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml`
+
 func newSpecCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "spec [flags] <old-spec> <new-spec>",
-		Short: "Compare OpenAPI specs by paths and methods",
-		Args:  cobra.ExactArgs(2),
+		Use:     "spec [flags] <old-spec> <new-spec>",
+		Short:   "Compare OpenAPI specs by paths and methods",
+		Example: specHelpExamples,
+		Args:    cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, positionalArgs []string) error {
 			oldSpec, err := source.LoadOpenAPISpecFile(positionalArgs[0])
 			if err != nil {

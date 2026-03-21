@@ -21,19 +21,19 @@ CI usage
   Emit JSON and fail only on breaking changes for automation.`
 
 const rootHelpExamples = `  # Local comparison (quickest)
-  xdiff testdata/old.json testdata/new.json
+  xdiff old.json new.json
 
   # Plain text comparison
-  xdiff text old.txt new.txt
+  xdiff text before.txt after.txt
 
   # URL comparison
   xdiff url https://old.example.com/api https://new.example.com/api
 
   # OpenAPI comparison
-  xdiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
+  xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
 
   # CI usage
-  xdiff --output-format json --fail-on breaking testdata/old.json testdata/new.json`
+  xdiff --output-format json --fail-on breaking old.json new.json`
 
 func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	commonFlags := newCommonFlags(stdout)

@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestRootHelpContent_IsTaskOriented(t *testing.T) {
@@ -23,9 +25,12 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 		t.Fatalf("missing CI usage section in Long help")
 	}
 
-	firstExample := "xdiff testdata/old.json testdata/new.json"
+	firstExample := "xdiff old.json new.json"
 	if !strings.Contains(cmd.Example, firstExample) {
 		t.Fatalf("missing shortest local example: %q", firstExample)
+	}
+	if strings.Contains(cmd.Example, "testdata/") {
+		t.Fatalf("root help examples should not depend on repo-local fixture paths:\n%s", cmd.Example)
 	}
 }
 
@@ -59,5 +64,24 @@ func TestRootCommandHelpDoesNotExposeExampleFlagOrCommand(t *testing.T) {
 	}
 	if strings.Contains(help, " example     ") {
 		t.Fatalf("help should not contain example command:\n%s", help)
+	}
+}
+
+func TestSubcommandsHaveExamples(t *testing.T) {
+	common := newCommonFlags(io.Discard)
+
+	tests := []struct {
+		name string
+		cmd  *cobra.Command
+	}{
+		{name: "text", cmd: newTextCommand(common, new(int))},
+		{name: "url", cmd: newURLCommand(common, new(int))},
+		{name: "spec", cmd: newSpecCommand(common, new(int))},
+	}
+
+	for _, tt := range tests {
+		if strings.TrimSpace(tt.cmd.Example) == "" {
+			t.Fatalf("%s command should have examples", tt.name)
+		}
 	}
 }

@@ -80,31 +80,31 @@ URL command only:
 Output JSON for CI:
 
 ```bash
-xdiff --output-format json testdata/old.json testdata/new.json
+xdiff --output-format json old.json new.json
 ```
 
 Ignore noisy fields:
 
 ```bash
-xdiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
+xdiff --ignore-path user.updated_at --ignore-path meta.request_id old.json new.json
 ```
 
 Show only breaking changes:
 
 ```bash
-xdiff --only-breaking testdata/old.json testdata/new.json
+xdiff --only-breaking old.json new.json
 ```
 
 Compare text files:
 
 ```bash
-xdiff text old.txt new.txt
+xdiff text before.txt after.txt
 ```
 
 Fail only when breaking changes are detected:
 
 ```bash
-xdiff --fail-on breaking testdata/old.json testdata/new.json
+xdiff --fail-on breaking old.json new.json
 ```
 
 URL comparison with auth header and timeout:
@@ -116,7 +116,7 @@ xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.
 OpenAPI spec comparison (JSON or YAML):
 
 ```bash
-xdiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
+xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
 ```
 
 Current `spec` comparison scope:
