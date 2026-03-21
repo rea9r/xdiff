@@ -67,8 +67,53 @@ func TestRun_OnlyBreakingAndIgnorePath(t *testing.T) {
 	if strings.Contains(out, "user.email") {
 		t.Fatalf("ignored path should not appear in output: %s", out)
 	}
-	if !strings.Contains(out, `-    "age": "20"`) || !strings.Contains(out, `+    "age": 20`) {
-		t.Fatalf("expected age diff in unified output, got: %s", out)
+	if !strings.Contains(out, `! user.age: string -> number`) {
+		t.Fatalf("expected filtered semantic output, got: %s", out)
+	}
+	if strings.Contains(out, "--- old") || strings.Contains(out, "+++ new") {
+		t.Fatalf("expected semantic output for filtered mode, got: %s", out)
+	}
+}
+
+func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:      "text",
+		IgnorePaths: []string{"user.name"},
+		OldPath:     oldPath,
+		NewPath:     newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitOK {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	}
+	if out != "No differences.\n" {
+		t.Fatalf("unexpected output: %q", out)
+	}
+}
+
+func TestRun_OnlyBreaking_TextMode_HidesNonBreakingDiffs(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:       "text",
+		OnlyBreaking: true,
+		OldPath:      oldPath,
+		NewPath:      newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitOK {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	}
+	if out != "No differences.\n" {
+		t.Fatalf("unexpected output: %q", out)
 	}
 }
 
@@ -143,7 +188,7 @@ func TestRun_FailOnBreaking_WithOnlyChanged(t *testing.T) {
 	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
-	code, _, err := RunJSONFiles(Options{
+	code, out, err := RunJSONFiles(Options{
 		Format:  "text",
 		FailOn:  FailOnBreaking,
 		OldPath: oldPath,
@@ -154,6 +199,9 @@ func TestRun_FailOnBreaking_WithOnlyChanged(t *testing.T) {
 	}
 	if code != exitOK {
 		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	}
+	if !strings.Contains(out, "--- old") || !strings.Contains(out, "+++ new") {
+		t.Fatalf("expected unified diff output, got: %q", out)
 	}
 }
 

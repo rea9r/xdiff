@@ -56,7 +56,15 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 	var out string
 	switch opts.Format {
 	case output.TextFormat:
-		out = output.RenderUnifiedJSONWithColor(oldValue, newValue, output.ShouldUseColor(opts.NoColor))
+		if len(diffs) == 0 {
+			out = "No differences.\n"
+			break
+		}
+		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
+			out = output.RenderSemanticTextWithColor(diffs, opts.UseColor)
+			break
+		}
+		out = output.RenderUnifiedJSONWithColor(oldValue, newValue, opts.UseColor)
 	case output.JSONFormat:
 		rendered, err := output.RenderJSON(diffs)
 		if err != nil {
@@ -85,7 +93,7 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 	var out string
 	switch opts.Format {
 	case output.TextFormat:
-		out = output.RenderSemanticTextWithColor(filtered, output.ShouldUseColor(opts.NoColor))
+		out = output.RenderSemanticTextWithColor(filtered, opts.UseColor)
 	case output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)
 		if err != nil {

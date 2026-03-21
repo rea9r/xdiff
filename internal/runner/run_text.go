@@ -41,8 +41,10 @@ func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, e
 	case output.TextFormat:
 		if len(filtered) == 0 {
 			out = "No differences.\n"
+		} else if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
+			out = output.RenderSemanticTextWithColor(filtered, opts.UseColor)
 		} else {
-			out = output.RenderUnifiedTextWithColor(oldText, newText, output.ShouldUseColor(opts.NoColor))
+			out = output.RenderUnifiedTextWithColor(oldText, newText, opts.UseColor)
 		}
 	case output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)

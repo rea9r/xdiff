@@ -1,6 +1,10 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"io"
+
+	"github.com/spf13/cobra"
+)
 
 const rootHelpLong = `Task-oriented quick guide:
 
@@ -31,8 +35,8 @@ const rootHelpExamples = `  # Local comparison (quickest)
   # CI usage
   xdiff --output-format json --fail-on breaking testdata/old.json testdata/new.json`
 
-func newRootCommand(exitCode *int) *cobra.Command {
-	commonFlags := newCommonFlags()
+func newRootCommand(exitCode *int, stdout, _ io.Writer) *cobra.Command {
+	commonFlags := newCommonFlags(stdout)
 	showExample := false
 
 	root := &cobra.Command{

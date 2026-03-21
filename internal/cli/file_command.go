@@ -14,13 +14,13 @@ func runFileCompare(common *commonFlagValues, exitCode *int) func(*cobra.Command
 			FailOn:       common.failOn,
 			IgnorePaths:  append([]string(nil), common.ignorePaths...),
 			OnlyBreaking: common.onlyBreaking,
-			NoColor:      common.noColor,
+			UseColor:     common.useColor(),
 			OldPath:      positionalArgs[0],
 			NewPath:      positionalArgs[1],
 		}
 
 		code, out, err := runner.RunJSONFiles(opts)
-		if writeErr := writeOutput(out); writeErr != nil {
+		if writeErr := writeOutput(common.stdout, out); writeErr != nil {
 			return asRunError(2, fmt.Errorf("failed to write stdout: %w", writeErr))
 		}
 		if err != nil {

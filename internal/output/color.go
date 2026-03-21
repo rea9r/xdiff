@@ -1,6 +1,7 @@
 package output
 
 import (
+	"io"
 	"os"
 	"strings"
 
@@ -16,7 +17,7 @@ const (
 	colorMagenta = "\x1b[35m"
 )
 
-func ShouldUseColor(noColor bool) bool {
+func ShouldUseColorOnWriter(noColor bool, w io.Writer) bool {
 	if noColor {
 		return false
 	}
@@ -29,7 +30,12 @@ func ShouldUseColor(noColor bool) bool {
 		return false
 	}
 
-	fi, err := os.Stdout.Stat()
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+
+	fi, err := f.Stat()
 	if err != nil {
 		return false
 	}

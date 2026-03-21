@@ -1,12 +1,13 @@
 package cli
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
 
 func TestRootHelpContent_IsTaskOriented(t *testing.T) {
-	cmd := newRootCommand(new(int))
+	cmd := newRootCommand(new(int), io.Discard, io.Discard)
 
 	if !strings.Contains(cmd.Long, "Local comparison") {
 		t.Fatalf("missing Local comparison section in Long help")

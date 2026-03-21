@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,8 +10,12 @@ import (
 	"testing"
 )
 
+func runCLIForTest(args []string) (int, error) {
+	return runCLI(args, io.Discard, io.Discard)
+}
+
 func TestRunCLI_MissingArgs(t *testing.T) {
-	code, err := runCLI([]string{})
+	code, err := runCLIForTest([]string{})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -20,7 +25,7 @@ func TestRunCLI_MissingArgs(t *testing.T) {
 }
 
 func TestRunCLI_Example(t *testing.T) {
-	code, err := runCLI([]string{"--example"})
+	code, err := runCLIForTest([]string{"--example"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -30,7 +35,7 @@ func TestRunCLI_Example(t *testing.T) {
 }
 
 func TestRunCLI_Example_WithPositionalArgs(t *testing.T) {
-	code, err := runCLI([]string{"--example", "testdata/old.json", "testdata/new.json"})
+	code, err := runCLIForTest([]string{"--example", "testdata/old.json", "testdata/new.json"})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -43,7 +48,7 @@ func TestRunCLI_InvalidFormat(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
-	code, err := runCLI([]string{"--output-format", "yaml", oldPath, newPath})
+	code, err := runCLIForTest([]string{"--output-format", "yaml", oldPath, newPath})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -59,7 +64,7 @@ func TestRunCLI_InvalidFailOn(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
-	code, err := runCLI([]string{"--fail-on", "changed", oldPath, newPath})
+	code, err := runCLIForTest([]string{"--fail-on", "changed", oldPath, newPath})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -72,7 +77,7 @@ func TestRunCLI_InvalidFailOn(t *testing.T) {
 }
 
 func TestRunCLI_URL_MissingArgs(t *testing.T) {
-	code, err := runCLI([]string{"url"})
+	code, err := runCLIForTest([]string{"url"})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -82,7 +87,7 @@ func TestRunCLI_URL_MissingArgs(t *testing.T) {
 }
 
 func TestRunCLI_URL_InvalidHeader(t *testing.T) {
-	code, err := runCLI([]string{
+	code, err := runCLIForTest([]string{
 		"url",
 		"--header", "InvalidHeader",
 		"https://example.com/old",
@@ -112,7 +117,7 @@ func TestRunCLI_URL_SuccessDiffFound(t *testing.T) {
 	}))
 	defer newServer.Close()
 
-	code, err := runCLI([]string{
+	code, err := runCLIForTest([]string{
 		"url",
 		oldServer.URL,
 		newServer.URL,
@@ -129,7 +134,7 @@ func TestRunCLI_Text_SuccessDiffFound(t *testing.T) {
 	oldPath := writeCLIFile(t, "hello\nworld\n", "old.txt")
 	newPath := writeCLIFile(t, "hello\ngopher\n", "new.txt")
 
-	code, err := runCLI([]string{"text", oldPath, newPath})
+	code, err := runCLIForTest([]string{"text", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -142,7 +147,7 @@ func TestRunCLI_Text_JSONFormat(t *testing.T) {
 	oldPath := writeCLIFile(t, "a\n", "old.txt")
 	newPath := writeCLIFile(t, "b\n", "new.txt")
 
-	code, err := runCLI([]string{"text", "--output-format", "json", oldPath, newPath})
+	code, err := runCLIForTest([]string{"text", "--output-format", "json", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -155,7 +160,7 @@ func TestRunCLI_Spec_NonBreaking(t *testing.T) {
 	oldPath := fixturePath("testdata/spec/non_breaking_old.yaml")
 	newPath := fixturePath("testdata/spec/non_breaking_new.yaml")
 
-	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -168,7 +173,7 @@ func TestRunCLI_Spec_Breaking(t *testing.T) {
 	oldPath := fixturePath("testdata/spec/breaking_old.yaml")
 	newPath := fixturePath("testdata/spec/breaking_new.yaml")
 
-	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -181,7 +186,7 @@ func TestRunCLI_Spec_Breaking_RequestBodyRequired(t *testing.T) {
 	oldPath := fixturePath("testdata/spec/required_old.yaml")
 	newPath := fixturePath("testdata/spec/required_new.yaml")
 
-	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -194,7 +199,7 @@ func TestRunCLI_Spec_Breaking_ResponseTypeChanged(t *testing.T) {
 	oldPath := fixturePath("testdata/spec/response_type_old.yaml")
 	newPath := fixturePath("testdata/spec/response_type_new.yaml")
 
-	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -207,7 +212,7 @@ func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
-	code, err := runCLI([]string{"--fail-on", "none", oldPath, newPath})
+	code, err := runCLIForTest([]string{"--fail-on", "none", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -220,7 +225,7 @@ func TestRunCLI_FailOnBreaking_ChangedOnlyReturnsZero(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
-	code, err := runCLI([]string{"--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -233,7 +238,7 @@ func TestRunCLI_FailOnBreaking_BreakingDiffReturnsOne(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"age":"20"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"age":20}}`, "new.json")
 
-	code, err := runCLI([]string{"--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}

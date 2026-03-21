@@ -30,9 +30,9 @@ func newSpecCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				FailOn:       common.failOn,
 				IgnorePaths:  append([]string(nil), common.ignorePaths...),
 				OnlyBreaking: common.onlyBreaking,
-				NoColor:      common.noColor,
+				UseColor:     common.useColor(),
 			})
-			if writeErr := writeOutput(out); writeErr != nil {
+			if writeErr := writeOutput(common.stdout, out); writeErr != nil {
 				return asRunError(2, fmt.Errorf("failed to write stdout: %w", writeErr))
 			}
 			if err != nil {

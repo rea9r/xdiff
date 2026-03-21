@@ -13,22 +13,20 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 	if stderr == nil {
 		stderr = os.Stderr
 	}
-	stdoutWriter = stdout
-	stderrWriter = stderr
 
-	code, err := runCLI(args)
+	code, err := runCLI(args, stdout, stderr)
 	if err != nil {
-		if writeErr := writeStderr(err.Error() + "\n"); writeErr != nil {
+		if _, writeErr := io.WriteString(stderr, err.Error()+"\n"); writeErr != nil {
 			return 2
 		}
 	}
 	return code
 }
 
-func runCLI(args []string) (int, error) {
+func runCLI(args []string, stdout, stderr io.Writer) (int, error) {
 	exitCode := 0
 
-	root := newRootCommand(&exitCode)
+	root := newRootCommand(&exitCode, stdout, stderr)
 	root.SetArgs(args)
 	if err := root.Execute(); err != nil {
 		if runErr, ok := errors.AsType[*runError](err); ok {

@@ -5,7 +5,7 @@ type Options struct {
 	FailOn       string
 	IgnorePaths  []string
 	OnlyBreaking bool
-	NoColor      bool
+	UseColor     bool
 	OldPath      string
 	NewPath      string
 }
@@ -15,7 +15,7 @@ type CompareOptions struct {
 	FailOn       string
 	IgnorePaths  []string
 	OnlyBreaking bool
-	NoColor      bool
+	UseColor     bool
 }
 
 func (o Options) CompareOptions() CompareOptions {
@@ -24,6 +24,6 @@ func (o Options) CompareOptions() CompareOptions {
 		FailOn:       o.FailOn,
 		IgnorePaths:  o.IgnorePaths,
 		OnlyBreaking: o.OnlyBreaking,
-		NoColor:      o.NoColor,
+		UseColor:     o.UseColor,
 	}
 }

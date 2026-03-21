@@ -15,7 +15,7 @@ func runExample(common *commonFlagValues, exitCode *int) func(*cobra.Command, []
 			return asRunError(2, err)
 		}
 
-		if writeErr := writeOutput(out); writeErr != nil {
+		if writeErr := writeOutput(common.stdout, out); writeErr != nil {
 			return asRunError(2, fmt.Errorf("failed to write stdout: %w", writeErr))
 		}
 		*exitCode = 0
@@ -44,7 +44,7 @@ func buildExampleOutput(common commonFlagValues) (string, int, error) {
 		FailOn:       common.failOn,
 		IgnorePaths:  append([]string(nil), common.ignorePaths...),
 		OnlyBreaking: common.onlyBreaking,
-		NoColor:      true,
+		UseColor:     false,
 	})
 	if err != nil {
 		return "", 0, err

@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"io"
+
 	"github.com/rea9r/xdiff/internal/output"
 	"github.com/spf13/pflag"
 )
@@ -11,13 +13,19 @@ type commonFlagValues struct {
 	ignorePaths  []string
 	onlyBreaking bool
 	noColor      bool
+	stdout       io.Writer
 }
 
-func newCommonFlags() *commonFlagValues {
+func newCommonFlags(stdout io.Writer) *commonFlagValues {
 	return &commonFlagValues{
 		outputFormat: output.TextFormat,
 		failOn:       "any",
+		stdout:       stdout,
 	}
+}
+
+func (c *commonFlagValues) useColor() bool {
+	return output.ShouldUseColorOnWriter(c.noColor, c.stdout)
 }
 
 func bindCommonFlags(flags *pflag.FlagSet, common *commonFlagValues) {

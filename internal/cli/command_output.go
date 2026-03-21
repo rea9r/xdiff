@@ -1,8 +1,11 @@
 package cli
 
-func writeOutput(out string) error {
+import "io"
+
+func writeOutput(w io.Writer, out string) error {
 	if out == "" {
 		return nil
 	}
-	return writeStdout(out)
+	_, err := io.WriteString(w, out)
+	return err
 }
