@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/rea9r/xdiff/internal/render"
+	"github.com/rea9r/xdiff/internal/output"
 	"github.com/spf13/pflag"
 )
 
@@ -15,13 +15,13 @@ type commonFlagValues struct {
 
 func newCommonFlags() *commonFlagValues {
 	return &commonFlagValues{
-		outputFormat: render.TextFormat,
+		outputFormat: output.TextFormat,
 		failOn:       "any",
 	}
 }
 
 func bindCommonFlags(flags *pflag.FlagSet, common *commonFlagValues) {
-	flags.StringVar(&common.outputFormat, "output-format", render.TextFormat, "output format: text or json")
+	flags.StringVar(&common.outputFormat, "output-format", output.TextFormat, "output format: text or json")
 	flags.StringVar(&common.failOn, "fail-on", "any", "failure mode: none, breaking, or any")
 	flags.StringArrayVar(&common.ignorePaths, "ignore-path", nil, "ignore diff by exact path (can be specified multiple times)")
 	flags.BoolVar(&common.onlyBreaking, "only-breaking", false, "show only breaking changes")

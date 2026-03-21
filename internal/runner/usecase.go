@@ -6,7 +6,7 @@ import (
 
 	"github.com/rea9r/xdiff/internal/delta"
 	"github.com/rea9r/xdiff/internal/jsondiff"
-	"github.com/rea9r/xdiff/internal/render"
+	"github.com/rea9r/xdiff/internal/output"
 	"github.com/rea9r/xdiff/internal/source"
 )
 
@@ -55,10 +55,10 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 
 	var out string
 	switch opts.Format {
-	case render.TextFormat:
-		out = render.RenderUnifiedJSONWithColor(oldValue, newValue, render.ShouldUseColor(opts.NoColor))
-	case render.JSONFormat:
-		rendered, err := render.RenderJSON(diffs)
+	case output.TextFormat:
+		out = output.RenderUnifiedJSONWithColor(oldValue, newValue, output.ShouldUseColor(opts.NoColor))
+	case output.JSONFormat:
+		rendered, err := output.RenderJSON(diffs)
 		if err != nil {
 			return exitError, "", err
 		}
@@ -84,10 +84,10 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 
 	var out string
 	switch opts.Format {
-	case render.TextFormat:
-		out = render.RenderSemanticTextWithColor(filtered, render.ShouldUseColor(opts.NoColor))
-	case render.JSONFormat:
-		rendered, err := render.RenderJSON(filtered)
+	case output.TextFormat:
+		out = output.RenderSemanticTextWithColor(filtered, output.ShouldUseColor(opts.NoColor))
+	case output.JSONFormat:
+		rendered, err := output.RenderJSON(filtered)
 		if err != nil {
 			return exitError, "", err
 		}
@@ -109,7 +109,7 @@ func validateFileOptions(opts Options) error {
 }
 
 func validateCompareOptions(opts CompareOptions) error {
-	if !render.IsSupportedFormat(opts.Format) {
+	if !output.IsSupportedFormat(opts.Format) {
 		return fmt.Errorf("invalid output format %q (allowed: text, json)", opts.Format)
 	}
 	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {

@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/rea9r/xdiff/internal/delta"
-	"github.com/rea9r/xdiff/internal/render"
+	"github.com/rea9r/xdiff/internal/output"
 	"github.com/rea9r/xdiff/internal/textdiff"
 )
 
@@ -38,14 +38,14 @@ func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, e
 
 	var out string
 	switch opts.Format {
-	case render.TextFormat:
+	case output.TextFormat:
 		if len(filtered) == 0 {
 			out = "No differences.\n"
 		} else {
-			out = render.RenderUnifiedTextWithColor(oldText, newText, render.ShouldUseColor(opts.NoColor))
+			out = output.RenderUnifiedTextWithColor(oldText, newText, output.ShouldUseColor(opts.NoColor))
 		}
-	case render.JSONFormat:
-		rendered, err := render.RenderJSON(filtered)
+	case output.JSONFormat:
+		rendered, err := output.RenderJSON(filtered)
 		if err != nil {
 			return exitError, "", err
 		}

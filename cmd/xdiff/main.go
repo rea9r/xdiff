@@ -7,11 +7,5 @@ import (
 )
 
 func main() {
-	code, err := cli.Execute(os.Args[1:])
-	if err != nil {
-		if _, writeErr := os.Stderr.WriteString(err.Error() + "\n"); writeErr != nil {
-			os.Exit(2)
-		}
-	}
-	os.Exit(code)
+	os.Exit(cli.Execute(os.Args[1:], os.Stdout, os.Stderr))
 }

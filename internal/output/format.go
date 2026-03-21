@@ -1,4 +1,4 @@
-package render
+package output
 
 const (
 	TextFormat = "text"
