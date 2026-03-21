@@ -10,6 +10,17 @@ const (
 	pathKindResponseSchemaType
 )
 
+var supportedMethods = []string{
+	"get",
+	"put",
+	"post",
+	"delete",
+	"options",
+	"head",
+	"patch",
+	"trace",
+}
+
 type pathRef struct {
 	apiPath     string
 	method      string
@@ -42,6 +53,16 @@ func responseSchemaTypePath(apiPath, method, statusCode, contentType string) pat
 		statusCode:  statusCode,
 		contentType: contentType,
 	}
+}
+
+func isSupportedMethod(method string) bool {
+	method = strings.ToLower(method)
+	for _, supported := range supportedMethods {
+		if method == supported {
+			return true
+		}
+	}
+	return false
 }
 
 func (p pathRef) raw() string {
@@ -122,7 +143,7 @@ func splitMethodPath(body string) (apiPath, method, rest string, ok bool) {
 	bestMethod := ""
 	bestEnd := -1
 
-	for m := range supportedMethods {
+	for _, m := range supportedMethods {
 		pattern := "." + m
 		searchPos := 0
 

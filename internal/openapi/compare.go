@@ -7,17 +7,6 @@ import (
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
-var supportedMethods = map[string]struct{}{
-	"get":     {},
-	"put":     {},
-	"post":    {},
-	"delete":  {},
-	"options": {},
-	"head":    {},
-	"patch":   {},
-	"trace":   {},
-}
-
 type operationSnapshot struct {
 	RequestBodyRequired bool
 	ResponseSchemaTypes map[string]map[string]string
@@ -109,15 +98,17 @@ func extractPathMethods(spec any) map[string]map[string]operationSnapshot {
 		methods := map[string]operationSnapshot{}
 		for key, rawOperation := range pathItem {
 			method := strings.ToLower(key)
-			if _, supported := supportedMethods[method]; supported {
-				op, ok := rawOperation.(map[string]any)
-				if !ok {
-					op = map[string]any{}
-				}
-				methods[method] = operationSnapshot{
-					RequestBodyRequired: extractRequestBodyRequired(op),
-					ResponseSchemaTypes: extractResponseSchemaTypes(op),
-				}
+			if !isSupportedMethod(method) {
+				continue
+			}
+
+			op, ok := rawOperation.(map[string]any)
+			if !ok {
+				op = map[string]any{}
+			}
+			methods[method] = operationSnapshot{
+				RequestBodyRequired: extractRequestBodyRequired(op),
+				ResponseSchemaTypes: extractResponseSchemaTypes(op),
 			}
 		}
 		if len(methods) > 0 {
