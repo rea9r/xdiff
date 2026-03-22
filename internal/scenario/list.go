@@ -25,17 +25,7 @@ func RenderCheckListText(checks []ResolvedCheck, scenarioPath string) string {
 }
 
 func RenderCheckListJSON(checks []ResolvedCheck, scenarioPath string) (string, error) {
-	entries := make([]CheckListEntry, 0, len(checks))
-	for _, check := range checks {
-		oldDisplay, newDisplay := displayTargets(check, scenarioPath)
-		entries = append(entries, CheckListEntry{
-			Name:    check.Name,
-			Kind:    check.Kind,
-			Old:     oldDisplay,
-			New:     newDisplay,
-			Summary: summarizeCheckTarget(check, scenarioPath),
-		})
-	}
+	entries := BuildCheckListEntries(checks, scenarioPath)
 
 	payload := struct {
 		Checks []CheckListEntry `json:"checks"`
@@ -48,6 +38,21 @@ func RenderCheckListJSON(checks []ResolvedCheck, scenarioPath string) (string, e
 		return "", err
 	}
 	return string(raw) + "\n", nil
+}
+
+func BuildCheckListEntries(checks []ResolvedCheck, scenarioPath string) []CheckListEntry {
+	entries := make([]CheckListEntry, 0, len(checks))
+	for _, check := range checks {
+		oldDisplay, newDisplay := displayTargets(check, scenarioPath)
+		entries = append(entries, CheckListEntry{
+			Name:    check.Name,
+			Kind:    check.Kind,
+			Old:     oldDisplay,
+			New:     newDisplay,
+			Summary: summarizeCheckTarget(check, scenarioPath),
+		})
+	}
+	return entries
 }
 
 func summarizeCheckTarget(check ResolvedCheck, scenarioPath string) string {
