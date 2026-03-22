@@ -162,7 +162,37 @@ all use canonical paths.
 
 ## Examples
 
-Output JSON for CI:
+Compare local JSON files:
+
+```bash
+xdiff json old.json new.json
+```
+
+Compare local text files:
+
+```bash
+xdiff text before.txt after.txt
+```
+
+Compare URL response bodies:
+
+```bash
+xdiff url https://old.example.com/api https://new.example.com/api
+```
+
+Compare OpenAPI specs:
+
+```bash
+xdiff spec old-openapi.yaml new-openapi.yaml
+```
+
+Fail only when breaking changes are detected:
+
+```bash
+xdiff json --fail-on breaking old.json new.json
+```
+
+Output JSON for CI or scripting:
 
 ```bash
 xdiff json --output-format json old.json new.json
@@ -174,28 +204,10 @@ Ignore noisy fields:
 xdiff json --ignore-path user.updated_at --ignore-path meta.request_id old.json new.json
 ```
 
-Show only breaking changes:
+Show canonical diff paths for local JSON comparison:
 
 ```bash
-xdiff json --only-breaking old.json new.json
-```
-
-Compare text files:
-
-```bash
-xdiff text before.txt after.txt
-```
-
-Fail only when breaking changes are detected:
-
-```bash
-xdiff json --fail-on breaking old.json new.json
-```
-
-Compare URL response bodies with an auth header and timeout:
-
-```bash
-xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
+xdiff json --show-paths old.json new.json
 ```
 
 Ignore array order in local JSON comparison:
@@ -210,22 +222,10 @@ Ignore array order in URL comparison:
 xdiff url --ignore-order https://old.example.com/api https://new.example.com/api
 ```
 
-Show canonical diff paths for local JSON comparison:
+Compare URL response bodies with an auth header and timeout:
 
 ```bash
-xdiff json --show-paths old.json new.json
-```
-
-Show canonical diff paths for OpenAPI comparison:
-
-```bash
-xdiff spec --show-paths old-openapi.yaml new-openapi.yaml
-```
-
-Show only breaking canonical paths for OpenAPI comparison:
-
-```bash
-xdiff spec --only-breaking --show-paths old-openapi.yaml new-openapi.yaml
+xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
 ```
 
 Force semantic text output for JSON comparison:
@@ -238,6 +238,18 @@ Force patch-style text output for plain text comparison:
 
 ```bash
 xdiff text --text-style patch before.txt after.txt
+```
+
+Show canonical diff paths for OpenAPI comparison:
+
+```bash
+xdiff spec --show-paths old-openapi.yaml new-openapi.yaml
+```
+
+Show only breaking canonical paths for OpenAPI comparison:
+
+```bash
+xdiff spec --only-breaking --show-paths old-openapi.yaml new-openapi.yaml
 ```
 
 Use semantic text output for OpenAPI comparison:
