@@ -17,11 +17,11 @@ func runCLIForTest(args []string) (int, error) {
 
 func TestRunCLI_MissingArgs(t *testing.T) {
 	code, err := runCLIForTest([]string{})
-	if err == nil {
-		t.Fatalf("expected error, got nil")
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
 	}
-	if code != 2 {
-		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
 	}
 }
 
@@ -39,7 +39,7 @@ func TestRunCLI_InvalidFormat(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--output-format", "yaml", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--output-format", "yaml", oldPath, newPath})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -55,7 +55,7 @@ func TestRunCLI_InvalidFailOn(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--fail-on", "changed", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--fail-on", "changed", oldPath, newPath})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -203,7 +203,7 @@ func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--fail-on", "none", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--fail-on", "none", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestRunCLI_FailOnBreaking_ChangedOnlyReturnsZero(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -229,7 +229,7 @@ func TestRunCLI_FailOnBreaking_BreakingDiffReturnsOne(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"age":"20"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"age":20}}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--fail-on", "breaking", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -242,7 +242,7 @@ func TestRunCLI_IgnoreOrder_ReorderedArrayReturnsZero(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"items":[1,2,3]}`, "old.json")
 	newPath := writeCLIJSON(t, `{"items":[3,2,1]}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--ignore-order", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--ignore-order", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -271,7 +271,7 @@ func TestRunCLI_PatchStyleWithIgnoreOrderReturnsError(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"items":[1,2,3]}`, "old.json")
 	newPath := writeCLIJSON(t, `{"items":[3,2,1]}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--text-style", "patch", "--ignore-order", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--text-style", "patch", "--ignore-order", oldPath, newPath})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -287,7 +287,7 @@ func TestRunCLI_InvalidTextStyle(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
-	code, err := runCLIForTest([]string{"--text-style", "fancy", oldPath, newPath})
+	code, err := runCLIForTest([]string{"json", "--text-style", "fancy", oldPath, newPath})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -305,7 +305,7 @@ func TestExecute_PrintsHintsForPatchAndIgnoreOrderConflict(t *testing.T) {
 
 	var stderr bytes.Buffer
 	code := Execute(
-		[]string{"--text-style", "patch", "--ignore-order", oldPath, newPath},
+		[]string{"json", "--text-style", "patch", "--ignore-order", oldPath, newPath},
 		io.Discard,
 		&stderr,
 	)
@@ -319,6 +319,35 @@ func TestExecute_PrintsHintsForPatchAndIgnoreOrderConflict(t *testing.T) {
 	}
 	if !strings.Contains(msg, "Try one of these:") {
 		t.Fatalf("expected hint header, got: %q", msg)
+	}
+}
+
+func TestRunCLI_RootTwoArgsReturnsHintAwareError(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, err := runCLIForTest([]string{oldPath, newPath})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), "local comparison mode must be explicit") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCLI_JSONCommand_SuccessDiffFound(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, err := runCLIForTest([]string{"json", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
 	}
 }
 

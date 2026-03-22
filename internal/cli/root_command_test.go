@@ -12,8 +12,11 @@ import (
 func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 	cmd := newRootCommand(new(int), io.Discard)
 
-	if !strings.Contains(cmd.Long, "Local comparison") {
-		t.Fatalf("missing Local comparison section in Long help")
+	if !strings.Contains(cmd.Long, "JSON comparison") {
+		t.Fatalf("missing JSON comparison section in Long help")
+	}
+	if !strings.Contains(cmd.Long, "Text comparison") {
+		t.Fatalf("missing Text comparison section in Long help")
 	}
 	if !strings.Contains(cmd.Long, "URL comparison") {
 		t.Fatalf("missing URL comparison section in Long help")
@@ -25,7 +28,7 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 		t.Fatalf("missing CI usage section in Long help")
 	}
 
-	firstExample := "xdiff old.json new.json"
+	firstExample := "xdiff json old.json new.json"
 	if !strings.Contains(cmd.Example, firstExample) {
 		t.Fatalf("missing shortest local example: %q", firstExample)
 	}
@@ -41,6 +44,17 @@ func TestRootCommandDoesNotRegisterExampleSubcommand(t *testing.T) {
 		if child.Name() == "example" {
 			t.Fatal("did not expect example subcommand to be registered")
 		}
+	}
+}
+
+func TestRootCommandRegistersJSONSubcommand(t *testing.T) {
+	cmd := newRootCommand(new(int), io.Discard)
+	found, _, err := cmd.Find([]string{"json"})
+	if err != nil {
+		t.Fatalf("unexpected find error: %v", err)
+	}
+	if found == nil || found.Name() != "json" {
+		t.Fatal("expected json subcommand to be registered")
 	}
 }
 
@@ -74,6 +88,7 @@ func TestSubcommandsHaveExamples(t *testing.T) {
 		name string
 		cmd  *cobra.Command
 	}{
+		{name: "json", cmd: newJSONCommand(common, new(int))},
 		{name: "text", cmd: newTextCommand(common, new(int))},
 		{name: "url", cmd: newURLCommand(common, new(int))},
 		{name: "spec", cmd: newSpecCommand(common, new(int))},
@@ -90,11 +105,19 @@ func TestIgnoreOrderFlagAvailability(t *testing.T) {
 	common := newCommonFlags(io.Discard)
 
 	root := newRootCommand(new(int), io.Discard)
-	if root.Flags().Lookup("ignore-order") == nil {
-		t.Fatal("root command should expose --ignore-order")
+	if root.Flags().Lookup("ignore-order") != nil {
+		t.Fatal("root command should not expose --ignore-order")
 	}
-	if !strings.Contains(root.Flags().FlagUsages(), "--ignore-order") {
-		t.Fatal("root help should include --ignore-order")
+	if strings.Contains(root.Flags().FlagUsages(), "--ignore-order") {
+		t.Fatal("root help should not include --ignore-order")
+	}
+
+	jsonCmd := newJSONCommand(common, new(int))
+	if jsonCmd.Flags().Lookup("ignore-order") == nil {
+		t.Fatal("json command should expose --ignore-order")
+	}
+	if !strings.Contains(jsonCmd.Flags().FlagUsages(), "--ignore-order") {
+		t.Fatal("json help should include --ignore-order")
 	}
 
 	urlCmd := newURLCommand(common, new(int))
@@ -126,11 +149,19 @@ func TestTextStyleFlagAvailability(t *testing.T) {
 	common := newCommonFlags(io.Discard)
 
 	root := newRootCommand(new(int), io.Discard)
-	if root.Flags().Lookup("text-style") == nil {
-		t.Fatal("root command should expose --text-style")
+	if root.Flags().Lookup("text-style") != nil {
+		t.Fatal("root command should not expose --text-style")
 	}
-	if !strings.Contains(root.Flags().FlagUsages(), "--text-style") {
-		t.Fatal("root help should include --text-style")
+	if strings.Contains(root.Flags().FlagUsages(), "--text-style") {
+		t.Fatal("root help should not include --text-style")
+	}
+
+	jsonCmd := newJSONCommand(common, new(int))
+	if jsonCmd.Flags().Lookup("text-style") == nil {
+		t.Fatal("json command should expose --text-style")
+	}
+	if !strings.Contains(jsonCmd.Flags().FlagUsages(), "--text-style") {
+		t.Fatal("json help should include --text-style")
 	}
 
 	urlCmd := newURLCommand(common, new(int))
@@ -156,11 +187,19 @@ func TestShowPathsFlagAvailability(t *testing.T) {
 	common := newCommonFlags(io.Discard)
 
 	root := newRootCommand(new(int), io.Discard)
-	if root.Flags().Lookup("show-paths") == nil {
-		t.Fatal("root command should expose --show-paths")
+	if root.Flags().Lookup("show-paths") != nil {
+		t.Fatal("root command should not expose --show-paths")
 	}
-	if !strings.Contains(root.Flags().FlagUsages(), "--show-paths") {
-		t.Fatal("root help should include --show-paths")
+	if strings.Contains(root.Flags().FlagUsages(), "--show-paths") {
+		t.Fatal("root help should not include --show-paths")
+	}
+
+	jsonCmd := newJSONCommand(common, new(int))
+	if jsonCmd.Flags().Lookup("show-paths") == nil {
+		t.Fatal("json command should expose --show-paths")
+	}
+	if !strings.Contains(jsonCmd.Flags().FlagUsages(), "--show-paths") {
+		t.Fatal("json help should include --show-paths")
 	}
 
 	urlCmd := newURLCommand(common, new(int))

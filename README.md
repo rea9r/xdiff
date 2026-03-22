@@ -25,7 +25,7 @@ go install ./cmd/xdiff
 Then compare your own files:
 
 ```bash
-xdiff old.json new.json
+xdiff json old.json new.json
 ```
 
 Compare two URLs:
@@ -36,10 +36,16 @@ xdiff url https://old.example.com/api https://new.example.com/api
 
 ## Commands
 
+List commands and usage:
+
+```bash
+xdiff
+```
+
 Compare local JSON files:
 
 ```bash
-xdiff [options] <old-file> <new-file>
+xdiff json [options] <old-file> <new-file>
 ```
 
 Arguments:
@@ -159,19 +165,19 @@ all use canonical paths.
 Output JSON for CI:
 
 ```bash
-xdiff --output-format json old.json new.json
+xdiff json --output-format json old.json new.json
 ```
 
 Ignore noisy fields:
 
 ```bash
-xdiff --ignore-path user.updated_at --ignore-path meta.request_id old.json new.json
+xdiff json --ignore-path user.updated_at --ignore-path meta.request_id old.json new.json
 ```
 
 Show only breaking changes:
 
 ```bash
-xdiff --only-breaking old.json new.json
+xdiff json --only-breaking old.json new.json
 ```
 
 Compare text files:
@@ -183,7 +189,7 @@ xdiff text before.txt after.txt
 Fail only when breaking changes are detected:
 
 ```bash
-xdiff --fail-on breaking old.json new.json
+xdiff json --fail-on breaking old.json new.json
 ```
 
 Compare URL response bodies with an auth header and timeout:
@@ -195,7 +201,7 @@ xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.
 Ignore array order in local JSON comparison:
 
 ```bash
-xdiff --ignore-order old.json new.json
+xdiff json --ignore-order old.json new.json
 ```
 
 Ignore array order in URL comparison:
@@ -207,7 +213,7 @@ xdiff url --ignore-order https://old.example.com/api https://new.example.com/api
 Show canonical diff paths for local JSON comparison:
 
 ```bash
-xdiff --show-paths old.json new.json
+xdiff json --show-paths old.json new.json
 ```
 
 Show canonical diff paths for OpenAPI comparison:
@@ -225,7 +231,7 @@ xdiff spec --only-breaking --show-paths old-openapi.yaml new-openapi.yaml
 Force semantic text output for JSON comparison:
 
 ```bash
-xdiff --text-style semantic old.json new.json
+xdiff json --text-style semantic old.json new.json
 ```
 
 Force patch-style text output for plain text comparison:

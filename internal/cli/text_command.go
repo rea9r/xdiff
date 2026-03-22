@@ -13,7 +13,7 @@ const textHelpExamples = `  # Compare two local text files
 
 func newTextCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "text [flags] old.txt new.txt",
+		Use:     "text [flags] <old-file> <new-file>",
 		Short:   "Compare plain text files",
 		Example: textHelpExamples,
 		Args:    cobra.ExactArgs(2),
