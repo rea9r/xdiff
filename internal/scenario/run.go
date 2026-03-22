@@ -14,7 +14,11 @@ func Run(cfg Config, scenarioPath string) (Summary, []Result, error) {
 	if err != nil {
 		return Summary{}, nil, err
 	}
+	summary, results := RunResolved(checks)
+	return summary, results, nil
+}
 
+func RunResolved(checks []ResolvedCheck) (Summary, []Result) {
 	results := make([]Result, 0, len(checks))
 	summary := Summary{Total: len(checks)}
 
@@ -40,7 +44,7 @@ func Run(cfg Config, scenarioPath string) (Summary, []Result, error) {
 		summary.ExitCode = 0
 	}
 
-	return summary, results, nil
+	return summary, results
 }
 
 func runCheck(check ResolvedCheck) Result {

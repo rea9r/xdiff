@@ -123,6 +123,8 @@ Scenario-mode options (`xdiff run`):
 | Option | Description | Default |
 | --- | --- | --- |
 | `--report-format text\|json` | Scenario report format | `text` |
+| `--list` | List checks without executing them | `false` |
+| `--only <name>` | Run only the named check (repeatable, exact match) | none |
 
 > This README uses **options** for named command-line settings such as `--output-format`.
 > Cobra help may refer to the same settings as **flags**.
@@ -183,6 +185,19 @@ Run multiple checks from one YAML file:
 xdiff run xdiff.yaml
 ```
 
+List checks without executing them:
+
+```bash
+xdiff run --list xdiff.yaml
+```
+
+Run only selected checks:
+
+```bash
+xdiff run --only public-contract xdiff.yaml
+xdiff run --only local-user-json --only live-user-url xdiff.yaml
+```
+
 Minimal example:
 
 ```yaml
@@ -220,6 +235,8 @@ Notes:
 - Supported check kinds: `json`, `text`, `url`, `spec`.
 - Local file paths are resolved relative to the scenario file directory.
 - `--report-format` controls scenario report output (`text` or `json`).
+- `--list` validates and resolves the scenario, but does not execute checks.
+- `--only` uses exact check names and preserves scenario file order.
 - Each check's `exit_code` follows that check's `fail_on` policy.
 - Scenario `status` and summary still reflect whether diffs actually exist.
 - Scenario exit codes:

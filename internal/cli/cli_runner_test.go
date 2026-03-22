@@ -398,6 +398,125 @@ checks:
 	}
 }
 
+func TestRunCLI_RunScenario_ListDoesNotExecuteChecks(t *testing.T) {
+	dir := t.TempDir()
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: missing-check
+    kind: text
+    old: missing-old.txt
+    new: missing-new.txt
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Execute([]string{"run", "--list", scenarioPath}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0 stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "- missing-check (text)") {
+		t.Fatalf("unexpected list output: %q", stdout.String())
+	}
+}
+
+func TestRunCLI_RunScenario_ListJSON(t *testing.T) {
+	dir := t.TempDir()
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: json-a
+    kind: json
+    old: old.json
+    new: new.json
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Execute([]string{"run", "--list", "--report-format", "json", scenarioPath}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0 stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), `"checks"`) || !strings.Contains(stdout.String(), `"name": "json-a"`) {
+		t.Fatalf("unexpected json list output: %q", stdout.String())
+	}
+}
+
+func TestRunCLI_RunScenario_OnlyRunsSelectedChecks(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeCLIFileInDir(t, dir, "same\n", "ok-old.txt")
+	_ = writeCLIFileInDir(t, dir, "same\n", "ok-new.txt")
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: missing-check
+    kind: text
+    old: missing-old.txt
+    new: missing-new.txt
+  - name: ok-check
+    kind: text
+    old: ok-old.txt
+    new: ok-new.txt
+`)
+
+	code, err := runCLIForTest([]string{"run", "--only", "ok-check", scenarioPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
+	}
+}
+
+func TestRunCLI_RunScenario_ListWithOnlyFiltersOutput(t *testing.T) {
+	dir := t.TempDir()
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: first
+    kind: text
+    old: a.txt
+    new: b.txt
+  - name: second
+    kind: text
+    old: c.txt
+    new: d.txt
+`)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Execute([]string{"run", "--list", "--only", "second", scenarioPath}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0 stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "first") || !strings.Contains(stdout.String(), "second") {
+		t.Fatalf("unexpected filtered list output: %q", stdout.String())
+	}
+}
+
+func TestRunCLI_RunScenario_UnknownOnlyNameReturnsError(t *testing.T) {
+	dir := t.TempDir()
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: only-this
+    kind: text
+    old: a.txt
+    new: b.txt
+`)
+
+	code, err := runCLIForTest([]string{"run", "--only", "missing", scenarioPath})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), "unknown check name") || !strings.Contains(err.Error(), "xdiff run --list <scenario-file>") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func writeCLIJSON(t *testing.T, content string, fileName string) string {
 	return writeCLIFile(t, content, fileName)
 }

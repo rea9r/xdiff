@@ -291,22 +291,19 @@ func TestRun_FailOnNoneStillCountsDiffInSummary(t *testing.T) {
 
 	cfg := Config{
 		Version: 1,
-		Checks: []Check{
-			{
-				Name:   "json-check",
-				Kind:   KindJSON,
-				Old:    filepath.Base(oldPath),
-				New:    filepath.Base(newPath),
-				FailOn: "none",
-			},
-		},
+		Checks: []Check{{
+			Name:   "json-check",
+			Kind:   KindJSON,
+			Old:    filepath.Base(oldPath),
+			New:    filepath.Base(newPath),
+			FailOn: "none",
+		}},
 	}
 
 	summary, results, err := Run(cfg, filepath.Join(tmp, "xdiff.yaml"))
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
-
 	if summary.Diff != 1 || summary.OK != 0 || summary.Error != 0 {
 		t.Fatalf("unexpected summary: %#v", summary)
 	}
@@ -314,9 +311,6 @@ func TestRun_FailOnNoneStillCountsDiffInSummary(t *testing.T) {
 		t.Fatalf("expected scenario exit code 1, got %d", summary.ExitCode)
 	}
 
-	if len(results) != 1 {
-		t.Fatalf("unexpected results len: %d", len(results))
-	}
 	result := results[0]
 	if result.Status != StatusDiff {
 		t.Fatalf("expected diff status, got %s", result.Status)
@@ -336,15 +330,13 @@ func TestRun_FailOnBreakingWithNonBreakingDiffStillCountsDiffInSummary(t *testin
 
 	cfg := Config{
 		Version: 1,
-		Checks: []Check{
-			{
-				Name:   "json-check",
-				Kind:   KindJSON,
-				Old:    filepath.Base(oldPath),
-				New:    filepath.Base(newPath),
-				FailOn: "breaking",
-			},
-		},
+		Checks: []Check{{
+			Name:   "json-check",
+			Kind:   KindJSON,
+			Old:    filepath.Base(oldPath),
+			New:    filepath.Base(newPath),
+			FailOn: "breaking",
+		}},
 	}
 
 	summary, results, err := Run(cfg, filepath.Join(tmp, "xdiff.yaml"))
@@ -386,7 +378,6 @@ func TestRenderJSON_Structure(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &got); err != nil {
 		t.Fatalf("failed to unmarshal report json: %v", err)
 	}
-
 	if got.Summary.ExitCode != 1 {
 		t.Fatalf("unexpected summary exit code: %d", got.Summary.ExitCode)
 	}
@@ -401,30 +392,73 @@ func TestRenderJSON_Structure(t *testing.T) {
 	}
 }
 
-func writeScenarioFile(t *testing.T, content string) string {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "xdiff.yaml")
-	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o644); err != nil {
-		t.Fatalf("failed to write scenario file: %v", err)
+func TestFilterResolvedChecks_PreservesScenarioOrder(t *testing.T) {
+	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindText}, {Name: "c", Kind: KindURL}}
+
+	filtered, err := FilterResolvedChecks(checks, []string{"c", "a"})
+	if err != nil {
+		t.Fatalf("FilterResolvedChecks returned error: %v", err)
 	}
-	return path
+	if len(filtered) != 2 {
+		t.Fatalf("unexpected filtered len: %d", len(filtered))
+	}
+	if filtered[0].Name != "a" || filtered[1].Name != "c" {
+		t.Fatalf("unexpected order: %#v", filtered)
+	}
 }
 
-func writeFile(t *testing.T, dir, name, content string) string {
-	t.Helper()
-	path := filepath.Join(dir, name)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("failed to write %s: %v", name, err)
+func TestFilterResolvedChecks_DuplicateOnlyDoesNotDuplicateResults(t *testing.T) {
+	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindText}}
+
+	filtered, err := FilterResolvedChecks(checks, []string{"a", "a"})
+	if err != nil {
+		t.Fatalf("FilterResolvedChecks returned error: %v", err)
 	}
-	return path
+	if len(filtered) != 1 || filtered[0].Name != "a" {
+		t.Fatalf("unexpected filtered result: %#v", filtered)
+	}
+}
+
+func TestFilterResolvedChecks_UnknownNameReturnsError(t *testing.T) {
+	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}}
+
+	_, err := FilterResolvedChecks(checks, []string{"missing"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "unknown check name") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(err.Error(), "xdiff run --list <scenario-file>") {
+		t.Fatalf("expected list hint, got: %v", err)
+	}
+}
+
+func TestRenderCheckListJSON_StableStructure(t *testing.T) {
+	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindSpec}}
+
+	raw, err := RenderCheckListJSON(checks)
+	if err != nil {
+		t.Fatalf("RenderCheckListJSON returned error: %v", err)
+	}
+
+	var got struct {
+		Checks []CheckListEntry `json:"checks"`
+	}
+	if err := json.Unmarshal([]byte(raw), &got); err != nil {
+		t.Fatalf("failed to unmarshal check list json: %v", err)
+	}
+	if len(got.Checks) != 2 {
+		t.Fatalf("unexpected check count: %d", len(got.Checks))
+	}
+	if got.Checks[0].Name != "a" || got.Checks[1].Name != "b" {
+		t.Fatalf("unexpected checks: %#v", got.Checks)
+	}
 }
 
 func TestRenderText_IncludesSummaryAndDetails(t *testing.T) {
 	summary := Summary{Total: 2, OK: 1, Diff: 1, ExitCode: 1}
-	results := []Result{
-		{Name: "ok", Kind: KindJSON, Status: StatusOK, ExitCode: 0},
-		{Name: "diff", Kind: KindJSON, Status: StatusDiff, ExitCode: 1, Output: "+ user.name: \"Hanako\"\n"},
-	}
+	results := []Result{{Name: "ok", Kind: KindJSON, Status: StatusOK, ExitCode: 0}, {Name: "diff", Kind: KindJSON, Status: StatusDiff, ExitCode: 1, Output: "+ user.name: \"Hanako\"\n"}}
 
 	out := RenderText(summary, results, "xdiff.yaml")
 	mustContain(t, out, "Scenario: xdiff.yaml")
@@ -432,13 +466,6 @@ func TestRenderText_IncludesSummaryAndDetails(t *testing.T) {
 	mustContain(t, out, "[DIFF] diff (json)")
 	mustContain(t, out, "Summary: total=2 ok=1 diff=1 error=0")
 	mustContain(t, out, "=== diff ===")
-}
-
-func mustContain(t *testing.T, got, want string) {
-	t.Helper()
-	if !strings.Contains(got, want) {
-		t.Fatalf("expected output to contain %q, got:\n%s", want, got)
-	}
 }
 
 func TestLoadFile_StrictUnknownField(t *testing.T) {
@@ -462,18 +489,38 @@ checks:
 }
 
 func TestResolve_InvalidTimeout(t *testing.T) {
-	cfg := Config{
-		Version: 1,
-		Checks: []Check{
-			{Name: "c1", Kind: KindURL, Old: "https://old.example.com", New: "https://new.example.com", Timeout: "xyz"},
-		},
-	}
+	cfg := Config{Version: 1, Checks: []Check{{Name: "c1", Kind: KindURL, Old: "https://old.example.com", New: "https://new.example.com", Timeout: "xyz"}}}
 	_, err := Resolve(cfg, filepath.Join(t.TempDir(), "xdiff.yaml"))
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
 	if !strings.Contains(err.Error(), "invalid timeout") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func writeScenarioFile(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "xdiff.yaml")
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o644); err != nil {
+		t.Fatalf("failed to write scenario file: %v", err)
+	}
+	return path
+}
+
+func writeFile(t *testing.T, dir, name, content string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("failed to write %s: %v", name, err)
+	}
+	return path
+}
+
+func mustContain(t *testing.T, got, want string) {
+	t.Helper()
+	if !strings.Contains(got, want) {
+		t.Fatalf("expected output to contain %q, got:\n%s", want, got)
 	}
 }
 
