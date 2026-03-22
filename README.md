@@ -41,22 +41,22 @@ xdiff url https://old.example.com/api https://new.example.com/api
 Compare local JSON files:
 
 ```bash
-xdiff [options] old.json new.json
+xdiff [options] <old-file> <new-file>
 ```
 
 Arguments:
-- `old.json`: base JSON file
-- `new.json`: JSON file to compare
+- `<old-file>`: base file containing JSON
+- `<new-file>`: file containing JSON to compare
 
 Compare local text files:
 
 ```bash
-xdiff text [options] old.txt new.txt
+xdiff text [options] <old-file> <new-file>
 ```
 
 Arguments:
-- `old.txt`: base text file
-- `new.txt`: text file to compare
+- `<old-file>`: base plain-text file
+- `<new-file>`: plain-text file to compare
 
 Compare JSON from URLs:
 
