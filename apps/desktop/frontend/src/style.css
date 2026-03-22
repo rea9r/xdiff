@@ -72,6 +72,16 @@ button {
   flex-wrap: wrap;
 }
 
+.path-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.path-row input {
+  flex: 1;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;

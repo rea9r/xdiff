@@ -81,6 +81,9 @@ export function App() {
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
       runScenario: (window as any).go?.main?.App?.RunScenario,
       listScenarioChecks: (window as any).go?.main?.App?.ListScenarioChecks,
+      pickJSONFile: (window as any).go?.main?.App?.PickJSONFile,
+      pickSpecFile: (window as any).go?.main?.App?.PickSpecFile,
+      pickScenarioFile: (window as any).go?.main?.App?.PickScenarioFile,
     }),
     [],
   )
@@ -88,6 +91,27 @@ export function App() {
   const setResult = (res: unknown) => {
     setSummaryLine(summarizeResponse(res))
     setOutput(renderResult(res))
+  }
+
+  const browseAndSet = async (
+    picker: (() => Promise<string>) | undefined,
+    setter: (value: string) => void,
+  ) => {
+    if (!picker) {
+      setSummaryLine('error=yes')
+      setOutput('Wails bridge not available (file picker)')
+      return
+    }
+
+    try {
+      const selected = await picker()
+      if (selected) {
+        setter(selected)
+      }
+    } catch (e) {
+      setSummaryLine('error=yes')
+      setOutput(String(e))
+    }
   }
 
   const runJSON = async () => {
@@ -220,12 +244,22 @@ export function App() {
           <section className="mode-panel">
             <div className="field-block">
               <label className="field-label">Old path</label>
-              <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
+              <div className="path-row">
+                <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
+                <button type="button" onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}>
+                  Browse...
+                </button>
+              </div>
             </div>
 
             <div className="field-block">
               <label className="field-label">New path</label>
-              <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
+              <div className="path-row">
+                <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
+                <button type="button" onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}>
+                  Browse...
+                </button>
+              </div>
             </div>
 
             <label className="checkbox-row">
@@ -247,12 +281,22 @@ export function App() {
           <section className="mode-panel">
             <div className="field-block">
               <label className="field-label">Old spec path</label>
-              <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
+              <div className="path-row">
+                <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
+                <button type="button" onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}>
+                  Browse...
+                </button>
+              </div>
             </div>
 
             <div className="field-block">
               <label className="field-label">New spec path</label>
-              <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
+              <div className="path-row">
+                <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
+                <button type="button" onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}>
+                  Browse...
+                </button>
+              </div>
             </div>
 
             <button onClick={onRun} disabled={loading}>
@@ -265,7 +309,12 @@ export function App() {
           <section className="mode-panel">
             <div className="field-block">
               <label className="field-label">Scenario path</label>
-              <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
+              <div className="path-row">
+                <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
+                <button type="button" onClick={() => browseAndSet(api.pickScenarioFile, setScenarioPath)}>
+                  Browse...
+                </button>
+              </div>
             </div>
 
             <div className="field-block">

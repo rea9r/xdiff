@@ -8,12 +8,12 @@ This app is an experimental desktop GUI for xdiff.
 - OpenAPI spec comparison
 - Scenario checks listing
 - Scenario selected run (`only`)
+- Native file picker for local JSON/spec/scenario paths
 
 Not included yet:
 
 - Text compare GUI
 - URL compare GUI
-- File picker
 - Packaging/distribution
 
 ## Prerequisites
@@ -31,6 +31,8 @@ cd apps/desktop
 npm --prefix frontend install
 wails dev
 ```
+
+Use each mode's `Browse...` button to select local files.
 
 ## Build frontend only
 

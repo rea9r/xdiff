@@ -15,6 +15,17 @@ profile.cov
 # local-only files
 .env
 
+# desktop frontend generated files
+apps/desktop/frontend/node_modules/
+apps/desktop/frontend/package.json.md5
+apps/desktop/frontend/wailsjs/
+apps/desktop/frontend/dist/assets/
+
+# desktop local build artifacts
+apps/desktop/desktop
+apps/desktop/xdiff-desktop
+apps/desktop/build/bin/
+
 # ignore only if you are not intentionally using Go workspaces
 go.work
 go.work.sum
