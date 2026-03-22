@@ -19,11 +19,15 @@ type loadResult struct {
 }
 
 func RunJSONFiles(opts Options) (int, string, error) {
+	return RunJSONFilesDetailed(opts).Triple()
+}
+
+func RunJSONFilesDetailed(opts Options) RunResult {
 	if err := validateFileOptions(opts); err != nil {
-		return exitError, "", err
+		return finalizeRun(nil, "", err, opts.FailOn)
 	}
 
-	return RunJSONLoaders(
+	return RunJSONLoadersDetailed(
 		func(_ context.Context) (any, error) {
 			return source.LoadJSONFile(opts.OldPath)
 		},
@@ -35,6 +39,10 @@ func RunJSONFiles(opts Options) (int, string, error) {
 }
 
 func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int, string, error) {
+	return RunJSONLoadersDetailed(oldLoader, newLoader, opts).Triple()
+}
+
+func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts CompareOptions) RunResult {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -65,10 +73,10 @@ func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int,
 			gotOld = true
 			if oldRes.err != nil {
 				cancel()
-				return exitError, "", oldRes.err
+				return finalizeRun(nil, "", oldRes.err, opts.FailOn)
 			}
 			if gotNew && newRes.err != nil {
-				return exitError, "", newRes.err
+				return finalizeRun(nil, "", newRes.err, opts.FailOn)
 			}
 		case res := <-newCh:
 			newRes = res
@@ -76,21 +84,25 @@ func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int,
 			if gotOld {
 				if oldRes.err != nil {
 					cancel()
-					return exitError, "", oldRes.err
+					return finalizeRun(nil, "", oldRes.err, opts.FailOn)
 				}
 				if newRes.err != nil {
-					return exitError, "", newRes.err
+					return finalizeRun(nil, "", newRes.err, opts.FailOn)
 				}
 			}
 		}
 	}
 
-	return RunJSONValues(oldRes.value, newRes.value, opts)
+	return RunJSONValuesDetailed(oldRes.value, newRes.value, opts)
 }
 
 func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, error) {
+	return RunJSONValuesDetailed(oldValue, newValue, opts).Triple()
+}
+
+func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResult {
 	if err := validateCompareOptions(opts); err != nil {
-		return exitError, "", err
+		return finalizeRun(nil, "", err, opts.FailOn)
 	}
 
 	diffs := jsondiff.CompareWithOptions(oldValue, newValue, jsondiff.Options{
@@ -108,7 +120,7 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 	case opts.Format == output.TextFormat:
 		style, err := resolveJSONTextStyle(opts)
 		if err != nil {
-			return exitError, "", err
+			return finalizeRun(diffs, "", err, opts.FailOn)
 		}
 
 		if len(diffs) == 0 {
@@ -126,21 +138,21 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 	case opts.Format == output.JSONFormat:
 		rendered, err := output.RenderJSON(diffs)
 		if err != nil {
-			return exitError, "", err
+			return finalizeRun(diffs, "", err, opts.FailOn)
 		}
 		out = rendered
 	}
 
-	hasFailure := HasFailureByMode(diffs, opts.FailOn)
-	if hasFailure {
-		return exitDiffFound, out, nil
-	}
-	return exitOK, out, nil
+	return finalizeRun(diffs, out, nil, opts.FailOn)
 }
 
 func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error) {
+	return RunDeltaDiffsDetailed(diffs, opts).Triple()
+}
+
+func RunDeltaDiffsDetailed(diffs []delta.Diff, opts CompareOptions) RunResult {
 	if err := validateCompareOptions(opts); err != nil {
-		return exitError, "", err
+		return finalizeRun(nil, "", err, opts.FailOn)
 	}
 
 	filtered := delta.ApplyOptions(diffs, delta.Options{
@@ -154,7 +166,7 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 		out = output.RenderPaths(filtered)
 	case opts.Format == output.TextFormat:
 		if _, err := resolveDeltaTextStyle(opts); err != nil {
-			return exitError, "", err
+			return finalizeRun(filtered, "", err, opts.FailOn)
 		}
 		out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
 			UseColor:      opts.UseColor,
@@ -163,16 +175,12 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 	case opts.Format == output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)
 		if err != nil {
-			return exitError, "", err
+			return finalizeRun(filtered, "", err, opts.FailOn)
 		}
 		out = rendered
 	}
 
-	hasFailure := HasFailureByMode(filtered, opts.FailOn)
-	if hasFailure {
-		return exitDiffFound, out, nil
-	}
-	return exitOK, out, nil
+	return finalizeRun(filtered, out, nil, opts.FailOn)
 }
 
 func validateFileOptions(opts Options) error {

@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rea9r/xdiff/internal/openapi"
 	"github.com/rea9r/xdiff/internal/runner"
@@ -45,7 +46,7 @@ func Run(cfg Config, scenarioPath string) (Summary, []Result, error) {
 func runCheck(check ResolvedCheck) Result {
 	switch check.Kind {
 	case KindJSON:
-		code, out, err := runner.RunJSONFiles(runner.Options{
+		return resultFromRun(check, runner.RunJSONFilesDetailed(runner.Options{
 			Format:       check.Compare.Format,
 			FailOn:       check.Compare.FailOn,
 			IgnorePaths:  check.Compare.IgnorePaths,
@@ -56,11 +57,10 @@ func runCheck(check ResolvedCheck) Result {
 			UseColor:     check.Compare.UseColor,
 			OldPath:      check.Old,
 			NewPath:      check.New,
-		})
-		return resultFromRun(check, code, out, err)
+		}))
 
 	case KindText:
-		code, out, err := runner.RunTextFiles(runner.Options{
+		return resultFromRun(check, runner.RunTextFilesDetailed(runner.Options{
 			Format:       check.Compare.Format,
 			FailOn:       check.Compare.FailOn,
 			IgnorePaths:  check.Compare.IgnorePaths,
@@ -70,8 +70,7 @@ func runCheck(check ResolvedCheck) Result {
 			UseColor:     check.Compare.UseColor,
 			OldPath:      check.Old,
 			NewPath:      check.New,
-		})
-		return resultFromRun(check, code, out, err)
+		}))
 
 	case KindURL:
 		load := func(rawURL string) runner.ValueLoader {
@@ -82,48 +81,50 @@ func runCheck(check ResolvedCheck) Result {
 				})
 			}
 		}
-		code, out, err := runner.RunJSONLoaders(load(check.Old), load(check.New), check.Compare)
-		return resultFromRun(check, code, out, err)
+		return resultFromRun(check, runner.RunJSONLoadersDetailed(load(check.Old), load(check.New), check.Compare))
 
 	case KindSpec:
 		oldSpec, err := source.LoadOpenAPISpecFile(check.Old)
 		if err != nil {
-			return resultFromRun(check, 2, "", err)
+			return resultFromRun(check, runner.RunResult{
+				ExitCode: 2,
+				Err:      err,
+			})
 		}
 		newSpec, err := source.LoadOpenAPISpecFile(check.New)
 		if err != nil {
-			return resultFromRun(check, 2, "", err)
+			return resultFromRun(check, runner.RunResult{
+				ExitCode: 2,
+				Err:      err,
+			})
 		}
 		diffs := openapi.ComparePathsMethods(oldSpec, newSpec)
 		opts := check.Compare
 		opts.PathFormatter = openapi.HumanizePath
-		code, out, err := runner.RunDeltaDiffs(diffs, opts)
-		return resultFromRun(check, code, out, err)
+		return resultFromRun(check, runner.RunDeltaDiffsDetailed(diffs, opts))
 	default:
-		return Result{
-			Name:         check.Name,
-			Kind:         check.Kind,
-			Status:       StatusError,
-			ExitCode:     2,
-			ErrorMessage: "unsupported kind",
-		}
+		return resultFromRun(check, runner.RunResult{
+			ExitCode: 2,
+			Err:      fmt.Errorf("unsupported kind %q", check.Kind),
+		})
 	}
 }
 
-func resultFromRun(check ResolvedCheck, code int, out string, err error) Result {
+func resultFromRun(check ResolvedCheck, runResult runner.RunResult) Result {
 	result := Result{
-		Name:     check.Name,
-		Kind:     check.Kind,
-		ExitCode: code,
-		Output:   out,
+		Name:      check.Name,
+		Kind:      check.Kind,
+		ExitCode:  runResult.ExitCode,
+		DiffFound: runResult.DiffFound,
+		Output:    runResult.Output,
 	}
 
-	if err != nil {
+	if runResult.Err != nil {
 		result.Status = StatusError
-		result.ErrorMessage = err.Error()
+		result.ErrorMessage = runResult.Err.Error()
 		return result
 	}
-	if code == 1 {
+	if runResult.DiffFound {
 		result.Status = StatusDiff
 		return result
 	}

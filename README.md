@@ -220,6 +220,8 @@ Notes:
 - Supported check kinds: `json`, `text`, `url`, `spec`.
 - Local file paths are resolved relative to the scenario file directory.
 - `--report-format` controls scenario report output (`text` or `json`).
+- Each check's `exit_code` follows that check's `fail_on` policy.
+- Scenario `status` and summary still reflect whether diffs actually exist.
 - Scenario exit codes:
   - `2`: at least one check has an execution error
   - `1`: no execution errors, but at least one check reports differences

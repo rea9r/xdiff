@@ -284,11 +284,94 @@ func TestRun_ExitCodeAggregation(t *testing.T) {
 	}
 }
 
+func TestRun_FailOnNoneStillCountsDiffInSummary(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := writeFile(t, tmp, "old.json", `{"user":{"name":"Taro"}}`)
+	newPath := writeFile(t, tmp, "new.json", `{"user":{"name":"Hanako"}}`)
+
+	cfg := Config{
+		Version: 1,
+		Checks: []Check{
+			{
+				Name:   "json-check",
+				Kind:   KindJSON,
+				Old:    filepath.Base(oldPath),
+				New:    filepath.Base(newPath),
+				FailOn: "none",
+			},
+		},
+	}
+
+	summary, results, err := Run(cfg, filepath.Join(tmp, "xdiff.yaml"))
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+
+	if summary.Diff != 1 || summary.OK != 0 || summary.Error != 0 {
+		t.Fatalf("unexpected summary: %#v", summary)
+	}
+	if summary.ExitCode != 1 {
+		t.Fatalf("expected scenario exit code 1, got %d", summary.ExitCode)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf("unexpected results len: %d", len(results))
+	}
+	result := results[0]
+	if result.Status != StatusDiff {
+		t.Fatalf("expected diff status, got %s", result.Status)
+	}
+	if !result.DiffFound {
+		t.Fatalf("expected diff_found=true")
+	}
+	if result.ExitCode != 0 {
+		t.Fatalf("expected per-check exit code 0, got %d", result.ExitCode)
+	}
+}
+
+func TestRun_FailOnBreakingWithNonBreakingDiffStillCountsDiffInSummary(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := writeFile(t, tmp, "old.json", `{"user":{"name":"Taro"}}`)
+	newPath := writeFile(t, tmp, "new.json", `{"user":{"name":"Hanako"}}`)
+
+	cfg := Config{
+		Version: 1,
+		Checks: []Check{
+			{
+				Name:   "json-check",
+				Kind:   KindJSON,
+				Old:    filepath.Base(oldPath),
+				New:    filepath.Base(newPath),
+				FailOn: "breaking",
+			},
+		},
+	}
+
+	summary, results, err := Run(cfg, filepath.Join(tmp, "xdiff.yaml"))
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if summary.Diff != 1 || summary.ExitCode != 1 {
+		t.Fatalf("unexpected summary: %#v", summary)
+	}
+
+	result := results[0]
+	if result.Status != StatusDiff {
+		t.Fatalf("expected diff status, got %s", result.Status)
+	}
+	if !result.DiffFound {
+		t.Fatalf("expected diff_found=true")
+	}
+	if result.ExitCode != 0 {
+		t.Fatalf("expected per-check exit code 0, got %d", result.ExitCode)
+	}
+}
+
 func TestRenderJSON_Structure(t *testing.T) {
 	summary := Summary{Total: 2, OK: 1, Diff: 1, Error: 0, ExitCode: 1}
 	results := []Result{
-		{Name: "a", Kind: KindJSON, Status: StatusOK, ExitCode: 0},
-		{Name: "b", Kind: KindSpec, Status: StatusDiff, ExitCode: 1, Output: "diff"},
+		{Name: "a", Kind: KindJSON, Status: StatusOK, ExitCode: 0, DiffFound: false},
+		{Name: "b", Kind: KindSpec, Status: StatusDiff, ExitCode: 1, DiffFound: true, Output: "diff"},
 	}
 
 	raw, err := RenderJSON(summary, results)
@@ -312,6 +395,9 @@ func TestRenderJSON_Structure(t *testing.T) {
 	}
 	if got.Results[1].Name != "b" || got.Results[1].Status != StatusDiff {
 		t.Fatalf("unexpected second result: %#v", got.Results[1])
+	}
+	if !got.Results[1].DiffFound {
+		t.Fatalf("expected second result diff_found=true")
 	}
 }
 

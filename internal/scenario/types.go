@@ -68,6 +68,7 @@ type Result struct {
 	Kind         string `json:"kind"`
 	Status       string `json:"status"`
 	ExitCode     int    `json:"exit_code"`
+	DiffFound    bool   `json:"diff_found"`
 	Output       string `json:"output,omitempty"`
 	ErrorMessage string `json:"error_message,omitempty"`
 }
