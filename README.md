@@ -2,7 +2,9 @@
 
 Data diff tool written in Go.
 
-`xdiff` compares JSON/text/OpenAPI inputs and reports differences with clear exit codes.
+## Overview
+
+`xdiff` compares JSON, plain text, OpenAPI specs, and JSON responses from URLs, and reports differences with clear exit codes.
 
 ## Quick Start
 
@@ -12,8 +14,7 @@ Try it from the repository root:
 go run ./cmd/xdiff testdata/old.json testdata/new.json
 ```
 
-The root `testdata/old.json` and `testdata/new.json` files are quick-start fixtures.
-Package-specific test fixtures are kept under each package's own `testdata/` directory.
+The root `testdata/old.json` and `testdata/new.json` files are quick-start fixtures. Package-specific test fixtures are kept under each package's own `testdata/` directory.
 
 Install once:
 
@@ -33,10 +34,7 @@ Compare two URLs:
 xdiff url https://old.example.com/api https://new.example.com/api
 ```
 
-> This README uses **options** for named command-line settings such as `--output-format`.
-> Cobra help may refer to the same settings as **flags**.
-
-## Command Reference
+## Commands
 
 Compare local JSON files:
 
@@ -67,12 +65,6 @@ xdiff url [options] <old-url> <new-url>
 Arguments:
 - `<old-url>`: base endpoint URL
 - `<new-url>`: endpoint URL to compare
-
-Notes:
-- Requests are sent with `GET`.
-- Comparison uses the decoded JSON response body.
-- Both responses must be `2xx`.
-- Response headers and status codes are not diff targets.
 
 Compare OpenAPI specs (JSON or YAML):
 
@@ -111,6 +103,57 @@ URL-specific options:
 | `--header "Key: Value"` | Add HTTP header (repeatable) | none |
 | `--timeout <duration>` | Request timeout (`3s`, `1m`) | `5s` |
 
+> This README uses **options** for named command-line settings such as `--output-format`.
+> Cobra help may refer to the same settings as **flags**.
+
+## Behavior Notes
+
+### URL Comparison
+
+- Requests are sent with `GET`.
+- Comparison uses the decoded JSON response body.
+- Both responses must be `2xx`.
+- Response headers and status codes are not diff targets.
+
+### Canonical Diff Paths
+
+`--ignore-path` matches canonical diff paths exactly.
+
+For OpenAPI comparison, canonical paths include values such as:
+
+- `paths./users.post`
+- `paths./users.post.requestBody.required`
+- `paths./users.get.responses.200.content.application/json.schema.type`
+
+OpenAPI text output may show more human-readable labels, but:
+
+- `--ignore-path`
+- `--output-format json`
+- `--show-paths`
+
+all use canonical paths.
+
+### `--ignore-order`
+
+- Arrays are compared as unordered normalized values.
+- This does not perform ID-based object matching.
+- Diff indices may reflect normalized comparison order rather than original source order.
+
+### `--text-style`
+
+- `auto` keeps the current behavior.
+- `patch` uses unified patch output when that style is supported.
+- `semantic` always renders structured diffs.
+- `patch` is invalid for `xdiff spec`.
+- `patch` is also invalid with semantic-only filters such as `--ignore-path`, `--only-breaking`, or `--ignore-order`.
+- For incompatible combinations, the CLI prints a suggested next step.
+
+### Current `spec` Comparison Scope
+
+- path/method added or removed
+- `requestBody.required` changes
+- response schema `type` changes (per status/content type)
+
 ## Examples
 
 Output JSON for CI:
@@ -143,19 +186,10 @@ Fail only when breaking changes are detected:
 xdiff --fail-on breaking old.json new.json
 ```
 
-URL comparison with auth header and timeout:
+Compare URL response bodies with an auth header and timeout:
 
 ```bash
 xdiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
-```
-
-URL comparison compares JSON response bodies returned by `GET` requests.
-Non-2xx responses are treated as execution errors.
-
-OpenAPI spec comparison (JSON or YAML):
-
-```bash
-xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
 ```
 
 Ignore array order in local JSON comparison:
@@ -169,15 +203,6 @@ Ignore array order in URL comparison:
 ```bash
 xdiff url --ignore-order https://old.example.com/api https://new.example.com/api
 ```
-
-For OpenAPI comparison, `--ignore-path` matches canonical paths such as:
-
-- `paths./users.post`
-- `paths./users.post.requestBody.required`
-- `paths./users.get.responses.200.content.application/json.schema.type`
-
-Text output may show human-readable OpenAPI labels, but `--ignore-path` and `--output-format json` use canonical paths.
-`--show-paths` always prints canonical paths.
 
 Show canonical diff paths for local JSON comparison:
 
@@ -197,18 +222,6 @@ Show only breaking canonical paths for OpenAPI comparison:
 xdiff spec --only-breaking --show-paths old-openapi.yaml new-openapi.yaml
 ```
 
-Notes for `--ignore-order`:
-- Arrays are compared as unordered normalized values.
-- This does not perform ID-based object matching.
-- Diff indices may reflect normalized comparison order rather than original source order.
-
-Notes for `--text-style`:
-- `auto` keeps the current behavior.
-- `patch` uses unified patch output when that style is supported.
-- `semantic` always renders structured diffs.
-- `patch` is invalid for `xdiff spec`, and also invalid with semantic-only filters such as `--ignore-path`, `--only-breaking`, or `--ignore-order`.
-- For incompatible combinations, the CLI prints a suggested next step.
-
 Force semantic text output for JSON comparison:
 
 ```bash
@@ -226,11 +239,6 @@ Use semantic text output for OpenAPI comparison:
 ```bash
 xdiff spec --text-style semantic old-openapi.yaml new-openapi.yaml
 ```
-
-Current `spec` comparison scope:
-- path/method added or removed
-- `requestBody.required` changes
-- response schema `type` changes (per status/content type)
 
 ## Output Samples
 
@@ -314,22 +322,16 @@ Machine-readable output (`--output-format json`):
 - `1`: differences found (based on `--fail-on` policy)
 - `2`: execution error
 
-## CI Example (GitHub Actions)
+## CI
 
-This repository includes a working example workflow: [`.github/workflows/xdiff-example.yml`](.github/workflows/xdiff-example.yml)
-- It runs `xdiff url` against two mock HTTP APIs inside CI.
-- Mock API startup and comparison logic is shared via `scripts/ci/mock_api_compare.sh`.
-- Consolidated PR comment logic is shared via `scripts/ci/post_xdiff_comment.sh`.
-- Success/failure example cases are implemented as a matrix job for maintainability.
-- It includes a success case (`non-breaking`, expected exit code `0`).
-- It includes a failure-detection case (`breaking`, expected exit code `1`).
-- It publishes JSON outputs as workflow artifacts.
-- It writes observed/expected exit codes and JSON output to Job Summary.
-- On pull requests, it posts/updates a single consolidated PR comment with both cases.
-- The PR comment includes summaries and top diffs (up to 3) for each case.
-- On direct pushes to `main`, it runs without PR comments and keeps results in artifacts/summary.
+This repository includes a working example workflow:
 
-For practical production patterns, see:
+- [`.github/workflows/xdiff-example.yml`](.github/workflows/xdiff-example.yml)
+
+Related helpers and docs:
+
+- [`scripts/ci/mock_api_compare.sh`](scripts/ci/mock_api_compare.sh)
+- [`scripts/ci/post_xdiff_comment.sh`](scripts/ci/post_xdiff_comment.sh)
 - [`docs/ci-use-cases.md`](docs/ci-use-cases.md)
 - [`docs/ux-scenarios.md`](docs/ux-scenarios.md)
 
@@ -343,7 +345,7 @@ xdiff url \
   http://127.0.0.1:18082/user.json > xdiff-result.json
 ```
 
-Use the workflow file as the source of truth for a runnable setup.
+Use the workflow file as the source of truth for a runnable CI setup.
 
 ## Development
 
