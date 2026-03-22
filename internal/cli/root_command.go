@@ -22,6 +22,9 @@ URL comparison
 OpenAPI comparison
   Compare contract-level changes between two OpenAPI specs.
 
+Scenario mode
+  Run multiple checks from one scenario file.
+
 CI usage
   Emit JSON and fail only on breaking changes for automation.`
 
@@ -36,6 +39,9 @@ const rootHelpExamples = `  # Local JSON comparison
 
   # OpenAPI comparison
   xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
+
+  # Scenario mode
+  xdiff run xdiff.yaml
 
   # CI usage
   xdiff url --output-format json --fail-on breaking https://old.example.com/api https://new.example.com/api`
@@ -71,5 +77,6 @@ func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	root.AddCommand(newTextCommand(commonFlags, exitCode))
 	root.AddCommand(newURLCommand(commonFlags, exitCode))
 	root.AddCommand(newSpecCommand(commonFlags, exitCode))
+	root.AddCommand(newRunCommand(exitCode, stdout))
 	return root
 }

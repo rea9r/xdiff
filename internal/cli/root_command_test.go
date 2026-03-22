@@ -24,6 +24,9 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 	if !strings.Contains(cmd.Long, "OpenAPI comparison") {
 		t.Fatalf("missing OpenAPI comparison section in Long help")
 	}
+	if !strings.Contains(cmd.Long, "Scenario mode") {
+		t.Fatalf("missing Scenario mode section in Long help")
+	}
 	if !strings.Contains(cmd.Long, "CI usage") {
 		t.Fatalf("missing CI usage section in Long help")
 	}
@@ -92,6 +95,7 @@ func TestSubcommandsHaveExamples(t *testing.T) {
 		{name: "text", cmd: newTextCommand(common, new(int))},
 		{name: "url", cmd: newURLCommand(common, new(int))},
 		{name: "spec", cmd: newSpecCommand(common, new(int))},
+		{name: "run", cmd: newRunCommand(new(int), io.Discard)},
 	}
 
 	for _, tt := range tests {

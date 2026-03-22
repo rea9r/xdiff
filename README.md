@@ -82,6 +82,15 @@ Arguments:
 - `<old-spec>`: base OpenAPI spec file
 - `<new-spec>`: OpenAPI spec file to compare
 
+Run multiple checks from a scenario file:
+
+```bash
+xdiff run [options] <scenario-file>
+```
+
+Arguments:
+- `<scenario-file>`: YAML file that defines multiple checks
+
 ## Options
 
 Common options (`xdiff json`, `xdiff text`, `xdiff url`, and `xdiff spec`):
@@ -96,7 +105,7 @@ Common options (`xdiff json`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 | `--text-style auto\|patch\|semantic` | Text rendering style for `--output-format text` | `auto` |
 | `--no-color` | Disable colored text output | `false` |
 
-JSON comparison options (`xdiff`, `xdiff url`):
+JSON comparison options (`xdiff json`, `xdiff url`):
 
 | Option | Description | Default |
 | --- | --- | --- |
@@ -108,6 +117,12 @@ URL-specific options:
 | --- | --- | --- |
 | `--header "Key: Value"` | Add HTTP header (repeatable) | none |
 | `--timeout <duration>` | Request timeout (`3s`, `1m`) | `5s` |
+
+Scenario-mode options (`xdiff run`):
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--report-format text\|json` | Scenario report format | `text` |
 
 > This README uses **options** for named command-line settings such as `--output-format`.
 > Cobra help may refer to the same settings as **flags**.
@@ -159,6 +174,56 @@ all use canonical paths.
 - path/method added or removed
 - `requestBody.required` changes
 - response schema `type` changes (per status/content type)
+
+## Scenario Mode
+
+Run multiple checks from one YAML file:
+
+```bash
+xdiff run xdiff.yaml
+```
+
+Minimal example:
+
+```yaml
+version: 1
+
+defaults:
+  fail_on: any
+  text_style: auto
+
+checks:
+  - name: local-user-json
+    kind: json
+    old: snapshots/old-user.json
+    new: snapshots/new-user.json
+    ignore_paths:
+      - user.updated_at
+    ignore_order: true
+
+  - name: public-contract
+    kind: spec
+    old: specs/old-openapi.yaml
+    new: specs/new-openapi.yaml
+    only_breaking: true
+
+  - name: live-user-url
+    kind: url
+    old: https://old.example.com/api/user
+    new: https://new.example.com/api/user
+    headers:
+      - Authorization: Bearer xxx
+    timeout: 3s
+```
+
+Notes:
+- Supported check kinds: `json`, `text`, `url`, `spec`.
+- Local file paths are resolved relative to the scenario file directory.
+- `--report-format` controls scenario report output (`text` or `json`).
+- Scenario exit codes:
+  - `2`: at least one check has an execution error
+  - `1`: no execution errors, but at least one check reports differences
+  - `0`: all checks are OK
 
 ## Examples
 

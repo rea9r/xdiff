@@ -351,6 +351,53 @@ func TestRunCLI_JSONCommand_SuccessDiffFound(t *testing.T) {
 	}
 }
 
+func TestRunCLI_RunScenario_Success(t *testing.T) {
+	dir := t.TempDir()
+	oldPath := writeCLIFileInDir(t, dir, "same\n", "old.txt")
+	newPath := writeCLIFileInDir(t, dir, "same\n", "new.txt")
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: text-ok
+    kind: text
+    old: old.txt
+    new: new.txt
+`)
+
+	code, err := runCLIForTest([]string{"run", scenarioPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
+	}
+	if oldPath == "" || newPath == "" {
+		t.Fatal("expected fixture paths to be created")
+	}
+}
+
+func TestRunCLI_RunScenario_JSONReport(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeCLIFileInDir(t, dir, "old\n", "old.txt")
+	_ = writeCLIFileInDir(t, dir, "new\n", "new.txt")
+	scenarioPath := writeCLIScenario(t, dir, "xdiff.yaml", `
+version: 1
+checks:
+  - name: text-diff
+    kind: text
+    old: old.txt
+    new: new.txt
+`)
+
+	code, err := runCLIForTest([]string{"run", "--report-format", "json", scenarioPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 1 {
+		t.Fatalf("exit code mismatch: got=%d want=1", code)
+	}
+}
+
 func writeCLIJSON(t *testing.T, content string, fileName string) string {
 	return writeCLIFile(t, content, fileName)
 }
@@ -368,4 +415,26 @@ func writeCLIFile(t *testing.T, content string, fileName string) string {
 
 func fixturePath(path string) string {
 	return filepath.Clean(path)
+}
+
+func writeCLIFileInDir(t *testing.T, dir string, content string, fileName string) string {
+	t.Helper()
+
+	path := filepath.Join(dir, fileName)
+	normalized := strings.TrimSpace(content) + "\n"
+	if err := os.WriteFile(path, []byte(normalized), 0o644); err != nil {
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+	return path
+}
+
+func writeCLIScenario(t *testing.T, dir string, fileName string, content string) string {
+	t.Helper()
+
+	path := filepath.Join(dir, fileName)
+	normalized := strings.TrimSpace(content) + "\n"
+	if err := os.WriteFile(path, []byte(normalized), 0o644); err != nil {
+		t.Fatalf("failed to write scenario file: %v", err)
+	}
+	return path
 }
