@@ -30,6 +30,27 @@ const defaultSpecCommon: CompareCommon = {
   noColor: true,
 }
 
+const defaultTextCommon: CompareCommon = {
+  failOn: 'any',
+  outputFormat: 'text',
+  textStyle: 'auto',
+  ignorePaths: [],
+  showPaths: false,
+  onlyBreaking: false,
+  noColor: true,
+}
+
+type TextResultView = 'rich' | 'raw'
+
+type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
+
+type UnifiedDiffRow = {
+  kind: UnifiedDiffRowKind
+  oldLine: number | null
+  newLine: number | null
+  content: string
+}
+
 function renderResult(res: unknown): string {
   if (typeof res === 'string') return res
   if (!res) return '(no response)'
@@ -93,6 +114,81 @@ function parseIgnorePaths(input: string): string[] {
     .filter((line) => line.length > 0)
 }
 
+function parseUnifiedDiff(output: string): UnifiedDiffRow[] | null {
+  const lines = output.split('\n')
+  const rows: UnifiedDiffRow[] = []
+  let oldLine = 0
+  let newLine = 0
+  let inHunk = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (i === lines.length - 1 && line === '') {
+      continue
+    }
+
+    if (line.startsWith('--- ') || line.startsWith('+++ ')) {
+      rows.push({ kind: 'meta', oldLine: null, newLine: null, content: line })
+      continue
+    }
+
+    if (line.startsWith('@@ ')) {
+      const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
+      if (!match) {
+        return null
+      }
+      oldLine = Number(match[1])
+      newLine = Number(match[2])
+      inHunk = true
+      rows.push({ kind: 'hunk', oldLine: null, newLine: null, content: line })
+      continue
+    }
+
+    if (!inHunk) {
+      rows.push({ kind: 'meta', oldLine: null, newLine: null, content: line })
+      continue
+    }
+
+    if (line.startsWith('+')) {
+      rows.push({
+        kind: 'add',
+        oldLine: null,
+        newLine,
+        content: line.slice(1),
+      })
+      newLine++
+      continue
+    }
+
+    if (line.startsWith('-')) {
+      rows.push({
+        kind: 'remove',
+        oldLine,
+        newLine: null,
+        content: line.slice(1),
+      })
+      oldLine++
+      continue
+    }
+
+    if (line.startsWith(' ')) {
+      rows.push({
+        kind: 'context',
+        oldLine,
+        newLine,
+        content: line.slice(1),
+      })
+      oldLine++
+      newLine++
+      continue
+    }
+
+    rows.push({ kind: 'meta', oldLine: null, newLine: null, content: line })
+  }
+
+  return rows
+}
+
 export function App() {
   const [mode, setMode] = useState<Mode>('json')
 
@@ -110,6 +206,12 @@ export function App() {
   const [specIgnorePathsDraft, setSpecIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultSpecCommon.ignorePaths),
   )
+
+  const [textOld, setTextOld] = useState('')
+  const [textNew, setTextNew] = useState('')
+  const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
+  const [textResultView, setTextResultView] = useState<TextResultView>('rich')
+  const [textResult, setTextResult] = useState<CompareResponse | null>(null)
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -143,6 +245,7 @@ export function App() {
     () => ({
       compareJSON: (window as any).go?.main?.App?.CompareJSONFiles,
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
+      compareText: (window as any).go?.main?.App?.CompareText,
       runScenario: (window as any).go?.main?.App?.RunScenario,
       listScenarioChecks: (window as any).go?.main?.App?.ListScenarioChecks,
       pickJSONFile: (window as any).go?.main?.App?.PickJSONFile,
@@ -163,6 +266,10 @@ export function App() {
 
   const updateSpecCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
     setSpecCommon((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const updateTextCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
+    setTextCommon((prev) => ({ ...prev, [key]: value }))
   }
 
   const setScenarioRunResultView = (res: ScenarioRunResponse) => {
@@ -231,6 +338,19 @@ export function App() {
     setResult(res)
   }
 
+  const runText = async () => {
+    const fn = api.compareText
+    if (!fn) throw new Error('Wails bridge not available (CompareText)')
+
+    const res: CompareResponse = await fn({
+      oldText: textOld,
+      newText: textNew,
+      common: textCommon,
+    })
+    setTextResult(res)
+    setResult(res)
+  }
+
   const loadScenarioChecks = async () => {
     const fn = api.listScenarioChecks
     if (!fn) throw new Error('Wails bridge not available (ListScenarioChecks)')
@@ -277,6 +397,10 @@ export function App() {
       await runSpec()
       return
     }
+    if (mode === 'text') {
+      await runText()
+      return
+    }
     await runScenario()
   }
 
@@ -286,6 +410,9 @@ export function App() {
     if (mode !== 'scenario') {
       setSummaryLine('')
       setOutput('')
+    }
+    if (mode === 'text') {
+      setTextResult(null)
     }
 
     try {
@@ -432,6 +559,63 @@ export function App() {
     )
   }
 
+  const renderTextDiffRows = (rows: UnifiedDiffRow[]) => {
+    return (
+      <div className="text-diff-grid">
+        {rows.map((row, idx) => (
+          <div key={`${idx}-${row.kind}`} className={`text-diff-row ${row.kind}`}>
+            <div className="text-diff-line">{row.oldLine ?? ''}</div>
+            <div className="text-diff-line">{row.newLine ?? ''}</div>
+            <pre className="text-diff-content">{row.content}</pre>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const renderTextResultPanel = () => {
+    const raw = textResult ? renderResult(textResult) : ''
+    const parsed = textResult?.output ? parseUnifiedDiff(textResult.output) : null
+    const showRich =
+      textResultView === 'rich' &&
+      textCommon.outputFormat === 'text' &&
+      textResult &&
+      !textResult.error &&
+      parsed
+
+    return (
+      <div className="text-result-shell">
+        <div className="result-summary">{summaryLine || '(no result yet)'}</div>
+
+        <div className="text-result-tabs">
+          <button
+            type="button"
+            className={textResultView === 'rich' ? 'active' : ''}
+            onClick={() => setTextResultView('rich')}
+            disabled={textCommon.outputFormat === 'json'}
+          >
+            Rich diff
+          </button>
+          <button
+            type="button"
+            className={textResultView === 'raw' ? 'active' : ''}
+            onClick={() => setTextResultView('raw')}
+          >
+            Raw output
+          </button>
+        </div>
+
+        <div className="text-result-body">
+          {showRich ? (
+            renderTextDiffRows(parsed)
+          ) : (
+            <pre className="result-output">{raw || '(no output yet)'}</pre>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app-shell">
       <aside className="control-panel">
@@ -442,6 +626,7 @@ export function App() {
           <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
             <option value="json">JSON compare</option>
             <option value="spec">OpenAPI spec compare</option>
+            <option value="text">Text compare</option>
             <option value="scenario">Scenario run</option>
           </select>
         </div>
@@ -678,6 +863,41 @@ export function App() {
           </section>
         )}
 
+        {mode === 'text' && (
+          <section className="mode-panel">
+            <section className="options-panel">
+              <h3>Options</h3>
+
+              <div className="field-block">
+                <label className="field-label">Output format</label>
+                <select
+                  value={textCommon.outputFormat}
+                  onChange={(e) => updateTextCommon('outputFormat', e.target.value)}
+                >
+                  <option value="text">text</option>
+                  <option value="json">json</option>
+                </select>
+              </div>
+
+              <div className="field-block">
+                <label className="field-label">Fail on</label>
+                <select
+                  value={textCommon.failOn}
+                  onChange={(e) => updateTextCommon('failOn', e.target.value)}
+                >
+                  <option value="none">none</option>
+                  <option value="breaking">breaking</option>
+                  <option value="any">any</option>
+                </select>
+              </div>
+            </section>
+
+            <button onClick={onRun} disabled={loading}>
+              {loading ? 'Running...' : 'Run text compare'}
+            </button>
+          </section>
+        )}
+
         {mode === 'scenario' && (
           <section className="mode-panel">
             <div className="field-block">
@@ -747,13 +967,40 @@ export function App() {
       </aside>
 
       <main className="result-panel">
-        <h2>Result</h2>
-        {mode === 'scenario' ? (
-          renderScenarioResultPanel()
+        {mode === 'text' ? (
+          <div className="text-workspace">
+            <h2>Text Compare</h2>
+            <div className="text-editors-row">
+              <div className="text-editor-panel">
+                <label className="field-label">Old text</label>
+                <textarea
+                  className="text-editor"
+                  value={textOld}
+                  onChange={(e) => setTextOld(e.target.value)}
+                />
+              </div>
+              <div className="text-editor-panel">
+                <label className="field-label">New text</label>
+                <textarea
+                  className="text-editor"
+                  value={textNew}
+                  onChange={(e) => setTextNew(e.target.value)}
+                />
+              </div>
+            </div>
+            {renderTextResultPanel()}
+          </div>
         ) : (
           <>
-            {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
-            <pre className="result-output">{output || '(no output yet)'}</pre>
+            <h2>Result</h2>
+            {mode === 'scenario' ? (
+              renderScenarioResultPanel()
+            ) : (
+              <>
+                {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
+                <pre className="result-output">{output || '(no output yet)'}</pre>
+              </>
+            )}
           </>
         )}
       </main>

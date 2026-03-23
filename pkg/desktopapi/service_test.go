@@ -77,6 +77,34 @@ func TestCompareSpecFiles_MissingFile(t *testing.T) {
 	}
 }
 
+func TestCompareText(t *testing.T) {
+	svc := NewService()
+	res, err := svc.CompareText(CompareTextRequest{
+		OldText: "hello\nworld\n",
+		NewText: "hello\nxdiff\n",
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "auto",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareText returned error: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected response")
+	}
+	if res.ExitCode != 1 {
+		t.Fatalf("expected exitCode 1, got %d", res.ExitCode)
+	}
+	if !res.DiffFound {
+		t.Fatal("expected diffFound=true")
+	}
+	if strings.TrimSpace(res.Output) == "" {
+		t.Fatal("expected output")
+	}
+}
+
 func TestListScenarioChecks(t *testing.T) {
 	tmp := t.TempDir()
 	oldPath := filepath.Join(tmp, "snapshots", "old.json")

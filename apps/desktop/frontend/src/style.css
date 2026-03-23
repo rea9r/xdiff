@@ -30,6 +30,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
 
 .mode-panel {
@@ -273,4 +274,99 @@ button {
 
 .muted {
   opacity: 0.7;
+}
+
+.text-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+.text-editors-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.text-editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.text-editor {
+  min-height: 180px;
+  resize: vertical;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: pre;
+}
+
+.text-result-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+
+.text-result-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.text-result-tabs button.active {
+  border-color: #5b8cff;
+  background: rgba(91, 140, 255, 0.08);
+}
+
+.text-result-body {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+}
+
+.text-diff-grid {
+  display: flex;
+  flex-direction: column;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.text-diff-row {
+  display: grid;
+  grid-template-columns: 56px 56px 1fr;
+  align-items: start;
+}
+
+.text-diff-row.meta,
+.text-diff-row.hunk {
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.text-diff-row.add {
+  background: rgba(60, 179, 113, 0.18);
+}
+
+.text-diff-row.remove {
+  background: rgba(220, 53, 69, 0.18);
+}
+
+.text-diff-line {
+  padding: 2px 8px;
+  text-align: right;
+  opacity: 0.8;
+  border-right: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.text-diff-content {
+  margin: 0;
+  padding: 2px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

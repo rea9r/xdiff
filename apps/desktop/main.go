@@ -35,6 +35,10 @@ func (a *App) CompareSpecFiles(req desktopapi.CompareSpecRequest) (*desktopapi.C
 	return a.api.CompareSpecFiles(req)
 }
 
+func (a *App) CompareText(req desktopapi.CompareTextRequest) (*desktopapi.CompareResponse, error) {
+	return a.api.CompareText(req)
+}
+
 func (a *App) RunScenario(req desktopapi.RunScenarioRequest) (*desktopapi.ScenarioRunResponse, error) {
 	return a.api.RunScenario(req)
 }

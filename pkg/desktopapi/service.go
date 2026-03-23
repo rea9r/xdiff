@@ -74,6 +74,26 @@ func (s *Service) CompareSpecFiles(req CompareSpecRequest) (*CompareResponse, er
 	}, nil
 }
 
+func (s *Service) CompareText(req CompareTextRequest) (*CompareResponse, error) {
+	opts := runner.CompareOptions{
+		Format:       normalizeOutputFormat(req.Common.OutputFormat),
+		FailOn:       req.Common.FailOn,
+		IgnorePaths:  append([]string(nil), req.Common.IgnorePaths...),
+		ShowPaths:    req.Common.ShowPaths,
+		OnlyBreaking: req.Common.OnlyBreaking,
+		TextStyle:    req.Common.TextStyle,
+		UseColor:     guiUseColor(),
+	}
+
+	res := runner.RunTextValuesDetailed(req.OldText, req.NewText, opts)
+	return &CompareResponse{
+		ExitCode:  res.ExitCode,
+		DiffFound: res.DiffFound,
+		Output:    res.Output,
+		Error:     errString(res.Err),
+	}, nil
+}
+
 func (s *Service) RunScenario(req RunScenarioRequest) (*ScenarioRunResponse, error) {
 	cfg, err := scenario.LoadFile(req.ScenarioPath)
 	if err != nil {

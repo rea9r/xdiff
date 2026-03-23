@@ -1,8 +1,8 @@
-# xdiff Desktop (Wails, Phase 4)
+# xdiff Desktop (Wails, Phase 5A)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 4)
+## Scope (Phase 5A)
 
 - JSON file comparison
 - OpenAPI spec comparison
@@ -16,6 +16,7 @@ This app is an experimental desktop GUI for xdiff.
 - Show paths and breaking-only toggles
 - Output format and text style controls
 - Fail-on and ignore-path controls for JSON/spec
+- Paste-first text compare workspace with rich/raw diff views
 
 Not included yet:
 

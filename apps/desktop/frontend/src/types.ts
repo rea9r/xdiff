@@ -1,4 +1,4 @@
-export type Mode = 'json' | 'spec' | 'scenario'
+export type Mode = 'json' | 'spec' | 'text' | 'scenario'
 
 export type CompareCommon = {
   failOn: string

@@ -23,6 +23,12 @@ type CompareSpecRequest struct {
 	Common  CompareCommon `json:"common"`
 }
 
+type CompareTextRequest struct {
+	OldText string        `json:"oldText"`
+	NewText string        `json:"newText"`
+	Common  CompareCommon `json:"common"`
+}
+
 type RunScenarioRequest struct {
 	ScenarioPath string   `json:"scenarioPath"`
 	ReportFormat string   `json:"reportFormat"`
