@@ -10,10 +10,20 @@ import type {
 } from './types'
 import './style.css'
 
-const defaultCommon: CompareCommon = {
+const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
   outputFormat: 'text',
   textStyle: 'auto',
+  ignorePaths: [],
+  showPaths: false,
+  onlyBreaking: false,
+  noColor: true,
+}
+
+const defaultSpecCommon: CompareCommon = {
+  failOn: 'any',
+  outputFormat: 'text',
+  textStyle: 'semantic',
   ignorePaths: [],
   showPaths: false,
   onlyBreaking: false,
@@ -78,9 +88,11 @@ export function App() {
   const [jsonOldPath, setJSONOldPath] = useState('')
   const [jsonNewPath, setJSONNewPath] = useState('')
   const [ignoreOrder, setIgnoreOrder] = useState(false)
+  const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
 
   const [specOldPath, setSpecOldPath] = useState('')
   const [specNewPath, setSpecNewPath] = useState('')
+  const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -110,6 +122,14 @@ export function App() {
   const setResult = (res: unknown) => {
     setSummaryLine(summarizeResponse(res))
     setOutput(renderResult(res))
+  }
+
+  const updateJSONCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
+    setJSONCommon((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const updateSpecCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
+    setSpecCommon((prev) => ({ ...prev, [key]: value }))
   }
 
   const setScenarioRunResultView = (res: ScenarioRunResponse) => {
@@ -145,7 +165,7 @@ export function App() {
     const res: CompareResponse = await fn({
       oldPath: jsonOldPath,
       newPath: jsonNewPath,
-      common: defaultCommon,
+      common: jsonCommon,
       ignoreOrder,
     })
     setResult(res)
@@ -155,10 +175,15 @@ export function App() {
     const fn = api.compareSpec
     if (!fn) throw new Error('Wails bridge not available (CompareSpecFiles)')
 
+    const safeSpecCommon = {
+      ...specCommon,
+      textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
+    }
+
     const res: CompareResponse = await fn({
       oldPath: specOldPath,
       newPath: specNewPath,
-      common: defaultCommon,
+      common: safeSpecCommon,
     })
     setResult(res)
   }
@@ -381,6 +406,10 @@ export function App() {
         {mode === 'json' && (
           <section className="mode-panel">
             <div className="field-block">
+              <h3 className="section-title">Paths</h3>
+            </div>
+
+            <div className="field-block">
               <label className="field-label">Old path</label>
               <div className="path-row">
                 <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
@@ -409,6 +438,52 @@ export function App() {
               ignore array order
             </label>
 
+            <section className="options-panel">
+              <h3>Options</h3>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={jsonCommon.showPaths}
+                  onChange={(e) => updateJSONCommon('showPaths', e.target.checked)}
+                />
+                show canonical paths
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={jsonCommon.onlyBreaking}
+                  onChange={(e) => updateJSONCommon('onlyBreaking', e.target.checked)}
+                />
+                only breaking
+              </label>
+
+              <div className="field-block">
+                <label className="field-label">Output format</label>
+                <select
+                  value={jsonCommon.outputFormat}
+                  onChange={(e) => updateJSONCommon('outputFormat', e.target.value)}
+                >
+                  <option value="text">text</option>
+                  <option value="json">json</option>
+                </select>
+              </div>
+
+              <div className="field-block">
+                <label className="field-label">Text style</label>
+                <select
+                  value={jsonCommon.textStyle}
+                  disabled={jsonCommon.outputFormat === 'json'}
+                  onChange={(e) => updateJSONCommon('textStyle', e.target.value)}
+                >
+                  <option value="auto">auto</option>
+                  <option value="patch">patch</option>
+                  <option value="semantic">semantic</option>
+                </select>
+              </div>
+            </section>
+
             <button onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run JSON compare'}
             </button>
@@ -417,6 +492,10 @@ export function App() {
 
         {mode === 'spec' && (
           <section className="mode-panel">
+            <div className="field-block">
+              <h3 className="section-title">Paths</h3>
+            </div>
+
             <div className="field-block">
               <label className="field-label">Old spec path</label>
               <div className="path-row">
@@ -436,6 +515,51 @@ export function App() {
                 </button>
               </div>
             </div>
+
+            <section className="options-panel">
+              <h3>Options</h3>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={specCommon.showPaths}
+                  onChange={(e) => updateSpecCommon('showPaths', e.target.checked)}
+                />
+                show canonical paths
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={specCommon.onlyBreaking}
+                  onChange={(e) => updateSpecCommon('onlyBreaking', e.target.checked)}
+                />
+                only breaking
+              </label>
+
+              <div className="field-block">
+                <label className="field-label">Output format</label>
+                <select
+                  value={specCommon.outputFormat}
+                  onChange={(e) => updateSpecCommon('outputFormat', e.target.value)}
+                >
+                  <option value="text">text</option>
+                  <option value="json">json</option>
+                </select>
+              </div>
+
+              <div className="field-block">
+                <label className="field-label">Text style</label>
+                <select
+                  value={specCommon.textStyle}
+                  disabled={specCommon.outputFormat === 'json'}
+                  onChange={(e) => updateSpecCommon('textStyle', e.target.value)}
+                >
+                  <option value="auto">auto</option>
+                  <option value="semantic">semantic</option>
+                </select>
+              </div>
+            </section>
 
             <button onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run spec compare'}

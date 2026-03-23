@@ -1,8 +1,8 @@
-# xdiff Desktop (Wails, Phase 3)
+# xdiff Desktop (Wails, Phase 4)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 3)
+## Scope (Phase 4)
 
 - JSON file comparison
 - OpenAPI spec comparison
@@ -12,6 +12,9 @@ This app is an experimental desktop GUI for xdiff.
 - Scenario run summary
 - Per-check scenario result list
 - Selected scenario result detail
+- JSON/spec advanced options
+- Show paths and breaking-only toggles
+- Output format and text style controls
 
 Not included yet:
 

@@ -49,6 +49,11 @@ body {
   font-weight: 600;
 }
 
+.section-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
 input,
 select,
 button,
@@ -80,6 +85,20 @@ button {
 
 .path-row input {
   flex: 1;
+}
+
+.options-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+}
+
+.options-panel h3 {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .checkbox-row {
