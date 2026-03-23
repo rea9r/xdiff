@@ -41,6 +41,10 @@ const defaultTextCommon: CompareCommon = {
 }
 
 type TextResultView = 'rich' | 'raw'
+type TextClipboardTarget = 'old' | 'new'
+type WailsRuntimeClipboard = {
+  ClipboardGetText?: () => Promise<string>
+}
 
 type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
 type InlineDiffKind = 'same' | 'add' | 'remove'
@@ -119,6 +123,22 @@ function parseIgnorePaths(input: string): string[] {
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
+}
+
+function getRuntimeClipboardRead(): (() => Promise<string>) | null {
+  const runtimeClipboard = (window as Window & {
+    runtime?: WailsRuntimeClipboard
+  }).runtime
+
+  return runtimeClipboard?.ClipboardGetText ?? null
+}
+
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return String(error)
 }
 
 function tokenizeInlineDiff(input: string): string[] {
@@ -396,6 +416,9 @@ export function App() {
   const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
     'text' | 'json' | null
   >(null)
+  const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
+    useState<TextClipboardTarget | null>(null)
+  const [textClipboardStatus, setTextClipboardStatus] = useState('')
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -534,6 +557,38 @@ export function App() {
     setTextResult(res)
     setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
     setResult(res)
+  }
+
+  const pasteTextFromClipboard = async (target: TextClipboardTarget) => {
+    const readClipboard = getRuntimeClipboardRead()
+    if (!readClipboard) {
+      setTextClipboardStatus('Clipboard runtime is not available.')
+      return
+    }
+
+    setTextClipboardBusyTarget(target)
+    setTextClipboardStatus('')
+
+    try {
+      const pasted = await readClipboard()
+
+      if (!pasted) {
+        setTextClipboardStatus('Clipboard is empty.')
+        return
+      }
+
+      if (target === 'old') {
+        setTextOld(pasted)
+        setTextClipboardStatus('Pasted clipboard into Old text.')
+      } else {
+        setTextNew(pasted)
+        setTextClipboardStatus('Pasted clipboard into New text.')
+      }
+    } catch (error) {
+      setTextClipboardStatus(`Failed to read clipboard: ${formatUnknownError(error)}`)
+    } finally {
+      setTextClipboardBusyTarget(null)
+    }
   }
 
   const loadScenarioChecks = async () => {
@@ -1161,7 +1216,17 @@ export function App() {
             <h2>Text Compare</h2>
             <div className="text-editors-row">
               <div className="text-editor-panel">
-                <label className="field-label">Old text</label>
+                <div className="text-editor-header">
+                  <label className="field-label">Old text</label>
+                  <button
+                    type="button"
+                    className="text-editor-action"
+                    onClick={() => void pasteTextFromClipboard('old')}
+                    disabled={textClipboardBusyTarget !== null}
+                  >
+                    {textClipboardBusyTarget === 'old' ? 'Pasting...' : 'Paste old'}
+                  </button>
+                </div>
                 <textarea
                   className="text-editor"
                   value={textOld}
@@ -1169,7 +1234,17 @@ export function App() {
                 />
               </div>
               <div className="text-editor-panel">
-                <label className="field-label">New text</label>
+                <div className="text-editor-header">
+                  <label className="field-label">New text</label>
+                  <button
+                    type="button"
+                    className="text-editor-action"
+                    onClick={() => void pasteTextFromClipboard('new')}
+                    disabled={textClipboardBusyTarget !== null}
+                  >
+                    {textClipboardBusyTarget === 'new' ? 'Pasting...' : 'Paste new'}
+                  </button>
+                </div>
                 <textarea
                   className="text-editor"
                   value={textNew}
@@ -1177,6 +1252,9 @@ export function App() {
                 />
               </div>
             </div>
+            {textClipboardStatus ? (
+              <div className="muted text-clipboard-status">{textClipboardStatus}</div>
+            ) : null}
             {renderTextResultPanel()}
           </div>
         ) : (

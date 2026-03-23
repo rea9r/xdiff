@@ -297,12 +297,32 @@ button {
   min-height: 0;
 }
 
+.text-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.text-editor-header .field-label {
+  margin: 0;
+}
+
+.text-editor-action {
+  flex: 0 0 auto;
+}
+
 .text-editor {
   min-height: 180px;
   resize: vertical;
   padding: 8px 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: pre;
+}
+
+.text-clipboard-status {
+  margin-top: 8px;
 }
 
 .text-result-shell {
