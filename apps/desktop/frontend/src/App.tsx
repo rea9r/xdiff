@@ -100,10 +100,16 @@ export function App() {
   const [jsonNewPath, setJSONNewPath] = useState('')
   const [ignoreOrder, setIgnoreOrder] = useState(false)
   const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
+  const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
+    ignorePathsToText(defaultJSONCommon.ignorePaths),
+  )
 
   const [specOldPath, setSpecOldPath] = useState('')
   const [specNewPath, setSpecNewPath] = useState('')
   const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
+  const [specIgnorePathsDraft, setSpecIgnorePathsDraft] = useState(() =>
+    ignorePathsToText(defaultSpecCommon.ignorePaths),
+  )
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -117,8 +123,11 @@ export function App() {
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const effectiveJSONIgnorePaths = parseIgnorePaths(jsonIgnorePathsDraft)
+  const effectiveSpecIgnorePaths = parseIgnorePaths(specIgnorePathsDraft)
+
   const jsonPatchBlockedByFilters =
-    ignoreOrder || jsonCommon.onlyBreaking || jsonCommon.ignorePaths.length > 0
+    ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
 
   useEffect(() => {
     if (jsonCommon.textStyle !== 'patch') {
@@ -188,6 +197,7 @@ export function App() {
 
     const safeJSONCommon = {
       ...jsonCommon,
+      ignorePaths: effectiveJSONIgnorePaths,
       textStyle:
         jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
           ? 'semantic'
@@ -209,6 +219,7 @@ export function App() {
 
     const safeSpecCommon = {
       ...specCommon,
+      ignorePaths: effectiveSpecIgnorePaths,
       textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
     }
 
@@ -519,8 +530,9 @@ export function App() {
                 <label className="field-label">Ignore paths</label>
                 <textarea
                   className="ignore-paths-input"
-                  value={ignorePathsToText(jsonCommon.ignorePaths)}
-                  onChange={(e) =>
+                  value={jsonIgnorePathsDraft}
+                  onChange={(e) => setJSONIgnorePathsDraft(e.target.value)}
+                  onBlur={(e) =>
                     updateJSONCommon('ignorePaths', parseIgnorePaths(e.target.value))
                   }
                   placeholder={'user.updated_at\nmeta.request_id'}
@@ -628,8 +640,9 @@ export function App() {
                 <label className="field-label">Ignore paths</label>
                 <textarea
                   className="ignore-paths-input"
-                  value={ignorePathsToText(specCommon.ignorePaths)}
-                  onChange={(e) =>
+                  value={specIgnorePathsDraft}
+                  onChange={(e) => setSpecIgnorePathsDraft(e.target.value)}
+                  onBlur={(e) =>
                     updateSpecCommon('ignorePaths', parseIgnorePaths(e.target.value))
                   }
                   placeholder={'paths./users.post.requestBody.required'}
