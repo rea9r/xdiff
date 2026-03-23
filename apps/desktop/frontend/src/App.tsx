@@ -44,6 +44,7 @@ type TextResultView = 'rich' | 'raw'
 type TextClipboardTarget = 'old' | 'new'
 type WailsRuntimeClipboard = {
   ClipboardGetText?: () => Promise<string>
+  ClipboardSetText?: (text: string) => Promise<boolean>
 }
 
 type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
@@ -131,6 +132,14 @@ function getRuntimeClipboardRead(): (() => Promise<string>) | null {
   }).runtime
 
   return runtimeClipboard?.ClipboardGetText ?? null
+}
+
+function getRuntimeClipboardWrite(): ((text: string) => Promise<boolean>) | null {
+  const runtimeClipboard = (window as Window & {
+    runtime?: WailsRuntimeClipboard
+  }).runtime
+
+  return runtimeClipboard?.ClipboardSetText ?? null
 }
 
 function formatUnknownError(error: unknown): string {
@@ -419,6 +428,8 @@ export function App() {
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextClipboardTarget | null>(null)
   const [textClipboardStatus, setTextClipboardStatus] = useState('')
+  const [textCopyBusy, setTextCopyBusy] = useState(false)
+  const [textCopyStatus, setTextCopyStatus] = useState('')
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -548,6 +559,7 @@ export function App() {
   const runText = async () => {
     const fn = api.compareText
     if (!fn) throw new Error('Wails bridge not available (CompareText)')
+    setTextCopyStatus('')
 
     const res: CompareResponse = await fn({
       oldText: textOld,
@@ -588,6 +600,37 @@ export function App() {
       setTextClipboardStatus(`Failed to read clipboard: ${formatUnknownError(error)}`)
     } finally {
       setTextClipboardBusyTarget(null)
+    }
+  }
+
+  const copyTextResultRawOutput = async () => {
+    const writeClipboard = getRuntimeClipboardWrite()
+    if (!writeClipboard) {
+      setTextCopyStatus('Clipboard runtime is not available.')
+      return
+    }
+
+    const raw = textResult ? renderResult(textResult) : ''
+    if (!raw) {
+      setTextCopyStatus('No raw output to copy.')
+      return
+    }
+
+    setTextCopyBusy(true)
+    setTextCopyStatus('')
+
+    try {
+      const ok = await writeClipboard(raw)
+      if (!ok) {
+        setTextCopyStatus('Failed to copy raw output.')
+        return
+      }
+
+      setTextCopyStatus('Copied raw output to clipboard.')
+    } catch (error) {
+      setTextCopyStatus(`Failed to copy raw output: ${formatUnknownError(error)}`)
+    } finally {
+      setTextCopyBusy(false)
     }
   }
 
@@ -831,23 +874,36 @@ export function App() {
       <div className="text-result-shell">
         <div className="result-summary">{summaryLine || '(no result yet)'}</div>
 
-        <div className="text-result-tabs">
+        <div className="text-result-toolbar">
+          <div className="text-result-tabs">
+            <button
+              type="button"
+              className={textResultView === 'rich' ? 'active' : ''}
+              onClick={() => setTextResultView('rich')}
+              disabled={!canUseRich}
+            >
+              Rich diff
+            </button>
+            <button
+              type="button"
+              className={textResultView === 'raw' ? 'active' : ''}
+              onClick={() => setTextResultView('raw')}
+            >
+              Raw output
+            </button>
+          </div>
+
           <button
             type="button"
-            className={textResultView === 'rich' ? 'active' : ''}
-            onClick={() => setTextResultView('rich')}
-            disabled={!canUseRich}
+            className="text-result-action"
+            onClick={() => void copyTextResultRawOutput()}
+            disabled={textCopyBusy || !raw}
           >
-            Rich diff
-          </button>
-          <button
-            type="button"
-            className={textResultView === 'raw' ? 'active' : ''}
-            onClick={() => setTextResultView('raw')}
-          >
-            Raw output
+            {textCopyBusy ? 'Copying...' : 'Copy raw output'}
           </button>
         </div>
+
+        {textCopyStatus ? <div className="muted text-copy-status">{textCopyStatus}</div> : null}
 
         <div className="text-result-body">
           {showRich ? (

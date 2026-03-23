@@ -17,7 +17,7 @@ This app is an experimental desktop GUI for xdiff.
 - Output format and text style controls
 - Fail-on and ignore-path controls for JSON/spec
 - Paste-first text compare workspace with rich/raw diff views
-- Text compare supports dedicated `Paste old` / `Paste new` actions
+- Text compare supports dedicated `Paste old` / `Paste new` / `Copy raw output` actions
 
 Not included yet:
 

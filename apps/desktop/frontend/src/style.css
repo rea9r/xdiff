@@ -338,9 +338,25 @@ button {
   gap: 8px;
 }
 
+.text-result-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.text-result-action {
+  flex: 0 0 auto;
+}
+
 .text-result-tabs button.active {
   border-color: #5b8cff;
   background: rgba(91, 140, 255, 0.08);
+}
+
+.text-copy-status {
+  margin: 0;
 }
 
 .text-result-body {
