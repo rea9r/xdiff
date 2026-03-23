@@ -20,7 +20,6 @@ This app is an experimental desktop GUI for xdiff.
 
 Not included yet:
 
-- Text compare GUI
 - URL compare GUI
 - Packaging/distribution
 
@@ -40,7 +39,7 @@ npm --prefix frontend install
 wails dev
 ```
 
-Use each mode's `Browse...` button to select local files.
+Use Browse... in file-based modes to select local files. Text mode is paste-first.
 
 ## Build frontend only
 

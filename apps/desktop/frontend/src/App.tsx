@@ -212,6 +212,9 @@ export function App() {
   const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
   const [textResultView, setTextResultView] = useState<TextResultView>('rich')
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
+  const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
+    'text' | 'json' | null
+  >(null)
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -348,6 +351,7 @@ export function App() {
       common: textCommon,
     })
     setTextResult(res)
+    setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
     setResult(res)
   }
 
@@ -413,6 +417,7 @@ export function App() {
     }
     if (mode === 'text') {
       setTextResult(null)
+      setTextLastRunOutputFormat(null)
     }
 
     try {
@@ -576,9 +581,10 @@ export function App() {
   const renderTextResultPanel = () => {
     const raw = textResult ? renderResult(textResult) : ''
     const parsed = textResult?.output ? parseUnifiedDiff(textResult.output) : null
+    const canUseRich = textLastRunOutputFormat === 'text'
     const showRich =
       textResultView === 'rich' &&
-      textCommon.outputFormat === 'text' &&
+      canUseRich &&
       textResult &&
       !textResult.error &&
       parsed
@@ -592,7 +598,7 @@ export function App() {
             type="button"
             className={textResultView === 'rich' ? 'active' : ''}
             onClick={() => setTextResultView('rich')}
-            disabled={textCommon.outputFormat === 'json'}
+            disabled={!canUseRich}
           >
             Rich diff
           </button>
