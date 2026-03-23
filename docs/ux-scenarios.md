@@ -14,7 +14,7 @@ Verify that `xdiff` helps users answer three questions quickly:
 Command:
 
 ```bash
-xdiff testdata/old.json testdata/new.json
+xdiff examples/json/old.json examples/json/new.json
 ```
 
 Checkpoints:
@@ -50,7 +50,7 @@ Checkpoints:
 Command:
 
 ```bash
-xdiff --output-format json --fail-on breaking testdata/old.json testdata/new.json
+xdiff --output-format json --fail-on breaking examples/json/old.json examples/json/new.json
 ```
 
 Checkpoints:
