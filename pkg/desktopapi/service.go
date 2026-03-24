@@ -464,18 +464,26 @@ func classifyFolderPath(path string) (string, int64, error) {
 	return "unknown", 0, nil
 }
 
-func compareFileContents(leftPath, rightPath string) (bool, error) {
+func compareFileContents(leftPath, rightPath string) (_ bool, err error) {
 	left, err := os.Open(leftPath)
 	if err != nil {
 		return false, err
 	}
-	defer left.Close()
+	defer func() {
+		if cerr := left.Close(); err == nil && cerr != nil {
+			err = cerr
+		}
+	}()
 
 	right, err := os.Open(rightPath)
 	if err != nil {
 		return false, err
 	}
-	defer right.Close()
+	defer func() {
+		if cerr := right.Close(); err == nil && cerr != nil {
+			err = cerr
+		}
+	}()
 
 	leftBuf := make([]byte, 32*1024)
 	rightBuf := make([]byte, 32*1024)
@@ -504,7 +512,7 @@ func compareFileContents(leftPath, rightPath string) (bool, error) {
 }
 
 func inferCompareModeHint(relativePath, status, leftKind, rightKind string) string {
-	if !(status == "same" || status == "changed") {
+	if status != "same" && status != "changed" {
 		return "none"
 	}
 	if leftKind != "file" || rightKind != "file" {
