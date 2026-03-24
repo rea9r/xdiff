@@ -218,3 +218,119 @@ func TestLoadTextFileRejectsNonUTF8(t *testing.T) {
 		t.Fatal("LoadTextFile() error = nil, want non-nil")
 	}
 }
+
+func TestCompareFolders_SameAndChanged(t *testing.T) {
+	leftRoot := filepath.Join(t.TempDir(), "left")
+	rightRoot := filepath.Join(t.TempDir(), "right")
+
+	writeFile(t, filepath.Join(leftRoot, "same.txt"), "hello\n")
+	writeFile(t, filepath.Join(rightRoot, "same.txt"), "hello\n")
+	writeFile(t, filepath.Join(leftRoot, "changed.txt"), "foo\n")
+	writeFile(t, filepath.Join(rightRoot, "changed.txt"), "bar\n")
+
+	svc := NewService()
+	res, err := svc.CompareFolders(CompareFoldersRequest{
+		LeftRoot:  leftRoot,
+		RightRoot: rightRoot,
+		Recursive: true,
+		ShowSame:  true,
+	})
+	if err != nil {
+		t.Fatalf("CompareFolders() error = %v", err)
+	}
+	if res.Error != "" {
+		t.Fatalf("CompareFolders() response error = %s", res.Error)
+	}
+	if res.Summary.Total != 2 || res.Summary.Same != 1 || res.Summary.Changed != 1 {
+		t.Fatalf("unexpected summary: %+v", res.Summary)
+	}
+}
+
+func TestCompareFolders_LeftOnlyAndRightOnly(t *testing.T) {
+	leftRoot := filepath.Join(t.TempDir(), "left")
+	rightRoot := filepath.Join(t.TempDir(), "right")
+
+	writeFile(t, filepath.Join(leftRoot, "left-only.txt"), "left\n")
+	writeFile(t, filepath.Join(rightRoot, "right-only.txt"), "right\n")
+
+	svc := NewService()
+	res, err := svc.CompareFolders(CompareFoldersRequest{
+		LeftRoot:  leftRoot,
+		RightRoot: rightRoot,
+		Recursive: true,
+		ShowSame:  false,
+	})
+	if err != nil {
+		t.Fatalf("CompareFolders() error = %v", err)
+	}
+	if res.Error != "" {
+		t.Fatalf("CompareFolders() response error = %s", res.Error)
+	}
+	if res.Summary.Total != 2 || res.Summary.LeftOnly != 1 || res.Summary.RightOnly != 1 {
+		t.Fatalf("unexpected summary: %+v", res.Summary)
+	}
+}
+
+func TestCompareFolders_TypeMismatch(t *testing.T) {
+	leftRoot := filepath.Join(t.TempDir(), "left")
+	rightRoot := filepath.Join(t.TempDir(), "right")
+
+	writeFile(t, filepath.Join(leftRoot, "node"), "file\n")
+	if err := os.MkdirAll(filepath.Join(rightRoot, "node"), 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+
+	svc := NewService()
+	res, err := svc.CompareFolders(CompareFoldersRequest{
+		LeftRoot:  leftRoot,
+		RightRoot: rightRoot,
+		Recursive: true,
+		ShowSame:  false,
+	})
+	if err != nil {
+		t.Fatalf("CompareFolders() error = %v", err)
+	}
+	if res.Error != "" {
+		t.Fatalf("CompareFolders() response error = %s", res.Error)
+	}
+	if res.Summary.Total != 1 || res.Summary.TypeMismatch != 1 {
+		t.Fatalf("unexpected summary: %+v", res.Summary)
+	}
+}
+
+func TestCompareFolders_FilterAndShowSame(t *testing.T) {
+	leftRoot := filepath.Join(t.TempDir(), "left")
+	rightRoot := filepath.Join(t.TempDir(), "right")
+
+	writeFile(t, filepath.Join(leftRoot, "same.txt"), "hello\n")
+	writeFile(t, filepath.Join(rightRoot, "same.txt"), "hello\n")
+	writeFile(t, filepath.Join(leftRoot, "changed.json"), `{"v":1}`)
+	writeFile(t, filepath.Join(rightRoot, "changed.json"), `{"v":2}`)
+
+	svc := NewService()
+	res, err := svc.CompareFolders(CompareFoldersRequest{
+		LeftRoot:   leftRoot,
+		RightRoot:  rightRoot,
+		Recursive:  true,
+		ShowSame:   false,
+		NameFilter: "CHANGED",
+	})
+	if err != nil {
+		t.Fatalf("CompareFolders() error = %v", err)
+	}
+	if res.Error != "" {
+		t.Fatalf("CompareFolders() response error = %s", res.Error)
+	}
+	if len(res.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(res.Entries))
+	}
+	if res.Entries[0].RelativePath != "changed.json" || res.Entries[0].Status != "changed" {
+		t.Fatalf("unexpected entry: %+v", res.Entries[0])
+	}
+	if res.Entries[0].CompareModeHint != "json" {
+		t.Fatalf("unexpected mode hint: %s", res.Entries[0].CompareModeHint)
+	}
+	if res.Summary.Total != 1 || res.Summary.Changed != 1 {
+		t.Fatalf("unexpected summary: %+v", res.Summary)
+	}
+}

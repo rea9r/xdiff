@@ -43,6 +43,10 @@ func (a *App) LoadTextFile(req desktopapi.LoadTextFileRequest) (*desktopapi.Load
 	return a.api.LoadTextFile(req)
 }
 
+func (a *App) CompareFolders(req desktopapi.CompareFoldersRequest) (*desktopapi.CompareFoldersResponse, error) {
+	return a.api.CompareFolders(req)
+}
+
 func (a *App) RunScenario(req desktopapi.RunScenarioRequest) (*desktopapi.ScenarioRunResponse, error) {
 	return a.api.RunScenario(req)
 }
@@ -100,6 +104,16 @@ func (a *App) PickTextFile() (string, error) {
 			DisplayName: "All files (*.*)",
 			Pattern:     "*.*",
 		},
+	})
+}
+
+func (a *App) PickFolderRoot() (string, error) {
+	if a.ctx == nil {
+		return "", nil
+	}
+
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select folder",
 	})
 }
 

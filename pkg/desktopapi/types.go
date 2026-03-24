@@ -38,6 +38,45 @@ type LoadTextFileResponse struct {
 	Content string `json:"content"`
 }
 
+type CompareFoldersRequest struct {
+	LeftRoot   string `json:"leftRoot"`
+	RightRoot  string `json:"rightRoot"`
+	Recursive  bool   `json:"recursive"`
+	ShowSame   bool   `json:"showSame"`
+	NameFilter string `json:"nameFilter"`
+}
+
+type FolderCompareSummary struct {
+	Total        int `json:"total"`
+	Same         int `json:"same"`
+	Changed      int `json:"changed"`
+	LeftOnly     int `json:"leftOnly"`
+	RightOnly    int `json:"rightOnly"`
+	TypeMismatch int `json:"typeMismatch"`
+	Error        int `json:"error"`
+}
+
+type FolderCompareEntry struct {
+	RelativePath    string `json:"relativePath"`
+	Status          string `json:"status"`
+	LeftPath        string `json:"leftPath"`
+	RightPath       string `json:"rightPath"`
+	LeftExists      bool   `json:"leftExists"`
+	RightExists     bool   `json:"rightExists"`
+	LeftKind        string `json:"leftKind"`
+	RightKind       string `json:"rightKind"`
+	LeftSize        int64  `json:"leftSize"`
+	RightSize       int64  `json:"rightSize"`
+	CompareModeHint string `json:"compareModeHint"`
+	Message         string `json:"message,omitempty"`
+}
+
+type CompareFoldersResponse struct {
+	Summary FolderCompareSummary `json:"summary"`
+	Entries []FolderCompareEntry `json:"entries"`
+	Error   string               `json:"error,omitempty"`
+}
+
 type RunScenarioRequest struct {
 	ScenarioPath string   `json:"scenarioPath"`
 	ReportFormat string   `json:"reportFormat"`
