@@ -384,6 +384,10 @@ button {
   flex: 0 0 auto;
 }
 
+.text-unchanged-toggle {
+  flex: 0 0 auto;
+}
+
 .text-result-tabs button.active,
 .text-diff-layout-tabs button.active {
   border-color: #5b8cff;
@@ -437,6 +441,10 @@ button {
   border-bottom: 1px solid rgba(127, 127, 127, 0.2);
 }
 
+.split-diff-banner.omitted {
+  background: rgba(127, 127, 127, 0.06);
+}
+
 .split-diff-banner-content {
   margin: 0;
   padding: 4px 8px;
@@ -485,6 +493,19 @@ button {
   word-break: break-word;
 }
 
+.split-omitted-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.split-omitted-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
 .text-diff-row {
   display: grid;
   grid-template-columns: 56px 56px 1fr;
@@ -516,6 +537,30 @@ button {
   padding: 2px 8px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.text-omitted-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-omitted-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(127, 127, 127, 0.06);
+  border-top: 1px dashed rgba(127, 127, 127, 0.28);
+  border-bottom: 1px dashed rgba(127, 127, 127, 0.28);
+}
+
+.text-omitted-banner.expanded {
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.text-omitted-action {
+  flex: 0 0 auto;
 }
 
 .text-inline-add,

@@ -66,16 +66,20 @@ type UnifiedDiffRow = {
   inlineSegments?: InlineDiffSegment[]
 }
 
-type SplitDiffRow =
+type RichDiffItem =
   | {
-      kind: 'meta' | 'hunk'
-      content: string
+      kind: 'row'
+      row: UnifiedDiffRow
     }
   | {
-      kind: 'pair'
-      left: UnifiedDiffRow | null
-      right: UnifiedDiffRow | null
+      kind: 'omitted'
+      sectionId: string
+      startOldLine: number
+      startNewLine: number
+      lines: string[]
     }
+
+type OmittedDiffItem = Extract<RichDiffItem, { kind: 'omitted' }>
 
 function renderResult(res: unknown): string {
   if (typeof res === 'string') return res
@@ -413,61 +417,150 @@ function parseUnifiedDiff(output: string): UnifiedDiffRow[] | null {
   return addInlineDiffSegments(rows)
 }
 
-function buildSplitDiffRows(rows: UnifiedDiffRow[]): SplitDiffRow[] {
-  const splitRows: SplitDiffRow[] = []
-  let index = 0
+function splitTextForDisplay(input: string): string[] {
+  const lines = input.split('\n')
+  if (lines.length > 0 && lines[lines.length - 1] === '') {
+    lines.pop()
+  }
+  return lines
+}
 
-  while (index < rows.length) {
-    const row = rows[index]
-
-    if (row.kind === 'meta' || row.kind === 'hunk') {
-      splitRows.push({
-        kind: row.kind,
-        content: row.content,
-      })
-      index++
-      continue
-    }
-
-    if (row.kind === 'context') {
-      splitRows.push({
-        kind: 'pair',
-        left: row,
-        right: row,
-      })
-      index++
-      continue
-    }
-
-    const removed: UnifiedDiffRow[] = []
-    const added: UnifiedDiffRow[] = []
-    let end = index
-
-    while (
-      end < rows.length &&
-      (rows[end].kind === 'remove' || rows[end].kind === 'add')
-    ) {
-      if (rows[end].kind === 'remove') {
-        removed.push(rows[end])
-      } else {
-        added.push(rows[end])
-      }
-      end++
-    }
-
-    const pairCount = Math.max(removed.length, added.length)
-    for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
-      splitRows.push({
-        kind: 'pair',
-        left: removed[pairIndex] ?? null,
-        right: added[pairIndex] ?? null,
-      })
-    }
-
-    index = end
+function parseHunkHeader(content: string): {
+  oldStart: number
+  oldCount: number
+  newStart: number
+  newCount: number
+} | null {
+  const match = content.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/)
+  if (!match) {
+    return null
   }
 
-  return splitRows
+  return {
+    oldStart: Number(match[1]),
+    oldCount: match[2] ? Number(match[2]) : 1,
+    newStart: Number(match[3]),
+    newCount: match[4] ? Number(match[4]) : 1,
+  }
+}
+
+function buildExpandedContextRow(
+  content: string,
+  oldLine: number,
+  newLine: number,
+): UnifiedDiffRow {
+  return {
+    kind: 'context',
+    oldLine,
+    newLine,
+    content,
+  }
+}
+
+function buildOmittedSectionID(
+  oldStart: number,
+  oldCount: number,
+  newStart: number,
+  newCount: number,
+): string {
+  return `omitted-${oldStart}-${oldCount}-${newStart}-${newCount}`
+}
+
+function pushOmittedItem(
+  items: RichDiffItem[],
+  oldLines: string[],
+  newLines: string[],
+  oldStart: number,
+  oldEnd: number,
+  newStart: number,
+  newEnd: number,
+) {
+  const oldCount = oldEnd - oldStart + 1
+  const newCount = newEnd - newStart + 1
+  const count = Math.min(oldCount, newCount)
+
+  if (count <= 0) {
+    return
+  }
+
+  const lines = oldLines.slice(oldStart - 1, oldStart - 1 + count)
+  if (lines.length === 0) {
+    return
+  }
+
+  items.push({
+    kind: 'omitted',
+    sectionId: buildOmittedSectionID(oldStart, count, newStart, count),
+    startOldLine: oldStart,
+    startNewLine: newStart,
+    lines,
+  })
+}
+
+function buildRichDiffItems(
+  rows: UnifiedDiffRow[],
+  oldText: string,
+  newText: string,
+): RichDiffItem[] {
+  const oldLines = splitTextForDisplay(oldText)
+  const newLines = splitTextForDisplay(newText)
+  const items: RichDiffItem[] = []
+
+  let previousShownOld = 0
+  let previousShownNew = 0
+  let sawHunk = false
+
+  for (const row of rows) {
+    if (row.kind === 'hunk') {
+      const parsed = parseHunkHeader(row.content)
+      if (parsed) {
+        sawHunk = true
+        pushOmittedItem(
+          items,
+          oldLines,
+          newLines,
+          previousShownOld + 1,
+          parsed.oldStart - 1,
+          previousShownNew + 1,
+          parsed.newStart - 1,
+        )
+      }
+
+      items.push({ kind: 'row', row })
+      continue
+    }
+
+    items.push({ kind: 'row', row })
+
+    if (row.kind === 'context') {
+      previousShownOld = row.oldLine ?? previousShownOld
+      previousShownNew = row.newLine ?? previousShownNew
+      continue
+    }
+
+    if (row.kind === 'remove') {
+      previousShownOld = row.oldLine ?? previousShownOld
+      continue
+    }
+
+    if (row.kind === 'add') {
+      previousShownNew = row.newLine ?? previousShownNew
+    }
+  }
+
+  if (sawHunk) {
+    pushOmittedItem(
+      items,
+      oldLines,
+      newLines,
+      previousShownOld + 1,
+      oldLines.length,
+      previousShownNew + 1,
+      newLines.length,
+    )
+  }
+
+  return items
 }
 
 function renderSplitDiffCell(
@@ -514,9 +607,14 @@ export function App() {
   const [textResultView, setTextResultView] = useState<TextResultView>('rich')
   const [textDiffLayout, setTextDiffLayout] = useState<TextDiffLayout>('split')
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
+  const [textLastRunOld, setTextLastRunOld] = useState('')
+  const [textLastRunNew, setTextLastRunNew] = useState('')
   const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
     'text' | 'json' | null
   >(null)
+  const [textExpandedUnchangedSectionIds, setTextExpandedUnchangedSectionIds] = useState<
+    string[]
+  >([])
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [textClipboardStatus, setTextClipboardStatus] = useState('')
@@ -547,6 +645,19 @@ export function App() {
     () => (textResult?.output ? parseUnifiedDiff(textResult.output) : null),
     [textResult?.output],
   )
+  const textRichItems = useMemo(
+    () =>
+      textRichRows ? buildRichDiffItems(textRichRows, textLastRunOld, textLastRunNew) : null,
+    [textRichRows, textLastRunOld, textLastRunNew],
+  )
+  const omittedSectionIds = useMemo(
+    () =>
+      textRichItems?.flatMap((item) => (item.kind === 'omitted' ? [item.sectionId] : [])) ?? [],
+    [textRichItems],
+  )
+  const allOmittedSectionsExpanded =
+    omittedSectionIds.length > 0 &&
+    omittedSectionIds.every((id) => textExpandedUnchangedSectionIds.includes(id))
   const canRenderTextRich =
     textLastRunOutputFormat === 'text' &&
     !!textResult &&
@@ -575,6 +686,12 @@ export function App() {
       setTextResultView('raw')
     }
   }, [canRenderTextRich, textResult, textResultView])
+
+  useEffect(() => {
+    setTextExpandedUnchangedSectionIds((prev) =>
+      prev.filter((id) => omittedSectionIds.includes(id)),
+    )
+  }, [omittedSectionIds])
 
   const api = useMemo(
     () => ({
@@ -607,6 +724,19 @@ export function App() {
 
   const updateTextCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
     setTextCommon((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const isTextSectionExpanded = (sectionId: string) =>
+    textExpandedUnchangedSectionIds.includes(sectionId)
+
+  const toggleTextUnchangedSection = (sectionId: string) => {
+    setTextExpandedUnchangedSectionIds((prev) =>
+      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
+    )
+  }
+
+  const toggleAllTextUnchangedSections = () => {
+    setTextExpandedUnchangedSectionIds(allOmittedSectionsExpanded ? [] : omittedSectionIds)
   }
 
   const setScenarioRunResultView = (res: ScenarioRunResponse) => {
@@ -679,6 +809,7 @@ export function App() {
     const fn = api.compareText
     if (!fn) throw new Error('Wails bridge not available (CompareText)')
     setTextCopyStatus('')
+    setTextExpandedUnchangedSectionIds([])
 
     const res: CompareResponse = await fn({
       oldText: textOld,
@@ -686,6 +817,8 @@ export function App() {
       common: textCommon,
     })
     setTextResult(res)
+    setTextLastRunOld(textOld)
+    setTextLastRunNew(textNew)
     setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
     setResult(res)
   }
@@ -877,7 +1010,10 @@ export function App() {
     }
     if (mode === 'text') {
       setTextResult(null)
+      setTextLastRunOld('')
+      setTextLastRunNew('')
       setTextLastRunOutputFormat(null)
+      setTextExpandedUnchangedSectionIds([])
     }
 
     try {
@@ -1024,45 +1160,105 @@ export function App() {
     )
   }
 
-  const renderTextDiffRows = (rows: UnifiedDiffRow[]) => {
+  const renderUnifiedOmittedBlock = (item: OmittedDiffItem) => {
+    const expanded = isTextSectionExpanded(item.sectionId)
+
     return (
-      <div className="text-diff-grid">
-        {rows.map((row, idx) => (
-          <div key={`${idx}-${row.kind}`} className={`text-diff-row ${row.kind}`}>
-            <div className="text-diff-line">{row.oldLine ?? ''}</div>
-            <div className="text-diff-line">{row.newLine ?? ''}</div>
-            <pre className="text-diff-content">
-              {renderInlineDiffContent(row, `text-diff-${idx}`)}
-            </pre>
-          </div>
-        ))}
+      <div key={item.sectionId} className="text-omitted-block">
+        <div className={`text-omitted-banner ${expanded ? 'expanded' : ''}`}>
+          <span className="muted">{item.lines.length} unchanged lines</span>
+          <button
+            type="button"
+            className="text-omitted-action"
+            onClick={() => toggleTextUnchangedSection(item.sectionId)}
+          >
+            {expanded ? 'Collapse unchanged' : 'Show hidden lines'}
+          </button>
+        </div>
+
+        {expanded
+          ? item.lines.map((line, index) => {
+              const row = buildExpandedContextRow(
+                line,
+                item.startOldLine + index,
+                item.startNewLine + index,
+              )
+
+              return (
+                <div key={`${item.sectionId}-${index}`} className={`text-diff-row ${row.kind}`}>
+                  <div className="text-diff-line">{row.oldLine ?? ''}</div>
+                  <div className="text-diff-line">{row.newLine ?? ''}</div>
+                  <pre className="text-diff-content">{row.content}</pre>
+                </div>
+              )
+            })
+          : null}
       </div>
     )
   }
 
-  const renderTextSplitRows = (rows: UnifiedDiffRow[]) => {
-    const splitRows = buildSplitDiffRows(rows)
+  const renderSplitOmittedBlock = (item: OmittedDiffItem) => {
+    const expanded = isTextSectionExpanded(item.sectionId)
 
     return (
-      <div className="split-diff-grid">
-        <div className="split-diff-header">
-          <div className="split-diff-header-cell">Old</div>
-          <div className="split-diff-header-cell">New</div>
+      <div key={item.sectionId} className="split-omitted-block">
+        <div className="split-diff-banner omitted">
+          <div className="split-omitted-banner-inner">
+            <span className="muted">{item.lines.length} unchanged lines</span>
+            <button
+              type="button"
+              className="text-omitted-action"
+              onClick={() => toggleTextUnchangedSection(item.sectionId)}
+            >
+              {expanded ? 'Collapse unchanged' : 'Show hidden lines'}
+            </button>
+          </div>
         </div>
 
-        {splitRows.map((row, idx) => {
-          if (row.kind === 'pair') {
-            return (
-              <div key={`split-row-${idx}`} className="split-diff-row">
-                {renderSplitDiffCell(row.left, 'left', `split-left-${idx}`)}
-                {renderSplitDiffCell(row.right, 'right', `split-right-${idx}`)}
-              </div>
-            )
+        {expanded
+          ? item.lines.map((line, index) => {
+              const row = buildExpandedContextRow(
+                line,
+                item.startOldLine + index,
+                item.startNewLine + index,
+              )
+
+              return (
+                <div key={`${item.sectionId}-${index}`} className="split-diff-row">
+                  {renderSplitDiffCell(
+                    row,
+                    'left',
+                    `split-omitted-left-${item.sectionId}-${index}`,
+                  )}
+                  {renderSplitDiffCell(
+                    row,
+                    'right',
+                    `split-omitted-right-${item.sectionId}-${index}`,
+                  )}
+                </div>
+              )
+            })
+          : null}
+      </div>
+    )
+  }
+
+  const renderTextDiffRows = (items: RichDiffItem[]) => {
+    return (
+      <div className="text-diff-grid">
+        {items.map((item, idx) => {
+          if (item.kind === 'omitted') {
+            return renderUnifiedOmittedBlock(item)
           }
 
+          const row = item.row
           return (
-            <div key={`split-banner-${idx}`} className={`split-diff-banner ${row.kind}`}>
-              <pre className="split-diff-banner-content">{row.content}</pre>
+            <div key={`${idx}-${row.kind}`} className={`text-diff-row ${row.kind}`}>
+              <div className="text-diff-line">{row.oldLine ?? ''}</div>
+              <div className="text-diff-line">{row.newLine ?? ''}</div>
+              <pre className="text-diff-content">
+                {renderInlineDiffContent(row, `text-diff-${idx}`)}
+              </pre>
             </div>
           )
         })}
@@ -1070,9 +1266,98 @@ export function App() {
     )
   }
 
+  const renderTextSplitRows = (items: RichDiffItem[]) => {
+    const splitNodes: JSX.Element[] = []
+    let index = 0
+
+    while (index < items.length) {
+      const item = items[index]
+
+      if (item.kind === 'omitted') {
+        splitNodes.push(renderSplitOmittedBlock(item))
+        index++
+        continue
+      }
+
+      const row = item.row
+
+      if (row.kind === 'meta' || row.kind === 'hunk') {
+        splitNodes.push(
+          <div key={`split-banner-${index}`} className={`split-diff-banner ${row.kind}`}>
+            <pre className="split-diff-banner-content">{row.content}</pre>
+          </div>,
+        )
+        index++
+        continue
+      }
+
+      if (row.kind === 'context') {
+        splitNodes.push(
+          <div key={`split-row-${index}`} className="split-diff-row">
+            {renderSplitDiffCell(row, 'left', `split-left-${index}`)}
+            {renderSplitDiffCell(row, 'right', `split-right-${index}`)}
+          </div>,
+        )
+        index++
+        continue
+      }
+
+      const removed: UnifiedDiffRow[] = []
+      const added: UnifiedDiffRow[] = []
+      let end = index
+
+      while (end < items.length) {
+        const candidate = items[end]
+        if (candidate.kind !== 'row') {
+          break
+        }
+        if (candidate.row.kind !== 'remove' && candidate.row.kind !== 'add') {
+          break
+        }
+
+        if (candidate.row.kind === 'remove') {
+          removed.push(candidate.row)
+        } else {
+          added.push(candidate.row)
+        }
+        end++
+      }
+
+      const pairCount = Math.max(removed.length, added.length)
+      for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
+        splitNodes.push(
+          <div key={`split-pair-${index}-${pairIndex}`} className="split-diff-row">
+            {renderSplitDiffCell(
+              removed[pairIndex] ?? null,
+              'left',
+              `split-left-${index}-${pairIndex}`,
+            )}
+            {renderSplitDiffCell(
+              added[pairIndex] ?? null,
+              'right',
+              `split-right-${index}-${pairIndex}`,
+            )}
+          </div>,
+        )
+      }
+
+      index = end
+    }
+
+    return (
+      <div className="split-diff-grid">
+        <div className="split-diff-header">
+          <div className="split-diff-header-cell">Old</div>
+          <div className="split-diff-header-cell">New</div>
+        </div>
+        {splitNodes}
+      </div>
+    )
+  }
+
   const renderTextResultPanel = () => {
     const raw = textResult ? renderResult(textResult) : ''
-    const showRich = textResultView === 'rich' && canRenderTextRich
+    const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
 
     return (
       <div className="text-result-shell">
@@ -1116,6 +1401,16 @@ export function App() {
                 Unified
               </button>
             </div>
+
+            {showRich && omittedSectionIds.length > 0 ? (
+              <button
+                type="button"
+                className="text-unchanged-toggle"
+                onClick={toggleAllTextUnchangedSections}
+              >
+                {allOmittedSectionsExpanded ? 'Collapse unchanged' : 'Expand unchanged'}
+              </button>
+            ) : null}
           </div>
 
           <button
@@ -1131,11 +1426,11 @@ export function App() {
         {textCopyStatus ? <div className="muted text-copy-status">{textCopyStatus}</div> : null}
 
         <div className="text-result-body">
-          {showRich && textRichRows ? (
+          {showRich && textRichItems ? (
             textDiffLayout === 'split' ? (
-              renderTextSplitRows(textRichRows)
+              renderTextSplitRows(textRichItems)
             ) : (
-              renderTextDiffRows(textRichRows)
+              renderTextDiffRows(textRichItems)
             )
           ) : (
             <pre className="result-output">{raw || '(no output yet)'}</pre>
