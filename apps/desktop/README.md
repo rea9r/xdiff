@@ -8,6 +8,7 @@ This app is an experimental desktop GUI for xdiff.
 - App shell refresh with shared header / sidebar / main layout
 - Shared UI primitives for controls, badges, cards, tables, and notifications
 - Existing JSON/spec/text/scenario/folder workflows preserved on top of the new visual foundation
+- Theme-aware viewer tokens and responsive sidebar toggle for narrower window widths
 
 - JSON file comparison
 - OpenAPI spec comparison

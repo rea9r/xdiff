@@ -1,4 +1,5 @@
-import { AppShell, Box, Group, Select, Text } from '@mantine/core'
+import { AppShell, Box, Burger, Group, ScrollArea, Select, Text } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import type { ReactNode } from 'react'
 import type { Mode } from '../types'
 import { ThemeModeControl } from './ThemeModeControl'
@@ -19,17 +20,40 @@ const MODE_OPTIONS = [
 ]
 
 export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps) {
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false)
+
   return (
-    <AppShell header={{ height: 60 }} navbar={{ width: 360, breakpoint: 'sm' }} padding="md">
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{
+        width: 360,
+        breakpoint: 'sm',
+        collapsed: { mobile: !mobileOpened },
+      }}
+      padding="md"
+    >
       <AppShell.Header>
         <Group justify="space-between" h="100%" px="md">
-          <Group gap="md">
+          <Group gap="sm">
+            <Burger
+              opened={mobileOpened}
+              onClick={toggleMobile}
+              hiddenFrom="sm"
+              size="sm"
+              aria-label="Toggle navigation"
+            />
             <Text fw={700}>xdiff Desktop</Text>
             <Select
               w={220}
               data={MODE_OPTIONS}
               value={mode}
-              onChange={(value) => value && onModeChange(value as Mode)}
+              onChange={(value) => {
+                if (!value) {
+                  return
+                }
+                onModeChange(value as Mode)
+                closeMobile()
+              }}
             />
           </Group>
           <ThemeModeControl />
@@ -37,12 +61,14 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
-        <Box className="control-panel">{sidebar}</Box>
+        <AppShell.Section grow component={ScrollArea}>
+          <Box pr="xs" className="control-panel">
+            {sidebar}
+          </Box>
+        </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>
-        <Box className="result-panel">{main}</Box>
-      </AppShell.Main>
+      <AppShell.Main>{main}</AppShell.Main>
     </AppShell>
   )
 }

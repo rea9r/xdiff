@@ -2534,9 +2534,9 @@ export function App() {
         </>
       }
       main={
-        <>
-        {mode === 'text' ? (
-          <div className="text-workspace">
+        <div className="result-panel">
+          {mode === 'text' ? (
+            <div className="text-workspace">
             <h2>Text Compare</h2>
             <div className="text-workspace-toolbar">
               <button
@@ -2651,7 +2651,7 @@ export function App() {
             )}
           </>
         )}
-        </>
+        </div>
       }
     />
   )
