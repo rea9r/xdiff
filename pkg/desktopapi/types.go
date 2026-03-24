@@ -29,6 +29,15 @@ type CompareTextRequest struct {
 	Common  CompareCommon `json:"common"`
 }
 
+type LoadTextFileRequest struct {
+	Path string `json:"path"`
+}
+
+type LoadTextFileResponse struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
 type RunScenarioRequest struct {
 	ScenarioPath string   `json:"scenarioPath"`
 	ReportFormat string   `json:"reportFormat"`

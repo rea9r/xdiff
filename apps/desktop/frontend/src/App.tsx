@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type {
   CompareCommon,
   CompareResponse,
+  LoadTextFileRequest,
+  LoadTextFileResponse,
   Mode,
   ScenarioCheckListEntry,
   ScenarioListResponse,
@@ -41,7 +43,7 @@ const defaultTextCommon: CompareCommon = {
 }
 
 type TextResultView = 'rich' | 'raw'
-type TextClipboardTarget = 'old' | 'new'
+type TextInputTarget = 'old' | 'new'
 type WailsRuntimeClipboard = {
   ClipboardGetText?: () => Promise<string>
   ClipboardSetText?: (text: string) => Promise<boolean>
@@ -419,6 +421,8 @@ export function App() {
 
   const [textOld, setTextOld] = useState('')
   const [textNew, setTextNew] = useState('')
+  const [textOldSourcePath, setTextOldSourcePath] = useState('')
+  const [textNewSourcePath, setTextNewSourcePath] = useState('')
   const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
   const [textResultView, setTextResultView] = useState<TextResultView>('rich')
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
@@ -426,10 +430,16 @@ export function App() {
     'text' | 'json' | null
   >(null)
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
-    useState<TextClipboardTarget | null>(null)
+    useState<TextInputTarget | null>(null)
   const [textClipboardStatus, setTextClipboardStatus] = useState('')
+  const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(
+    null,
+  )
+  const [textWorkspaceStatus, setTextWorkspaceStatus] = useState('')
   const [textCopyBusy, setTextCopyBusy] = useState(false)
   const [textCopyStatus, setTextCopyStatus] = useState('')
+
+  const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -469,6 +479,8 @@ export function App() {
       pickJSONFile: (window as any).go?.main?.App?.PickJSONFile,
       pickSpecFile: (window as any).go?.main?.App?.PickSpecFile,
       pickScenarioFile: (window as any).go?.main?.App?.PickScenarioFile,
+      pickTextFile: (window as any).go?.main?.App?.PickTextFile,
+      loadTextFile: (window as any).go?.main?.App?.LoadTextFile,
     }),
     [],
   )
@@ -571,7 +583,7 @@ export function App() {
     setResult(res)
   }
 
-  const pasteTextFromClipboard = async (target: TextClipboardTarget) => {
+  const pasteTextFromClipboard = async (target: TextInputTarget) => {
     const readClipboard = getRuntimeClipboardRead()
     if (!readClipboard) {
       setTextClipboardStatus('Clipboard runtime is not available.')
@@ -580,6 +592,7 @@ export function App() {
 
     setTextClipboardBusyTarget(target)
     setTextClipboardStatus('')
+    setTextWorkspaceStatus('')
 
     try {
       const pasted = await readClipboard()
@@ -591,16 +604,77 @@ export function App() {
 
       if (target === 'old') {
         setTextOld(pasted)
-        setTextClipboardStatus('Pasted clipboard into Old text.')
+        setTextOldSourcePath('')
+        setTextClipboardStatus('Pasted clipboard into Old text. Run again to refresh diff.')
       } else {
         setTextNew(pasted)
-        setTextClipboardStatus('Pasted clipboard into New text.')
+        setTextNewSourcePath('')
+        setTextClipboardStatus('Pasted clipboard into New text. Run again to refresh diff.')
       }
     } catch (error) {
       setTextClipboardStatus(`Failed to read clipboard: ${formatUnknownError(error)}`)
     } finally {
       setTextClipboardBusyTarget(null)
     }
+  }
+
+  const loadTextFromFile = async (target: TextInputTarget) => {
+    const picker = api.pickTextFile
+    const loader = api.loadTextFile
+
+    if (!picker || !loader) {
+      setTextWorkspaceStatus('Text file loader is not available.')
+      return
+    }
+
+    setTextFileBusyTarget(target)
+    setTextWorkspaceStatus('')
+    setTextClipboardStatus('')
+
+    try {
+      const selected = await picker()
+      if (!selected) {
+        return
+      }
+
+      const loaded: LoadTextFileResponse = await loader({
+        path: selected,
+      } satisfies LoadTextFileRequest)
+
+      if (target === 'old') {
+        setTextOld(loaded.content)
+        setTextOldSourcePath(loaded.path)
+      } else {
+        setTextNew(loaded.content)
+        setTextNewSourcePath(loaded.path)
+      }
+
+      setTextWorkspaceStatus(
+        `Loaded ${loaded.path} into ${target === 'old' ? 'Old text' : 'New text'}. Run again to refresh diff.`,
+      )
+    } catch (error) {
+      setTextWorkspaceStatus(`Failed to load text file: ${formatUnknownError(error)}`)
+    } finally {
+      setTextFileBusyTarget(null)
+    }
+  }
+
+  const swapTextInputs = () => {
+    setTextOld(textNew)
+    setTextNew(textOld)
+    setTextOldSourcePath(textNewSourcePath)
+    setTextNewSourcePath(textOldSourcePath)
+    setTextWorkspaceStatus('Swapped Old/New text. Run again to refresh diff.')
+    setTextClipboardStatus('')
+  }
+
+  const clearTextInputs = () => {
+    setTextOld('')
+    setTextNew('')
+    setTextOldSourcePath('')
+    setTextNewSourcePath('')
+    setTextWorkspaceStatus('Cleared both text inputs.')
+    setTextClipboardStatus('')
   }
 
   const copyTextResultRawOutput = async () => {
@@ -1270,15 +1344,60 @@ export function App() {
         {mode === 'text' ? (
           <div className="text-workspace">
             <h2>Text Compare</h2>
+            <div className="text-workspace-toolbar">
+              <button
+                type="button"
+                onClick={() => void loadTextFromFile('old')}
+                disabled={textEditorBusy}
+              >
+                {textFileBusyTarget === 'old' ? 'Loading old...' : 'Load old...'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void loadTextFromFile('new')}
+                disabled={textEditorBusy}
+              >
+                {textFileBusyTarget === 'new' ? 'Loading new...' : 'Load new...'}
+              </button>
+
+              <button type="button" onClick={swapTextInputs} disabled={textEditorBusy}>
+                Swap
+              </button>
+
+              <button
+                type="button"
+                onClick={clearTextInputs}
+                disabled={textEditorBusy || (!textOld && !textNew)}
+              >
+                Clear
+              </button>
+            </div>
+
+            {textWorkspaceStatus ? (
+              <div className="muted text-workspace-status">{textWorkspaceStatus}</div>
+            ) : null}
+
+            {textClipboardStatus ? (
+              <div className="muted text-clipboard-status">{textClipboardStatus}</div>
+            ) : null}
+
             <div className="text-editors-row">
               <div className="text-editor-panel">
                 <div className="text-editor-header">
-                  <label className="field-label">Old text</label>
+                  <div className="text-editor-title">
+                    <label className="field-label">Old text</label>
+                    {textOldSourcePath ? (
+                      <div className="muted text-source-path" title={textOldSourcePath}>
+                        {textOldSourcePath}
+                      </div>
+                    ) : null}
+                  </div>
                   <button
                     type="button"
                     className="text-editor-action"
                     onClick={() => void pasteTextFromClipboard('old')}
-                    disabled={textClipboardBusyTarget !== null}
+                    disabled={textEditorBusy}
                   >
                     {textClipboardBusyTarget === 'old' ? 'Pasting...' : 'Paste old'}
                   </button>
@@ -1286,17 +1405,27 @@ export function App() {
                 <textarea
                   className="text-editor"
                   value={textOld}
-                  onChange={(e) => setTextOld(e.target.value)}
+                  onChange={(e) => {
+                    setTextOld(e.target.value)
+                    if (textOldSourcePath) setTextOldSourcePath('')
+                  }}
                 />
               </div>
               <div className="text-editor-panel">
                 <div className="text-editor-header">
-                  <label className="field-label">New text</label>
+                  <div className="text-editor-title">
+                    <label className="field-label">New text</label>
+                    {textNewSourcePath ? (
+                      <div className="muted text-source-path" title={textNewSourcePath}>
+                        {textNewSourcePath}
+                      </div>
+                    ) : null}
+                  </div>
                   <button
                     type="button"
                     className="text-editor-action"
                     onClick={() => void pasteTextFromClipboard('new')}
-                    disabled={textClipboardBusyTarget !== null}
+                    disabled={textEditorBusy}
                   >
                     {textClipboardBusyTarget === 'new' ? 'Pasting...' : 'Paste new'}
                   </button>
@@ -1304,13 +1433,13 @@ export function App() {
                 <textarea
                   className="text-editor"
                   value={textNew}
-                  onChange={(e) => setTextNew(e.target.value)}
+                  onChange={(e) => {
+                    setTextNew(e.target.value)
+                    if (textNewSourcePath) setTextNewSourcePath('')
+                  }}
                 />
               </div>
             </div>
-            {textClipboardStatus ? (
-              <div className="muted text-clipboard-status">{textClipboardStatus}</div>
-            ) : null}
             {renderTextResultPanel()}
           </div>
         ) : (

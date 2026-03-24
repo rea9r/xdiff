@@ -39,6 +39,10 @@ func (a *App) CompareText(req desktopapi.CompareTextRequest) (*desktopapi.Compar
 	return a.api.CompareText(req)
 }
 
+func (a *App) LoadTextFile(req desktopapi.LoadTextFileRequest) (*desktopapi.LoadTextFileResponse, error) {
+	return a.api.LoadTextFile(req)
+}
+
 func (a *App) RunScenario(req desktopapi.RunScenarioRequest) (*desktopapi.ScenarioRunResponse, error) {
 	return a.api.RunScenario(req)
 }
@@ -78,6 +82,19 @@ func (a *App) PickScenarioFile() (string, error) {
 		{
 			DisplayName: "Scenario YAML (*.yaml;*.yml)",
 			Pattern:     "*.yaml;*.yml",
+		},
+		{
+			DisplayName: "All files (*.*)",
+			Pattern:     "*.*",
+		},
+	})
+}
+
+func (a *App) PickTextFile() (string, error) {
+	return a.pickFile("Select text file", []runtime.FileFilter{
+		{
+			DisplayName: "Text-like (*.txt;*.md;*.log;*.csv;*.tsv;*.yaml;*.yml;*.json;*.xml;*.html;*.css;*.js;*.ts;*.tsx;*.jsx;*.go;*.py;*.sh;*.sql)",
+			Pattern:     "*.txt;*.md;*.log;*.csv;*.tsv;*.yaml;*.yml;*.json;*.xml;*.html;*.css;*.js;*.ts;*.tsx;*.jsx;*.go;*.py;*.sh;*.sql",
 		},
 		{
 			DisplayName: "All files (*.*)",

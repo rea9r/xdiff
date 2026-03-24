@@ -18,6 +18,15 @@ export type CompareResponse = {
   paths?: string[]
 }
 
+export type LoadTextFileRequest = {
+  path: string
+}
+
+export type LoadTextFileResponse = {
+  path: string
+  content: string
+}
+
 export type ScenarioSummary = {
   total: number
   ok: number

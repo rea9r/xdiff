@@ -284,6 +284,16 @@ button {
   flex: 1;
 }
 
+.text-workspace-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.text-workspace-status {
+  margin-top: 8px;
+}
+
 .text-editors-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -299,14 +309,26 @@ button {
 
 .text-editor-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
 }
 
+.text-editor-title {
+  min-width: 0;
+}
+
 .text-editor-header .field-label {
   margin: 0;
+}
+
+.text-source-path {
+  margin-top: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .text-editor-action {
@@ -421,4 +443,10 @@ button {
 
 .text-inline-remove {
   background: rgba(207, 34, 46, 0.28);
+}
+
+@media (max-width: 920px) {
+  .text-editors-row {
+    grid-template-columns: 1fr;
+  }
 }

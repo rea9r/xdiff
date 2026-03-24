@@ -179,3 +179,42 @@ checks:
 		t.Fatalf("expected 1 result, got %d", len(res.Results))
 	}
 }
+
+func TestLoadTextFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sample.txt")
+	want := "hello\nworld\n"
+
+	if err := os.WriteFile(path, []byte(want), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	svc := NewService()
+	got, err := svc.LoadTextFile(LoadTextFileRequest{Path: path})
+	if err != nil {
+		t.Fatalf("LoadTextFile() error = %v", err)
+	}
+
+	if got.Path != path {
+		t.Fatalf("LoadTextFile() path = %q, want %q", got.Path, path)
+	}
+
+	if got.Content != want {
+		t.Fatalf("LoadTextFile() content = %q, want %q", got.Content, want)
+	}
+}
+
+func TestLoadTextFileRejectsNonUTF8(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "binary.bin")
+
+	if err := os.WriteFile(path, []byte{0xff, 0xfe, 0xfd}, 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	svc := NewService()
+	_, err := svc.LoadTextFile(LoadTextFileRequest{Path: path})
+	if err == nil {
+		t.Fatal("LoadTextFile() error = nil, want non-nil")
+	}
+}

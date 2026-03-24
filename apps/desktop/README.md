@@ -16,8 +16,8 @@ This app is an experimental desktop GUI for xdiff.
 - Show paths and breaking-only toggles
 - Output format and text style controls
 - Fail-on and ignore-path controls for JSON/spec
-- Paste-first text compare workspace with rich/raw diff views
-- Text compare supports dedicated `Paste old` / `Paste new` / `Copy raw output` actions
+- Paste-first text compare workspace with local file load and rich/raw diff views
+- Text compare supports dedicated `Load old...` / `Load new...` / `Paste old` / `Paste new` / `Copy raw output` actions, plus `Swap` / `Clear`
 
 Not included yet:
 
@@ -40,7 +40,7 @@ npm --prefix frontend install
 wails dev
 ```
 
-Use Browse... in file-based modes to select local files. Text mode is paste-first.
+Use Browse... in file-based modes to select local files. Text mode supports both paste-first input and dedicated `Load old...` / `Load new...` actions.
 
 ## Build frontend only
 
