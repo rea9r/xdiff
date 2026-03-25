@@ -140,6 +140,22 @@ function summarizeResponse(res: unknown): string {
   return parts.join(' ')
 }
 
+function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
+  return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
+}
+
+function summarizeTextResultForGUI(res: CompareResponse | null): string {
+  if (!res) {
+    return '(no result yet)'
+  }
+
+  if (res.error) {
+    return 'Execution error'
+  }
+
+  return res.diffFound ? 'Differences found' : 'No differences'
+}
+
 function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
   const results = res.results ?? []
   if (results.length === 0) return ''
@@ -205,22 +221,6 @@ function canOpenFolderEntry(entry: FolderCompareEntry): boolean {
     entry.leftKind === 'file' &&
     entry.rightKind === 'file'
   )
-}
-
-function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
-  return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
-}
-
-function summarizeTextResultForGUI(res: CompareResponse | null): string {
-  if (!res) {
-    return ''
-  }
-
-  if (res.error) {
-    return 'Execution error'
-  }
-
-  return res.diffFound ? 'Differences found' : 'No differences'
 }
 
 function ignorePathsToText(paths: string[]): string {
@@ -775,13 +775,10 @@ export function App() {
   const textSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
-  const [textClipboardStatus, setTextClipboardStatus] = useState('')
   const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(
     null,
   )
-  const [textWorkspaceStatus, setTextWorkspaceStatus] = useState('')
   const [textCopyBusy, setTextCopyBusy] = useState(false)
-  const [textCopyStatus, setTextCopyStatus] = useState('')
 
   const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
 
@@ -1197,9 +1194,6 @@ export function App() {
       setTextExpandedUnchangedSectionIds([])
       setTextSearchQuery('')
       setTextActiveSearchIndex(0)
-      setTextClipboardStatus('')
-      setTextCopyStatus('')
-      setTextWorkspaceStatus(`Opened ${entry.relativePath} from folder compare.`)
       setMode('text')
       setResult(res)
     } catch (error) {
@@ -1258,7 +1252,6 @@ export function App() {
   const runText = async () => {
     const fn = api.compareText
     if (!fn) throw new Error('Wails bridge not available (CompareText)')
-    setTextCopyStatus('')
     setTextExpandedUnchangedSectionIds([])
 
     const res: CompareResponse = await fn({
@@ -1276,7 +1269,6 @@ export function App() {
   const pasteTextFromClipboard = async (target: TextInputTarget) => {
     const readClipboard = getRuntimeClipboardRead()
     if (!readClipboard) {
-      setTextClipboardStatus('Clipboard runtime is not available.')
       notifications.show({
         title: 'Clipboard unavailable',
         message: 'Clipboard runtime is not available.',
@@ -1286,39 +1278,28 @@ export function App() {
     }
 
     setTextClipboardBusyTarget(target)
-    setTextClipboardStatus('')
-    setTextWorkspaceStatus('')
 
     try {
       const pasted = await readClipboard()
 
       if (!pasted) {
-        setTextClipboardStatus('Clipboard is empty.')
+        notifications.show({
+          title: 'Clipboard is empty',
+          message: 'Nothing to paste.',
+          color: 'yellow',
+        })
         return
       }
 
       if (target === 'old') {
         setTextOld(pasted)
         setTextOldSourcePath('')
-        setTextClipboardStatus('Pasted clipboard into Old text. Run again to refresh diff.')
-        notifications.show({
-          title: 'Pasted old text',
-          message: 'Clipboard content was pasted into Old text.',
-          color: 'green',
-        })
       } else {
         setTextNew(pasted)
         setTextNewSourcePath('')
-        setTextClipboardStatus('Pasted clipboard into New text. Run again to refresh diff.')
-        notifications.show({
-          title: 'Pasted new text',
-          message: 'Clipboard content was pasted into New text.',
-          color: 'green',
-        })
       }
     } catch (error) {
       const message = `Failed to read clipboard: ${formatUnknownError(error)}`
-      setTextClipboardStatus(message)
       notifications.show({
         title: 'Failed to paste from clipboard',
         message,
@@ -1334,7 +1315,6 @@ export function App() {
     const loader = api.loadTextFile
 
     if (!picker || !loader) {
-      setTextWorkspaceStatus('Text file loader is not available.')
       notifications.show({
         title: 'Text loader unavailable',
         message: 'Text file loader is not available.',
@@ -1344,8 +1324,6 @@ export function App() {
     }
 
     setTextFileBusyTarget(target)
-    setTextWorkspaceStatus('')
-    setTextClipboardStatus('')
 
     try {
       const selected = await picker()
@@ -1364,18 +1342,8 @@ export function App() {
         setTextNew(loaded.content)
         setTextNewSourcePath(loaded.path)
       }
-
-      setTextWorkspaceStatus(
-        `Loaded ${loaded.path} into ${target === 'old' ? 'Old text' : 'New text'}. Run again to refresh diff.`,
-      )
-      notifications.show({
-        title: target === 'old' ? 'Loaded old text' : 'Loaded new text',
-        message: loaded.path,
-        color: 'green',
-      })
     } catch (error) {
       const message = `Failed to load text file: ${formatUnknownError(error)}`
-      setTextWorkspaceStatus(message)
       notifications.show({
         title: 'Failed to load text file',
         message,
@@ -1391,28 +1359,22 @@ export function App() {
     setTextNew(textOld)
     setTextOldSourcePath(textNewSourcePath)
     setTextNewSourcePath(textOldSourcePath)
-    setTextWorkspaceStatus('Swapped sides. Run again to refresh diff.')
-    setTextClipboardStatus('')
   }
 
   const clearTextInput = (target: TextInputTarget) => {
     if (target === 'old') {
       setTextOld('')
       setTextOldSourcePath('')
-      setTextWorkspaceStatus('Cleared Old text. Run again to refresh diff.')
-    } else {
-      setTextNew('')
-      setTextNewSourcePath('')
-      setTextWorkspaceStatus('Cleared New text. Run again to refresh diff.')
+      return
     }
 
-    setTextClipboardStatus('')
+    setTextNew('')
+    setTextNewSourcePath('')
   }
 
   const copyTextResultRawOutput = async () => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
-      setTextCopyStatus('Clipboard runtime is not available.')
       notifications.show({
         title: 'Clipboard unavailable',
         message: 'Clipboard runtime is not available.',
@@ -1423,17 +1385,14 @@ export function App() {
 
     const raw = textResult ? renderResult(textResult) : ''
     if (!raw) {
-      setTextCopyStatus('No raw output to copy.')
       return
     }
 
     setTextCopyBusy(true)
-    setTextCopyStatus('')
 
     try {
       const ok = await writeClipboard(raw)
       if (!ok) {
-        setTextCopyStatus('Failed to copy raw output.')
         notifications.show({
           title: 'Copy failed',
           message: 'Failed to copy raw output.',
@@ -1442,7 +1401,6 @@ export function App() {
         return
       }
 
-      setTextCopyStatus('Copied raw output to clipboard.')
       notifications.show({
         title: 'Copied',
         message: 'Raw output copied to clipboard.',
@@ -1450,7 +1408,6 @@ export function App() {
       })
     } catch (error) {
       const message = `Failed to copy raw output: ${formatUnknownError(error)}`
-      setTextCopyStatus(message)
       notifications.show({
         title: 'Copy failed',
         message,
@@ -1785,6 +1742,7 @@ export function App() {
           if (shouldHideTextRichMetaRow(row)) {
             return null
           }
+
           const matchId = buildTextSearchRowIDForItem(idx)
           const searchClassName = getTextSearchClassName(matchId)
           return (
@@ -1924,8 +1882,7 @@ export function App() {
   const renderTextResultPanel = () => {
     const raw = textResult ? renderResult(textResult) : ''
     const hasTextResult = !!textResult
-    const showRich =
-      hasTextResult && textResultView === 'rich' && canRenderTextRich && !!textRichItems
+    const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
 
     return (
       <div className="text-result-shell">
@@ -2006,6 +1963,7 @@ export function App() {
                     variant="default"
                     size="input-sm"
                     aria-label="Previous match"
+                    className="text-search-action"
                     onClick={() => moveTextSearch(-1)}
                     disabled={textSearchMatches.length === 0}
                   >
@@ -2018,6 +1976,7 @@ export function App() {
                     variant="default"
                     size="input-sm"
                     aria-label="Next match"
+                    className="text-search-action"
                     onClick={() => moveTextSearch(1)}
                     disabled={textSearchMatches.length === 0}
                   >
@@ -2043,6 +2002,7 @@ export function App() {
               variant="default"
               size="input-sm"
               aria-label="Copy raw output"
+              className="text-result-action"
               onClick={() => void copyTextResultRawOutput()}
               disabled={textCopyBusy || !raw}
               loading={textCopyBusy}
@@ -2052,13 +2012,15 @@ export function App() {
           </Tooltip>
         </div>
 
-        {textCopyStatus ? <div className="muted text-copy-status">{textCopyStatus}</div> : null}
-
         <div className="text-result-body">
           {!hasTextResult ? (
             <pre className="result-output">(no result yet)</pre>
           ) : showRich && textRichItems ? (
-            textDiffLayout === 'split' ? renderTextSplitRows(textRichItems) : renderTextDiffRows(textRichItems)
+            textDiffLayout === 'split' ? (
+              renderTextSplitRows(textRichItems)
+            ) : (
+              renderTextDiffRows(textRichItems)
+            )
           ) : (
             <pre className="result-output">{raw}</pre>
           )}
@@ -2628,29 +2590,7 @@ export function App() {
         <div className="result-panel">
           {mode === 'text' ? (
             <div className="text-workspace">
-            <div className="text-workspace-header">
-              <h2>Text Compare</h2>
-              <Tooltip label="Swap old and new texts">
-                <ActionIcon
-                  variant="default"
-                  size="input-sm"
-                  aria-label="Swap sides"
-                  onClick={swapTextInputs}
-                  disabled={textEditorBusy}
-                >
-                  <IconSwitchHorizontal size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </div>
-
-            {textWorkspaceStatus ? (
-              <div className="muted text-workspace-status">{textWorkspaceStatus}</div>
-            ) : null}
-
-            {textClipboardStatus ? (
-              <div className="muted text-clipboard-status">{textClipboardStatus}</div>
-            ) : null}
-
+            <h2>Text Compare</h2>
             <div className="text-editors-row">
               <div className="text-editor-panel">
                 <div className="text-editor-header">
@@ -2668,6 +2608,7 @@ export function App() {
                         variant="default"
                         size="input-sm"
                         aria-label="Open file into Old text"
+                        className="text-editor-action"
                         onClick={() => void loadTextFromFile('old')}
                         disabled={textEditorBusy}
                         loading={textFileBusyTarget === 'old'}
@@ -2675,12 +2616,12 @@ export function App() {
                         <IconFolderOpen size={16} />
                       </ActionIcon>
                     </Tooltip>
-
                     <Tooltip label="Paste clipboard into Old text">
                       <ActionIcon
                         variant="default"
                         size="input-sm"
                         aria-label="Paste clipboard into Old text"
+                        className="text-editor-action"
                         onClick={() => void pasteTextFromClipboard('old')}
                         disabled={textEditorBusy}
                         loading={textClipboardBusyTarget === 'old'}
@@ -2688,16 +2629,28 @@ export function App() {
                         <IconClipboardText size={16} />
                       </ActionIcon>
                     </Tooltip>
-
                     <Tooltip label="Clear Old text">
                       <ActionIcon
                         variant="default"
                         size="input-sm"
                         aria-label="Clear Old text"
+                        className="text-editor-action"
                         onClick={() => clearTextInput('old')}
                         disabled={textEditorBusy || !textOld}
                       >
                         <IconBackspace size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Swap old and new texts">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Swap sides"
+                        className="text-editor-action"
+                        onClick={swapTextInputs}
+                        disabled={textEditorBusy}
+                      >
+                        <IconSwitchHorizontal size={16} />
                       </ActionIcon>
                     </Tooltip>
                   </div>
@@ -2727,6 +2680,7 @@ export function App() {
                         variant="default"
                         size="input-sm"
                         aria-label="Open file into New text"
+                        className="text-editor-action"
                         onClick={() => void loadTextFromFile('new')}
                         disabled={textEditorBusy}
                         loading={textFileBusyTarget === 'new'}
@@ -2734,12 +2688,12 @@ export function App() {
                         <IconFolderOpen size={16} />
                       </ActionIcon>
                     </Tooltip>
-
                     <Tooltip label="Paste clipboard into New text">
                       <ActionIcon
                         variant="default"
                         size="input-sm"
                         aria-label="Paste clipboard into New text"
+                        className="text-editor-action"
                         onClick={() => void pasteTextFromClipboard('new')}
                         disabled={textEditorBusy}
                         loading={textClipboardBusyTarget === 'new'}
@@ -2747,12 +2701,12 @@ export function App() {
                         <IconClipboardText size={16} />
                       </ActionIcon>
                     </Tooltip>
-
                     <Tooltip label="Clear New text">
                       <ActionIcon
                         variant="default"
                         size="input-sm"
                         aria-label="Clear New text"
+                        className="text-editor-action"
                         onClick={() => clearTextInput('new')}
                         disabled={textEditorBusy || !textNew}
                       >

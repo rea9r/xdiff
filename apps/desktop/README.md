@@ -25,7 +25,7 @@ This app is an experimental desktop GUI for xdiff.
 - Output format and text style controls
 - Fail-on and ignore-path controls for JSON/spec
 - Paste-first text compare workspace with local file load and rich/raw diff views
-- Text compare supports dedicated `Load old...` / `Load new...` / `Paste old` / `Paste new` / `Copy raw output` actions, plus `Swap` / `Clear`
+- Text compare uses compact icon actions per editor (`Open`, `Paste`, `Clear`, `Swap sides`) and a `Copy raw output` icon action in the result toolbar
 - Text rich diff supports `Unified` / `Split` view toggle
 - Text rich diff keeps omitted unchanged sections collapsed by default, with per-section and global expand/collapse controls
 - Text rich diff supports row search with next/prev navigation and auto-reveal of the active hidden unchanged section
@@ -52,7 +52,7 @@ npm --prefix frontend install
 wails dev
 ```
 
-Use Browse... in file-based modes to select local files. Text mode supports both paste-first input and dedicated `Load old...` / `Load new...` actions.
+Use Browse... in file-based modes to select local files. Text mode supports paste-first input and per-editor open/paste actions.
 Folder compare is desktop-only in this phase and does not add a new CLI command yet.
 
 ## Build frontend only

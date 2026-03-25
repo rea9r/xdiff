@@ -332,36 +332,16 @@ button {
 .text-workspace {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
   flex: 1;
 }
 
-.text-workspace-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--xdiff-toolbar-gap);
-}
-
-.text-workspace-header h2 {
-  margin: 0;
-}
-
-.text-workspace-toolbar {
-  display: flex;
-  gap: var(--xdiff-toolbar-gap);
-  flex-wrap: wrap;
-}
-
-.text-workspace-status {
-  margin-top: 8px;
-}
-
 .text-editors-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .text-editor-panel {
@@ -369,6 +349,7 @@ button {
   flex-direction: column;
   gap: 6px;
   min-height: 0;
+  min-width: 0;
 }
 
 .text-editor-header {
@@ -403,7 +384,7 @@ button {
 .text-editor-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--xdiff-toolbar-gap);
   flex-wrap: wrap;
 }
 
@@ -413,10 +394,6 @@ button {
   padding: 8px 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: pre;
-}
-
-.text-clipboard-status {
-  margin-top: 8px;
 }
 
 .text-result-shell {
@@ -484,10 +461,6 @@ button {
 .text-diff-layout-tabs button.active {
   border-color: var(--xdiff-search-hit-border);
   background: color-mix(in srgb, var(--xdiff-search-hit-border) 12%, transparent);
-}
-
-.text-copy-status {
-  margin: 0;
 }
 
 .text-result-body {
@@ -793,41 +766,6 @@ button {
   white-space: nowrap;
 }
 
-.mantine-AppShell-navbar {
-  position: relative;
-}
-
-.app-navbar-resizer {
-  position: absolute;
-  top: 0;
-  right: -4px;
-  width: 8px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 20;
-}
-
-.app-navbar-resizer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 3px;
-  width: 2px;
-  height: 100%;
-  background: var(--xdiff-viewer-border);
-  opacity: 0.55;
-}
-
-.app-navbar-resizer:hover::before {
-  opacity: 1;
-}
-
-@media (max-width: 920px) {
-  .text-editors-row {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 1200px) {
   .scenario-results-layout {
     grid-template-columns: 1fr;
@@ -839,11 +777,5 @@ button {
     display: grid;
     grid-template-columns: 1fr;
     align-items: stretch;
-  }
-}
-
-@media (max-width: 62em) {
-  .app-navbar-resizer {
-    display: none;
   }
 }
