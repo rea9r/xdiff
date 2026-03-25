@@ -26,8 +26,8 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        width: 360,
-        breakpoint: 'sm',
+        width: 320,
+        breakpoint: 'md',
         collapsed: { mobile: !mobileOpened },
       }}
       padding="md"
@@ -44,7 +44,7 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
             />
             <Text fw={700}>xdiff Desktop</Text>
             <Select
-              w={220}
+              w={200}
               data={MODE_OPTIONS}
               value={mode}
               onChange={(value) => {

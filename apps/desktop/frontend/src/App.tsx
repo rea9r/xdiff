@@ -1657,7 +1657,7 @@ export function App() {
           <span className="muted">{item.lines.length} unchanged lines</span>
           <button
             type="button"
-            className="text-omitted-action"
+            className="text-omitted-action button-secondary button-compact"
             onClick={() => toggleTextUnchangedSection(item.sectionId)}
           >
             {expanded ? 'Collapse unchanged' : 'Show hidden lines'}
@@ -1701,7 +1701,7 @@ export function App() {
             <span className="muted">{item.lines.length} unchanged lines</span>
             <button
               type="button"
-              className="text-omitted-action"
+              className="text-omitted-action button-secondary button-compact"
               onClick={() => toggleTextUnchangedSection(item.sectionId)}
             >
               {expanded ? 'Collapse unchanged' : 'Show hidden lines'}
@@ -1895,7 +1895,7 @@ export function App() {
             <div className="text-result-tabs">
               <button
                 type="button"
-                className={textResultView === 'rich' ? 'active' : ''}
+                className={`button-secondary button-compact ${textResultView === 'rich' ? 'active' : ''}`}
                 onClick={() => setTextResultView('rich')}
                 disabled={!canRenderTextRich}
               >
@@ -1903,7 +1903,7 @@ export function App() {
               </button>
               <button
                 type="button"
-                className={textResultView === 'raw' ? 'active' : ''}
+                className={`button-secondary button-compact ${textResultView === 'raw' ? 'active' : ''}`}
                 onClick={() => setTextResultView('raw')}
               >
                 Raw output
@@ -1913,7 +1913,7 @@ export function App() {
             <div className="text-diff-layout-tabs">
               <button
                 type="button"
-                className={textDiffLayout === 'split' ? 'active' : ''}
+                className={`button-secondary button-compact ${textDiffLayout === 'split' ? 'active' : ''}`}
                 onClick={() => setTextDiffLayout('split')}
                 disabled={!canRenderTextRich}
               >
@@ -1921,7 +1921,7 @@ export function App() {
               </button>
               <button
                 type="button"
-                className={textDiffLayout === 'unified' ? 'active' : ''}
+                className={`button-secondary button-compact ${textDiffLayout === 'unified' ? 'active' : ''}`}
                 onClick={() => setTextDiffLayout('unified')}
                 disabled={!canRenderTextRich}
               >
@@ -1960,7 +1960,7 @@ export function App() {
 
                 <button
                   type="button"
-                  className="text-search-action"
+                  className="text-search-action button-secondary button-compact"
                   onClick={() => moveTextSearch(-1)}
                   disabled={textSearchMatches.length === 0}
                 >
@@ -1969,7 +1969,7 @@ export function App() {
 
                 <button
                   type="button"
-                  className="text-search-action"
+                  className="text-search-action button-secondary button-compact"
                   onClick={() => moveTextSearch(1)}
                   disabled={textSearchMatches.length === 0}
                 >
@@ -1981,7 +1981,7 @@ export function App() {
             {showRich && omittedSectionIds.length > 0 ? (
               <button
                 type="button"
-                className="text-unchanged-toggle"
+                className="text-unchanged-toggle button-secondary button-compact"
                 onClick={toggleAllTextUnchangedSections}
               >
                 {allOmittedSectionsExpanded ? 'Collapse unchanged' : 'Expand unchanged'}
@@ -1991,7 +1991,7 @@ export function App() {
 
           <button
             type="button"
-            className="text-result-action"
+            className="text-result-action button-secondary button-compact"
             onClick={() => void copyTextResultRawOutput()}
             disabled={textCopyBusy || !raw}
           >
@@ -2103,7 +2103,7 @@ export function App() {
                               {openable ? (
                                 <button
                                   type="button"
-                                  className="folder-action-button"
+                                  className="folder-action-button button-secondary button-compact"
                                   onClick={() => void openFolderEntryDiff(entry)}
                                   disabled={folderOpenBusyPath === entry.relativePath}
                                 >
@@ -2147,7 +2147,11 @@ export function App() {
               <label className="field-label">Old path</label>
               <div className="path-row">
                 <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
-                <button type="button" onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
+                >
                   Browse...
                 </button>
               </div>
@@ -2157,7 +2161,11 @@ export function App() {
               <label className="field-label">New path</label>
               <div className="path-row">
                 <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
-                <button type="button" onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
+                >
                   Browse...
                 </button>
               </div>
@@ -2253,7 +2261,7 @@ export function App() {
               </label>
             </details>
 
-            <button onClick={onRun} disabled={loading}>
+            <button className="button-primary" onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run JSON compare'}
             </button>
           </section>
@@ -2269,7 +2277,11 @@ export function App() {
               <label className="field-label">Old spec path</label>
               <div className="path-row">
                 <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
-                <button type="button" onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
+                >
                   Browse...
                 </button>
               </div>
@@ -2279,7 +2291,11 @@ export function App() {
               <label className="field-label">New spec path</label>
               <div className="path-row">
                 <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
-                <button type="button" onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
+                >
                   Browse...
                 </button>
               </div>
@@ -2363,7 +2379,7 @@ export function App() {
               </label>
             </details>
 
-            <button onClick={onRun} disabled={loading}>
+            <button className="button-primary" onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run spec compare'}
             </button>
           </section>
@@ -2398,7 +2414,7 @@ export function App() {
               </div>
             </section>
 
-            <button onClick={onRun} disabled={loading}>
+            <button className="button-primary" onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run text compare'}
             </button>
           </section>
@@ -2413,7 +2429,11 @@ export function App() {
                   value={folderLeftRoot}
                   onChange={(e) => setFolderLeftRoot(e.target.value)}
                 />
-                <button type="button" onClick={() => void browseFolderRoot('left')}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => void browseFolderRoot('left')}
+                >
                   Browse...
                 </button>
               </div>
@@ -2426,7 +2446,11 @@ export function App() {
                   value={folderRightRoot}
                   onChange={(e) => setFolderRightRoot(e.target.value)}
                 />
-                <button type="button" onClick={() => void browseFolderRoot('right')}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => void browseFolderRoot('right')}
+                >
                   Browse...
                 </button>
               </div>
@@ -2459,7 +2483,11 @@ export function App() {
               />
             </div>
 
-            <button onClick={onRun} disabled={loading || !folderLeftRoot || !folderRightRoot}>
+            <button
+              className="button-primary"
+              onClick={onRun}
+              disabled={loading || !folderLeftRoot || !folderRightRoot}
+            >
               {loading ? 'Comparing...' : 'Compare folders'}
             </button>
           </section>
@@ -2471,7 +2499,11 @@ export function App() {
               <label className="field-label">Scenario path</label>
               <div className="path-row">
                 <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
-                <button type="button" onClick={() => browseAndSet(api.pickScenarioFile, setScenarioPath)}>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => browseAndSet(api.pickScenarioFile, setScenarioPath)}
+                >
                   Browse...
                 </button>
               </div>
@@ -2489,10 +2521,10 @@ export function App() {
             </div>
 
             <div className="button-row">
-              <button onClick={onLoadScenarioChecks} disabled={loading}>
+              <button className="button-secondary" onClick={onLoadScenarioChecks} disabled={loading}>
                 {loading ? 'Loading...' : 'Load checks'}
               </button>
-              <button onClick={onRun} disabled={loading}>
+              <button className="button-primary" onClick={onRun} disabled={loading}>
                 {loading ? 'Running...' : 'Run selected'}
               </button>
             </div>
@@ -2500,10 +2532,18 @@ export function App() {
             {scenarioListStatus ? <div className="muted">{scenarioListStatus}</div> : null}
 
             <div className="button-row">
-              <button onClick={selectAllScenarioChecks} disabled={scenarioChecks.length === 0}>
+              <button
+                className="button-secondary button-compact"
+                onClick={selectAllScenarioChecks}
+                disabled={scenarioChecks.length === 0}
+              >
                 Select all
               </button>
-              <button onClick={clearScenarioSelection} disabled={selectedChecks.length === 0}>
+              <button
+                className="button-secondary button-compact"
+                onClick={clearScenarioSelection}
+                disabled={selectedChecks.length === 0}
+              >
                 Clear
               </button>
             </div>
@@ -2541,6 +2581,7 @@ export function App() {
             <div className="text-workspace-toolbar">
               <button
                 type="button"
+                className="button-secondary"
                 onClick={() => void loadTextFromFile('old')}
                 disabled={textEditorBusy}
               >
@@ -2549,18 +2590,25 @@ export function App() {
 
               <button
                 type="button"
+                className="button-secondary"
                 onClick={() => void loadTextFromFile('new')}
                 disabled={textEditorBusy}
               >
                 {textFileBusyTarget === 'new' ? 'Loading new...' : 'Load new...'}
               </button>
 
-              <button type="button" onClick={swapTextInputs} disabled={textEditorBusy}>
+              <button
+                type="button"
+                className="button-secondary button-compact"
+                onClick={swapTextInputs}
+                disabled={textEditorBusy}
+              >
                 Swap
               </button>
 
               <button
                 type="button"
+                className="button-secondary button-compact"
                 onClick={clearTextInputs}
                 disabled={textEditorBusy || (!textOld && !textNew)}
               >
@@ -2589,7 +2637,7 @@ export function App() {
                   </div>
                   <button
                     type="button"
-                    className="text-editor-action"
+                    className="text-editor-action button-secondary button-compact"
                     onClick={() => void pasteTextFromClipboard('old')}
                     disabled={textEditorBusy}
                   >
@@ -2617,7 +2665,7 @@ export function App() {
                   </div>
                   <button
                     type="button"
-                    className="text-editor-action"
+                    className="text-editor-action button-secondary button-compact"
                     onClick={() => void pasteTextFromClipboard('new')}
                     disabled={textEditorBusy}
                   >
