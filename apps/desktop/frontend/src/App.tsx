@@ -197,6 +197,22 @@ function canOpenFolderEntry(entry: FolderCompareEntry): boolean {
   )
 }
 
+function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
+  return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
+}
+
+function summarizeTextResultForGUI(res: CompareResponse | null): string {
+  if (!res) {
+    return '(no result yet)'
+  }
+
+  if (res.error) {
+    return 'Execution error'
+  }
+
+  return res.diffFound ? 'Differences found' : 'No differences'
+}
+
 function ignorePathsToText(paths: string[]): string {
   return paths.join('\n')
 }
@@ -1365,16 +1381,21 @@ export function App() {
     setTextNew(textOld)
     setTextOldSourcePath(textNewSourcePath)
     setTextNewSourcePath(textOldSourcePath)
-    setTextWorkspaceStatus('Swapped Old/New text. Run again to refresh diff.')
+    setTextWorkspaceStatus('Swapped sides. Run again to refresh diff.')
     setTextClipboardStatus('')
   }
 
-  const clearTextInputs = () => {
-    setTextOld('')
-    setTextNew('')
-    setTextOldSourcePath('')
-    setTextNewSourcePath('')
-    setTextWorkspaceStatus('Cleared both text inputs.')
+  const clearTextInput = (target: TextInputTarget) => {
+    if (target === 'old') {
+      setTextOld('')
+      setTextOldSourcePath('')
+      setTextWorkspaceStatus('Cleared Old text. Run again to refresh diff.')
+    } else {
+      setTextNew('')
+      setTextNewSourcePath('')
+      setTextWorkspaceStatus('Cleared New text. Run again to refresh diff.')
+    }
+
     setTextClipboardStatus('')
   }
 
@@ -1751,6 +1772,9 @@ export function App() {
           }
 
           const row = item.row
+          if (shouldHideTextRichMetaRow(row)) {
+            return null
+          }
           const matchId = buildTextSearchRowIDForItem(idx)
           const searchClassName = getTextSearchClassName(matchId)
           return (
@@ -1787,6 +1811,11 @@ export function App() {
       const row = item.row
 
       if (row.kind === 'meta' || row.kind === 'hunk') {
+        if (shouldHideTextRichMetaRow(row)) {
+          index++
+          continue
+        }
+
         splitNodes.push(
           <div key={`split-banner-${index}`} className={`split-diff-banner ${row.kind}`}>
             <pre className="split-diff-banner-content">{row.content}</pre>
@@ -1888,7 +1917,7 @@ export function App() {
 
     return (
       <div className="text-result-shell">
-        <div className="result-summary">{summaryLine || '(no result yet)'}</div>
+        <div className="result-summary">{summarizeTextResultForGUI(textResult)}</div>
 
         <div className="text-result-toolbar">
           <div className="text-result-controls">
@@ -2581,38 +2610,11 @@ export function App() {
             <div className="text-workspace-toolbar">
               <button
                 type="button"
-                className="button-secondary"
-                onClick={() => void loadTextFromFile('old')}
-                disabled={textEditorBusy}
-              >
-                {textFileBusyTarget === 'old' ? 'Loading old...' : 'Load old...'}
-              </button>
-
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={() => void loadTextFromFile('new')}
-                disabled={textEditorBusy}
-              >
-                {textFileBusyTarget === 'new' ? 'Loading new...' : 'Load new...'}
-              </button>
-
-              <button
-                type="button"
                 className="button-secondary button-compact"
                 onClick={swapTextInputs}
                 disabled={textEditorBusy}
               >
-                Swap
-              </button>
-
-              <button
-                type="button"
-                className="button-secondary button-compact"
-                onClick={clearTextInputs}
-                disabled={textEditorBusy || (!textOld && !textNew)}
-              >
-                Clear
+                Swap sides
               </button>
             </div>
 
@@ -2635,14 +2637,33 @@ export function App() {
                       </div>
                     ) : null}
                   </div>
-                  <button
-                    type="button"
-                    className="text-editor-action button-secondary button-compact"
-                    onClick={() => void pasteTextFromClipboard('old')}
-                    disabled={textEditorBusy}
-                  >
-                    {textClipboardBusyTarget === 'old' ? 'Pasting...' : 'Paste old'}
-                  </button>
+                  <div className="text-editor-actions">
+                    <button
+                      type="button"
+                      className="text-editor-action button-secondary button-compact"
+                      onClick={() => void loadTextFromFile('old')}
+                      disabled={textEditorBusy}
+                      title="Load file into Old text"
+                    >
+                      {textFileBusyTarget === 'old' ? 'Opening...' : 'Open...'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-editor-action button-secondary button-compact"
+                      onClick={() => void pasteTextFromClipboard('old')}
+                      disabled={textEditorBusy}
+                    >
+                      {textClipboardBusyTarget === 'old' ? 'Pasting...' : 'Paste'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-editor-action button-secondary button-compact"
+                      onClick={() => clearTextInput('old')}
+                      disabled={textEditorBusy || !textOld}
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   className="text-editor"
@@ -2663,14 +2684,33 @@ export function App() {
                       </div>
                     ) : null}
                   </div>
-                  <button
-                    type="button"
-                    className="text-editor-action button-secondary button-compact"
-                    onClick={() => void pasteTextFromClipboard('new')}
-                    disabled={textEditorBusy}
-                  >
-                    {textClipboardBusyTarget === 'new' ? 'Pasting...' : 'Paste new'}
-                  </button>
+                  <div className="text-editor-actions">
+                    <button
+                      type="button"
+                      className="text-editor-action button-secondary button-compact"
+                      onClick={() => void loadTextFromFile('new')}
+                      disabled={textEditorBusy}
+                      title="Load file into New text"
+                    >
+                      {textFileBusyTarget === 'new' ? 'Opening...' : 'Open...'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-editor-action button-secondary button-compact"
+                      onClick={() => void pasteTextFromClipboard('new')}
+                      disabled={textEditorBusy}
+                    >
+                      {textClipboardBusyTarget === 'new' ? 'Pasting...' : 'Paste'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-editor-action button-secondary button-compact"
+                      onClick={() => clearTextInput('new')}
+                      disabled={textEditorBusy || !textNew}
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   className="text-editor"

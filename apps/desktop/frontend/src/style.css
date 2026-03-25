@@ -389,6 +389,13 @@ button {
   flex: 0 0 auto;
 }
 
+.text-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--xdiff-toolbar-gap);
+  flex-wrap: wrap;
+}
+
 .text-editor {
   min-height: 180px;
   resize: vertical;
