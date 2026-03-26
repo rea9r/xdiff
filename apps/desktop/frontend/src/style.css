@@ -23,6 +23,8 @@
   --xdiff-header-control-radius: 8px;
   --xdiff-header-gap: 4px;
   --xdiff-micro-action-size: 26px;
+  --xdiff-mono-font-size: 13px;
+  --xdiff-mono-line-height: 1.45;
 }
 
 [data-mantine-color-scheme='dark'] {
@@ -260,6 +262,9 @@ button {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .scenario-result-shell {
@@ -431,11 +436,23 @@ button {
 }
 
 .text-source-path {
-  margin-top: 4px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.text-source-path-slot {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.text-source-path-empty {
+  visibility: hidden;
 }
 
 .text-editor-action {
@@ -462,6 +479,8 @@ button {
   resize: vertical;
   padding: 8px 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
   white-space: pre;
 }
 
@@ -626,6 +645,8 @@ button {
   padding: 2px 7px;
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .split-omitted-block {
@@ -684,6 +705,8 @@ button {
   padding: 2px 7px;
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .text-omitted-block {

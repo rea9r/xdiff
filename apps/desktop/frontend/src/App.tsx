@@ -2564,11 +2564,15 @@ export function App() {
               <div className="text-editor-header">
                 <div className="text-editor-title">
                   <label className="field-label">Old text</label>
-                  {textOldSourcePath ? (
-                    <div className="muted text-source-path" title={textOldSourcePath}>
-                      {textOldSourcePath}
-                    </div>
-                  ) : null}
+                  <div className="text-source-path-slot">
+                    {textOldSourcePath ? (
+                      <div className="muted text-source-path" title={textOldSourcePath}>
+                        {textOldSourcePath}
+                      </div>
+                    ) : (
+                      <div className="text-source-path text-source-path-empty" aria-hidden="true" />
+                    )}
+                  </div>
                 </div>
                 <div className="text-editor-actions">
                   <Tooltip label="Open file into Old text">
@@ -2636,11 +2640,15 @@ export function App() {
               <div className="text-editor-header">
                 <div className="text-editor-title">
                   <label className="field-label">New text</label>
-                  {textNewSourcePath ? (
-                    <div className="muted text-source-path" title={textNewSourcePath}>
-                      {textNewSourcePath}
-                    </div>
-                  ) : null}
+                  <div className="text-source-path-slot">
+                    {textNewSourcePath ? (
+                      <div className="muted text-source-path" title={textNewSourcePath}>
+                        {textNewSourcePath}
+                      </div>
+                    ) : (
+                      <div className="text-source-path text-source-path-empty" aria-hidden="true" />
+                    )}
+                  </div>
                 </div>
                 <div className="text-editor-actions">
                   <Tooltip label="Open file into New text">
