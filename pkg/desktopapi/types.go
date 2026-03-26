@@ -97,6 +97,28 @@ type CompareResponse struct {
 	Paths     []string `json:"paths,omitempty"`
 }
 
+type JSONRichDiffItem struct {
+	Type     string `json:"type"` // added | removed | changed | type_changed
+	Path     string `json:"path"`
+	OldValue any    `json:"oldValue,omitempty"`
+	NewValue any    `json:"newValue,omitempty"`
+	Breaking bool   `json:"breaking"`
+}
+
+type JSONRichSummary struct {
+	Added       int `json:"added"`
+	Removed     int `json:"removed"`
+	Changed     int `json:"changed"`
+	TypeChanged int `json:"typeChanged"`
+	Breaking    int `json:"breaking"`
+}
+
+type CompareJSONRichResponse struct {
+	Result  CompareResponse    `json:"result"`
+	Summary JSONRichSummary    `json:"summary"`
+	Diffs   []JSONRichDiffItem `json:"diffs"`
+}
+
 type ScenarioSummary struct {
 	Total    int `json:"total"`
 	OK       int `json:"ok"`

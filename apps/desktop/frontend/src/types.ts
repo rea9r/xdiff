@@ -18,6 +18,28 @@ export type CompareResponse = {
   paths?: string[]
 }
 
+export type JSONRichDiffItem = {
+  type: 'added' | 'removed' | 'changed' | 'type_changed'
+  path: string
+  oldValue?: unknown
+  newValue?: unknown
+  breaking: boolean
+}
+
+export type JSONRichSummary = {
+  added: number
+  removed: number
+  changed: number
+  typeChanged: number
+  breaking: number
+}
+
+export type CompareJSONRichResponse = {
+  result: CompareResponse
+  summary: JSONRichSummary
+  diffs: JSONRichDiffItem[]
+}
+
 export type LoadTextFileRequest = {
   path: string
 }

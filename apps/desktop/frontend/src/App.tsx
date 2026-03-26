@@ -16,8 +16,10 @@ import type {
   CompareCommon,
   CompareFoldersRequest,
   CompareFoldersResponse,
+  CompareJSONRichResponse,
   CompareResponse,
   FolderCompareEntry,
+  JSONRichDiffItem,
   LoadTextFileRequest,
   LoadTextFileResponse,
   Mode,
@@ -68,6 +70,7 @@ const defaultTextCommon: CompareCommon = {
 }
 
 type TextResultView = 'rich' | 'raw'
+type JSONResultView = 'rich' | 'raw'
 type TextDiffLayout = 'split' | 'unified'
 type TextInputTarget = 'old' | 'new'
 type WailsRuntimeClipboard = {
@@ -210,6 +213,22 @@ function renderMenuCheck(active: boolean) {
   ) : (
     <span className="menu-check-slot" aria-hidden="true" />
   )
+}
+
+function stringifyJSONValue(value: unknown): string {
+  if (value === null) return 'null'
+  if (value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+function summarizeJSONSearchText(item: JSONRichDiffItem): string {
+  return `${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
 }
 
 function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
@@ -799,6 +818,10 @@ export function App() {
   const [jsonNewPath, setJSONNewPath] = useState('')
   const [ignoreOrder, setIgnoreOrder] = useState(false)
   const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
+  const [jsonResultView, setJSONResultView] = useState<JSONResultView>('rich')
+  const [jsonRichResult, setJSONRichResult] = useState<CompareJSONRichResponse | null>(null)
+  const [jsonSearchQuery, setJSONSearchQuery] = useState('')
+  const [jsonActiveSearchIndex, setJSONActiveSearchIndex] = useState(0)
   const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultJSONCommon.ignorePaths),
   )
@@ -909,6 +932,26 @@ export function App() {
     !textResult.error &&
     !!textRichRows
 
+  const jsonResult = jsonRichResult?.result ?? null
+  const jsonDiffRows = jsonRichResult?.diffs ?? []
+  const canRenderJSONRich = !!jsonRichResult && !jsonRichResult.result.error
+  const normalizedJSONSearchQuery = useMemo(
+    () => normalizeSearchQuery(jsonSearchQuery),
+    [jsonSearchQuery],
+  )
+  const jsonSearchMatches = useMemo(() => {
+    if (!normalizedJSONSearchQuery) {
+      return []
+    }
+
+    return jsonDiffRows
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) =>
+        summarizeJSONSearchText(item).toLowerCase().includes(normalizedJSONSearchQuery),
+      )
+      .map(({ index }) => index)
+  }, [jsonDiffRows, normalizedJSONSearchQuery])
+
   const jsonPatchBlockedByFilters =
     ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
 
@@ -941,8 +984,22 @@ export function App() {
   }, [canRenderTextRich, textResult, textResultView])
 
   useEffect(() => {
+    if (!jsonRichResult) {
+      return
+    }
+
+    if (jsonResultView === 'rich' && !canRenderJSONRich) {
+      setJSONResultView('raw')
+    }
+  }, [canRenderJSONRich, jsonRichResult, jsonResultView])
+
+  useEffect(() => {
     setTextActiveSearchIndex(0)
   }, [normalizedTextSearchQuery, textResult?.output])
+
+  useEffect(() => {
+    setJSONActiveSearchIndex(0)
+  }, [normalizedJSONSearchQuery, jsonRichResult?.result.output])
 
   useEffect(() => {
     if (textSearchMatches.length === 0) {
@@ -956,6 +1013,19 @@ export function App() {
       setTextActiveSearchIndex(0)
     }
   }, [textSearchMatches.length, textActiveSearchIndex])
+
+  useEffect(() => {
+    if (jsonSearchMatches.length === 0) {
+      if (jsonActiveSearchIndex !== 0) {
+        setJSONActiveSearchIndex(0)
+      }
+      return
+    }
+
+    if (jsonActiveSearchIndex >= jsonSearchMatches.length) {
+      setJSONActiveSearchIndex(0)
+    }
+  }, [jsonSearchMatches.length, jsonActiveSearchIndex])
 
   useEffect(() => {
     if (textResultView !== 'rich' || !canRenderTextRich || !activeTextSearchMatch) {
@@ -983,6 +1053,7 @@ export function App() {
   const api = useMemo(
     () => ({
       compareJSON: (window as any).go?.main?.App?.CompareJSONFiles,
+      compareJSONRich: (window as any).go?.main?.App?.CompareJSONRich,
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
       compareText: (window as any).go?.main?.App?.CompareText,
       compareFolders: (window as any).go?.main?.App?.CompareFolders,
@@ -1173,6 +1244,7 @@ export function App() {
     try {
       if (entry.compareModeHint === 'json') {
         const fn = api.compareJSON
+        const richFn = api.compareJSONRich
         if (!fn) {
           throw new Error('Wails bridge not available (CompareJSONFiles)')
         }
@@ -1189,12 +1261,41 @@ export function App() {
         const oldPath = entry.leftPath
         const newPath = entry.rightPath
 
-        const res: CompareResponse = await fn({
-          oldPath,
-          newPath,
-          common: safeJSONCommon,
-          ignoreOrder,
-        })
+        let res: CompareResponse
+        if (richFn) {
+          const richRes: CompareJSONRichResponse = await richFn({
+            oldPath,
+            newPath,
+            common: safeJSONCommon,
+            ignoreOrder,
+          })
+          setJSONRichResult(richRes)
+          setJSONSearchQuery('')
+          setJSONActiveSearchIndex(0)
+          setJSONResultView('rich')
+          res = richRes.result
+        } else {
+          res = await fn({
+            oldPath,
+            newPath,
+            common: safeJSONCommon,
+            ignoreOrder,
+          })
+          setJSONRichResult({
+            result: res,
+            summary: {
+              added: 0,
+              removed: 0,
+              changed: 0,
+              typeChanged: 0,
+              breaking: 0,
+            },
+            diffs: [],
+          })
+          setJSONSearchQuery('')
+          setJSONActiveSearchIndex(0)
+          setJSONResultView('raw')
+        }
 
         setJSONOldPath(oldPath)
         setJSONNewPath(newPath)
@@ -1279,6 +1380,7 @@ export function App() {
 
   const runJSON = async () => {
     const fn = api.compareJSON
+    const richFn = api.compareJSONRich
     if (!fn) throw new Error('Wails bridge not available (CompareJSONFiles)')
 
     const safeJSONCommon = {
@@ -1290,12 +1392,41 @@ export function App() {
           : jsonCommon.textStyle,
     }
 
+    if (richFn) {
+      const richRes: CompareJSONRichResponse = await richFn({
+        oldPath: jsonOldPath,
+        newPath: jsonNewPath,
+        common: safeJSONCommon,
+        ignoreOrder,
+      })
+      setJSONRichResult(richRes)
+      setJSONResultView('rich')
+      setJSONSearchQuery('')
+      setJSONActiveSearchIndex(0)
+      setResult(richRes.result)
+      return
+    }
+
     const res: CompareResponse = await fn({
       oldPath: jsonOldPath,
       newPath: jsonNewPath,
       common: safeJSONCommon,
       ignoreOrder,
     })
+    setJSONRichResult({
+      result: res,
+      summary: {
+        added: 0,
+        removed: 0,
+        changed: 0,
+        typeChanged: 0,
+        breaking: 0,
+      },
+      diffs: [],
+    })
+    setJSONResultView('raw')
+    setJSONSearchQuery('')
+    setJSONActiveSearchIndex(0)
     setResult(res)
   }
 
@@ -2180,6 +2311,250 @@ export function App() {
     )
   }
 
+  const moveJSONSearch = (direction: 1 | -1) => {
+    if (!canRenderJSONRich || jsonSearchMatches.length === 0) {
+      return
+    }
+
+    if (jsonResultView !== 'rich') {
+      setJSONResultView('rich')
+    }
+
+    setJSONActiveSearchIndex((prev) =>
+      direction === 1
+        ? (prev + 1) % jsonSearchMatches.length
+        : (prev - 1 + jsonSearchMatches.length) % jsonSearchMatches.length,
+    )
+  }
+
+  const renderJSONValueBlock = (value: unknown) => {
+    if (value === undefined) {
+      return <span className="muted">—</span>
+    }
+
+    if (value === null) {
+      return <code>null</code>
+    }
+
+    if (typeof value === 'string') {
+      return <code>{value}</code>
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return <code>{String(value)}</code>
+    }
+
+    return <pre className="json-value-block">{stringifyJSONValue(value)}</pre>
+  }
+
+  const renderJSONTypeLabel = (type: JSONRichDiffItem['type']) => {
+    if (type === 'type_changed') {
+      return 'type changed'
+    }
+    return type
+  }
+
+  const renderJSONResultPanel = () => {
+    const raw = jsonResult ? renderResult(jsonResult) : ''
+    const showRich = jsonResultView === 'rich' && canRenderJSONRich
+    const canSearchRich = showRich
+    const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
+    const hasJSONResult = !!jsonResult
+    const summary = jsonRichResult?.summary
+    const hasDiffStats =
+      !!summary &&
+      (summary.added > 0 ||
+        summary.removed > 0 ||
+        summary.changed > 0 ||
+        summary.typeChanged > 0)
+
+    return (
+      <div className="json-result-shell">
+        <div className="json-result-toolbar">
+          <div className="json-result-primary-controls">
+            <input
+              type="text"
+              className="text-search-input"
+              placeholder="Search paths or values"
+              value={jsonSearchQuery}
+              disabled={!canSearchRich}
+              onChange={(e) => setJSONSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  moveJSONSearch(e.shiftKey ? -1 : 1)
+                  return
+                }
+
+                if (e.key === 'Escape') {
+                  setJSONSearchQuery('')
+                }
+              }}
+            />
+
+            {normalizedJSONSearchQuery ? (
+              <span className="muted text-search-status">
+                {jsonSearchMatches.length > 0
+                  ? `${jsonActiveSearchIndex + 1} / ${jsonSearchMatches.length}`
+                  : '0 matches'}
+              </span>
+            ) : null}
+
+            <Tooltip label="Previous match">
+              <ActionIcon
+                variant="default"
+                size={28}
+                aria-label="Previous match"
+                className="text-search-action"
+                onClick={() => moveJSONSearch(-1)}
+                disabled={!canSearchRich || jsonSearchMatches.length === 0}
+              >
+                <IconChevronUp size={15} />
+              </ActionIcon>
+            </Tooltip>
+
+            <Tooltip label="Next match">
+              <ActionIcon
+                variant="default"
+                size={28}
+                aria-label="Next match"
+                className="text-search-action"
+                onClick={() => moveJSONSearch(1)}
+                disabled={!canSearchRich || jsonSearchMatches.length === 0}
+              >
+                <IconChevronDown size={15} />
+              </ActionIcon>
+            </Tooltip>
+
+            {hasJSONResult ? (
+              <div className="text-result-summary-inline">
+                {jsonResult?.error ? (
+                  <span className="text-diff-stat error">Execution error</span>
+                ) : hasDiffStats && summary ? (
+                  <>
+                    {summary.added > 0 ? (
+                      <span className="text-diff-stat added">+{summary.added}</span>
+                    ) : null}
+                    {summary.removed > 0 ? (
+                      <span className="text-diff-stat removed">-{summary.removed}</span>
+                    ) : null}
+                    {summary.changed > 0 ? (
+                      <span className="text-diff-stat neutral">~{summary.changed}</span>
+                    ) : null}
+                    {summary.typeChanged > 0 ? (
+                      <span className="text-diff-stat neutral">
+                        type {summary.typeChanged}
+                      </span>
+                    ) : null}
+                    {summary.breaking > 0 ? (
+                      <span className="text-diff-stat error">breaking {summary.breaking}</span>
+                    ) : null}
+                  </>
+                ) : jsonResult?.diffFound ? null : (
+                  <span className="text-diff-stat neutral">No differences</span>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="json-result-secondary-controls">
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <Tooltip label="View settings">
+                  <ActionIcon
+                    variant="default"
+                    size={28}
+                    aria-label="View settings"
+                    className="text-result-action"
+                  >
+                    <IconAdjustmentsHorizontal size={15} />
+                  </ActionIcon>
+                </Tooltip>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>Display</Menu.Label>
+                <Menu.Item
+                  leftSection={renderMenuCheck(jsonResultView === 'rich')}
+                  onClick={() => setJSONResultView('rich')}
+                  disabled={!canRenderJSONRich}
+                >
+                  Rich diff
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={renderMenuCheck(jsonResultView === 'raw')}
+                  onClick={() => setJSONResultView('raw')}
+                >
+                  Raw output
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </div>
+        </div>
+
+        <div className="text-result-body">
+          {!hasJSONResult ? (
+            <pre className="result-output">(no result yet)</pre>
+          ) : showRich ? (
+            <div className="json-diff-table-wrap">
+              <table className="json-diff-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Path</th>
+                    <th>Old</th>
+                    <th>New</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jsonDiffRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4}>
+                        <div className="muted">No differences.</div>
+                      </td>
+                    </tr>
+                  ) : (
+                    jsonDiffRows.map((diff, index) => {
+                      const searchHit = jsonSearchMatches.includes(index)
+                      const activeHit = activeJSONMatch === index
+                      return (
+                        <tr
+                          key={`${diff.type}-${diff.path}-${index}`}
+                          className={[
+                            'json-diff-row',
+                            diff.type,
+                            searchHit ? 'search-hit' : '',
+                            activeHit ? 'active-search-hit' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        >
+                          <td>
+                            <div className="json-type-cell">
+                              <span>{renderJSONTypeLabel(diff.type)}</span>
+                              {diff.breaking ? (
+                                <span className="text-diff-stat error">breaking</span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="json-path-cell">{diff.path}</td>
+                          <td>{renderJSONValueBlock(diff.oldValue)}</td>
+                          <td>{renderJSONValueBlock(diff.newValue)}</td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <pre className="result-output">{raw}</pre>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const renderFolderResultPanel = () => {
     const res = folderResult
 
@@ -2879,8 +3254,7 @@ export function App() {
           </div>
         </SectionCard>
         <SectionCard title="Result">
-          {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
-          <pre className="result-output">{output || '(no output yet)'}</pre>
+          {renderJSONResultPanel()}
         </SectionCard>
       </div>
     ) : mode === 'spec' ? (

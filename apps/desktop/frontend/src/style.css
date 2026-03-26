@@ -654,6 +654,15 @@ button {
   flex: 1;
 }
 
+.json-result-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .text-result-primary-controls {
   display: flex;
   align-items: center;
@@ -667,6 +676,18 @@ button {
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
+}
+
+.json-result-primary-controls,
+.json-result-secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.json-result-primary-controls {
+  min-width: 0;
 }
 
 .text-result-summary-inline {
@@ -735,6 +756,14 @@ button {
   flex-wrap: wrap;
 }
 
+.json-result-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .text-result-action {
   flex: 0 0 auto;
 }
@@ -750,6 +779,79 @@ button {
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: 8px;
   background: var(--xdiff-viewer-code-bg);
+}
+
+.json-diff-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: 8px;
+  background: var(--xdiff-viewer-surface);
+}
+
+.json-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.json-diff-table th,
+.json-diff-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--xdiff-viewer-border);
+  vertical-align: top;
+}
+
+.json-diff-table th {
+  position: sticky;
+  top: 0;
+  background: var(--xdiff-viewer-surface-subtle);
+  z-index: 1;
+  text-align: left;
+}
+
+.json-diff-row.added {
+  background: var(--xdiff-diff-add-bg);
+}
+
+.json-diff-row.removed {
+  background: var(--xdiff-diff-remove-bg);
+}
+
+.json-diff-row.changed {
+  background: var(--xdiff-diff-change-bg);
+}
+
+.json-diff-row.type_changed {
+  background: var(--xdiff-diff-breaking-bg);
+}
+
+.json-diff-row.search-hit {
+  box-shadow: inset 0 0 0 1px var(--xdiff-search-hit-border);
+}
+
+.json-diff-row.active-search-hit {
+  box-shadow: inset 0 0 0 2px var(--xdiff-search-hit-active-border);
+}
+
+.json-type-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.json-path-cell {
+  font-family: var(--mantine-font-family-monospace);
+  white-space: nowrap;
+}
+
+.json-value-block {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--xdiff-viewer-code-bg);
+  overflow: auto;
 }
 
 .text-diff-grid {

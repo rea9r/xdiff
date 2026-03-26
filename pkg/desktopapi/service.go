@@ -2,6 +2,7 @@ package desktopapi
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -56,6 +57,82 @@ func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, er
 		Output:    res.Output,
 		Error:     errString(res.Err),
 	}, nil
+}
+
+type jsonMachineDiffItem struct {
+	Type     string `json:"type"`
+	Path     string `json:"path"`
+	OldValue any    `json:"old_value,omitempty"`
+	NewValue any    `json:"new_value,omitempty"`
+}
+
+type jsonMachineResult struct {
+	Diffs []jsonMachineDiffItem `json:"diffs"`
+}
+
+func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichResponse, error) {
+	rawResult, err := s.CompareJSONFiles(req)
+	if err != nil {
+		return nil, err
+	}
+
+	structuredReq := req
+	structuredReq.Common.OutputFormat = output.JSONFormat
+	structuredReq.Common.ShowPaths = false
+	structuredReq.Common.NoColor = true
+
+	structuredResult, err := s.CompareJSONFiles(structuredReq)
+	if err != nil {
+		return nil, err
+	}
+
+	diffs := make([]JSONRichDiffItem, 0)
+	if strings.TrimSpace(structuredResult.Output) != "" {
+		var parsed jsonMachineResult
+		if err := json.Unmarshal([]byte(structuredResult.Output), &parsed); err != nil {
+			return nil, fmt.Errorf("failed to parse structured JSON diff output: %w", err)
+		}
+
+		diffs = make([]JSONRichDiffItem, 0, len(parsed.Diffs))
+		for _, item := range parsed.Diffs {
+			breaking := item.Type == "removed" || item.Type == "type_changed"
+			diffs = append(diffs, JSONRichDiffItem{
+				Type:     item.Type,
+				Path:     item.Path,
+				OldValue: item.OldValue,
+				NewValue: item.NewValue,
+				Breaking: breaking,
+			})
+		}
+	}
+
+	return &CompareJSONRichResponse{
+		Result:  *rawResult,
+		Summary: summarizeJSONRichDiffs(diffs),
+		Diffs:   diffs,
+	}, nil
+}
+
+func summarizeJSONRichDiffs(diffs []JSONRichDiffItem) JSONRichSummary {
+	summary := JSONRichSummary{}
+	for _, diff := range diffs {
+		switch diff.Type {
+		case "added":
+			summary.Added++
+		case "removed":
+			summary.Removed++
+		case "changed":
+			summary.Changed++
+		case "type_changed":
+			summary.TypeChanged++
+		}
+
+		if diff.Breaking {
+			summary.Breaking++
+		}
+	}
+
+	return summary
 }
 
 func (s *Service) CompareSpecFiles(req CompareSpecRequest) (*CompareResponse, error) {

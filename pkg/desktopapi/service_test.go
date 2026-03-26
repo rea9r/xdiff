@@ -52,6 +52,171 @@ func TestCompareJSONFiles(t *testing.T) {
 	}
 }
 
+func TestCompareJSONRich_Basic(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.json")
+	newPath := filepath.Join(tmp, "new.json")
+
+	writeFile(t, oldPath, `{"name":"Taro","age":"20","email":"old@example.com"}`)
+	writeFile(t, newPath, `{"name":"Hanako","age":20,"phone":"090-xxxx-xxxx"}`)
+
+	svc := NewService()
+	rawRes, err := svc.CompareJSONFiles(CompareJSONRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONFiles returned error: %v", err)
+	}
+
+	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONRich returned error: %v", err)
+	}
+	if richRes == nil {
+		t.Fatal("expected response")
+	}
+	if richRes.Result.ExitCode != rawRes.ExitCode ||
+		richRes.Result.DiffFound != rawRes.DiffFound ||
+		richRes.Result.Output != rawRes.Output ||
+		richRes.Result.Error != rawRes.Error {
+		t.Fatalf("raw compare result mismatch: got %+v, want %+v", richRes.Result, *rawRes)
+	}
+	if len(richRes.Diffs) == 0 {
+		t.Fatal("expected rich diffs")
+	}
+
+	seenPath := map[string]bool{}
+	seenType := map[string]bool{}
+	for _, item := range richRes.Diffs {
+		seenPath[item.Path] = true
+		seenType[item.Type] = true
+		if (item.Type == "removed" || item.Type == "type_changed") && !item.Breaking {
+			t.Fatalf("expected breaking=true for type=%s", item.Type)
+		}
+	}
+
+	if !seenPath["name"] || !seenPath["age"] || !seenPath["email"] || !seenPath["phone"] {
+		t.Fatalf("expected canonical paths in rich diffs, got: %+v", richRes.Diffs)
+	}
+	if !seenType["changed"] || !seenType["type_changed"] || !seenType["removed"] || !seenType["added"] {
+		t.Fatalf("expected all diff types in rich diffs, got: %+v", richRes.Diffs)
+	}
+	if richRes.Summary.Breaking < 2 {
+		t.Fatalf("expected at least 2 breaking diffs, got summary: %+v", richRes.Summary)
+	}
+}
+
+func TestCompareJSONRich_OnlyBreaking(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.json")
+	newPath := filepath.Join(tmp, "new.json")
+
+	writeFile(t, oldPath, `{"name":"Taro","age":"20","email":"old@example.com"}`)
+	writeFile(t, newPath, `{"name":"Hanako","age":20}`)
+
+	svc := NewService()
+	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+			OnlyBreaking: true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONRich returned error: %v", err)
+	}
+
+	for _, item := range richRes.Diffs {
+		if item.Type != "removed" && item.Type != "type_changed" {
+			t.Fatalf("expected only breaking types, got %s", item.Type)
+		}
+		if !item.Breaking {
+			t.Fatalf("expected breaking=true for %s", item.Type)
+		}
+	}
+}
+
+func TestCompareJSONRich_IgnorePaths(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.json")
+	newPath := filepath.Join(tmp, "new.json")
+
+	writeFile(t, oldPath, `{"name":"Taro","age":20,"email":"old@example.com"}`)
+	writeFile(t, newPath, `{"name":"Hanako","age":20,"email":"new@example.com"}`)
+
+	svc := NewService()
+	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+			IgnorePaths:  []string{"name"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONRich returned error: %v", err)
+	}
+
+	for _, item := range richRes.Diffs {
+		if item.Path == "name" {
+			t.Fatalf("expected ignorePaths to suppress name diff, got %+v", richRes.Diffs)
+		}
+	}
+}
+
+func TestCompareJSONRich_IgnoreOrder(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.json")
+	newPath := filepath.Join(tmp, "new.json")
+
+	writeFile(t, oldPath, `{"items":[1,2,3]}`)
+	writeFile(t, newPath, `{"items":[3,2,1]}`)
+
+	svc := NewService()
+	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+		IgnoreOrder: true,
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONRich returned error: %v", err)
+	}
+
+	if richRes.Result.DiffFound {
+		t.Fatalf("expected no diff when ignoreOrder=true, got %+v", richRes.Result)
+	}
+	if len(richRes.Diffs) != 0 {
+		t.Fatalf("expected no rich diffs, got %+v", richRes.Diffs)
+	}
+	if richRes.Summary != (JSONRichSummary{}) {
+		t.Fatalf("expected empty summary, got %+v", richRes.Summary)
+	}
+}
+
 func TestCompareSpecFiles_MissingFile(t *testing.T) {
 	svc := NewService()
 	res, err := svc.CompareSpecFiles(CompareSpecRequest{
