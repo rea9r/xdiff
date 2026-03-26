@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActionIcon, Drawer, Menu, Tooltip } from '@mantine/core'
+import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   IconAdjustmentsHorizontal,
@@ -184,6 +184,14 @@ function summarizeTextResultForGUI(res: CompareResponse | null): string {
   }
 
   return res.diffFound ? 'Differences found' : 'No differences'
+}
+
+function renderMenuCheck(active: boolean) {
+  return active ? (
+    <IconCheck size={14} className="menu-check-icon is-active" />
+  ) : (
+    <span className="menu-check-slot" aria-hidden="true" />
+  )
 }
 
 function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
@@ -1990,27 +1998,29 @@ export function App() {
           <div className="text-result-secondary-controls">
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
-                <ActionIcon
-                  variant="default"
-                  size={28}
-                  aria-label="View settings"
-                  className="text-result-action"
-                >
-                  <IconAdjustmentsHorizontal size={15} />
-                </ActionIcon>
+                <Tooltip label="View settings">
+                  <ActionIcon
+                    variant="default"
+                    size={28}
+                    aria-label="View settings"
+                    className="text-result-action"
+                  >
+                    <IconAdjustmentsHorizontal size={15} />
+                  </ActionIcon>
+                </Tooltip>
               </Menu.Target>
 
               <Menu.Dropdown>
                 <Menu.Label>Display</Menu.Label>
                 <Menu.Item
-                  leftSection={textResultView === 'rich' ? <IconCheck size={14} /> : null}
+                  leftSection={renderMenuCheck(textResultView === 'rich')}
                   onClick={() => setTextResultView('rich')}
                   disabled={!canRenderTextRich}
                 >
                   Rich diff
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={textResultView === 'raw' ? <IconCheck size={14} /> : null}
+                  leftSection={renderMenuCheck(textResultView === 'raw')}
                   onClick={() => setTextResultView('raw')}
                 >
                   Raw output
@@ -2019,14 +2029,14 @@ export function App() {
                 <Menu.Divider />
                 <Menu.Label>Layout</Menu.Label>
                 <Menu.Item
-                  leftSection={textDiffLayout === 'split' ? <IconCheck size={14} /> : null}
+                  leftSection={renderMenuCheck(textDiffLayout === 'split')}
                   onClick={() => setTextDiffLayout('split')}
                   disabled={!canRenderTextRich}
                 >
                   Split
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={textDiffLayout === 'unified' ? <IconCheck size={14} /> : null}
+                  leftSection={renderMenuCheck(textDiffLayout === 'unified')}
                   onClick={() => setTextDiffLayout('unified')}
                   disabled={!canRenderTextRich}
                 >
@@ -2206,10 +2216,11 @@ export function App() {
       <HeaderRailPrimaryButton onClick={() => void onRun()} loading={loading}>
         Compare
       </HeaderRailPrimaryButton>
-      <Tooltip label="Show compare options">
+      <Tooltip label={compareOptionsOpened ? 'Hide compare options' : 'Show compare options'}>
         <HeaderRailAction
+          variant={compareOptionsOpened ? 'filled' : 'default'}
           aria-label="Show compare options"
-          onClick={() => setCompareOptionsOpened(true)}
+          onClick={() => setCompareOptionsOpened((prev) => !prev)}
         >
           <IconAdjustmentsHorizontal size={HEADER_RAIL_ICON_SIZE} />
         </HeaderRailAction>
@@ -2801,31 +2812,40 @@ export function App() {
       </div>
     )
 
-  return (
-    <>
-      <AppChrome
-        mode={mode}
-        onModeChange={(nextMode) => {
-          setMode(nextMode)
-          if (nextMode === 'folder' || nextMode === 'scenario') {
-            setCompareOptionsOpened(false)
-          }
-        }}
-        layoutMode={isCompareCentricMode ? 'workspace' : 'sidebar'}
-        sidebar={isCompareCentricMode ? undefined : sidebarContent}
-        headerActions={isCompareCentricMode ? compareModeHeaderActions : undefined}
-        main={mainContent}
-      />
+  const compareOptionsInspector = isCompareCentricMode ? (
+    <div className="workspace-inspector-panel">
+      <div className="workspace-inspector-header">
+        <h3>{compareOptionsTitle}</h3>
+        <Tooltip label="Close options">
+          <ActionIcon
+            variant="default"
+            size={26}
+            aria-label="Close options"
+            onClick={() => setCompareOptionsOpened(false)}
+          >
+            <IconChevronDown size={14} />
+          </ActionIcon>
+        </Tooltip>
+      </div>
+      <div className="workspace-inspector-body">{compareOptionsContent}</div>
+    </div>
+  ) : null
 
-      <Drawer
-        opened={isCompareCentricMode && compareOptionsOpened}
-        onClose={() => setCompareOptionsOpened(false)}
-        position="right"
-        size={360}
-        title={compareOptionsTitle}
-      >
-        {compareOptionsContent}
-      </Drawer>
-    </>
+  return (
+    <AppChrome
+      mode={mode}
+      onModeChange={(nextMode) => {
+        setMode(nextMode)
+        if (nextMode === 'folder' || nextMode === 'scenario') {
+          setCompareOptionsOpened(false)
+        }
+      }}
+      layoutMode={isCompareCentricMode ? 'workspace' : 'sidebar'}
+      sidebar={isCompareCentricMode ? undefined : sidebarContent}
+      headerActions={isCompareCentricMode ? compareModeHeaderActions : undefined}
+      main={mainContent}
+      inspector={isCompareCentricMode ? compareOptionsInspector : undefined}
+      inspectorOpen={isCompareCentricMode && compareOptionsOpened}
+    />
   )
 }

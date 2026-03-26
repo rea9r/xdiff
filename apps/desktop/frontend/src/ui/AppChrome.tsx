@@ -15,6 +15,8 @@ type AppChromeProps = {
   sidebar?: ReactNode
   main: ReactNode
   headerActions?: ReactNode
+  inspector?: ReactNode
+  inspectorOpen?: boolean
 }
 
 const MODE_OPTIONS = [
@@ -41,6 +43,8 @@ export function AppChrome({
   sidebar,
   main,
   headerActions,
+  inspector,
+  inspectorOpen = false,
 }: AppChromeProps) {
   const isSidebarLayout = layoutMode === 'sidebar'
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false)
@@ -177,7 +181,18 @@ export function AppChrome({
         </AppShell.Navbar>
       ) : null}
 
-      <AppShell.Main>{main}</AppShell.Main>
+      <AppShell.Main>
+        {isSidebarLayout ? (
+          main
+        ) : (
+          <div className={`workspace-shell ${inspectorOpen ? 'with-inspector' : ''}`}>
+            <div className="workspace-main">{main}</div>
+            {inspectorOpen && inspector ? (
+              <aside className="workspace-inspector">{inspector}</aside>
+            ) : null}
+          </div>
+        )}
+      </AppShell.Main>
     </AppShell>
   )
 }
