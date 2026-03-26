@@ -174,16 +174,26 @@ function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
   return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
 }
 
-function summarizeTextResultForGUI(res: CompareResponse | null): string {
-  if (!res) {
-    return '(no result yet)'
+function summarizeTextDiffCounts(rows: UnifiedDiffRow[] | null): {
+  added: number
+  removed: number
+} {
+  if (!rows) {
+    return { added: 0, removed: 0 }
   }
 
-  if (res.error) {
-    return 'Execution error'
+  let added = 0
+  let removed = 0
+
+  for (const row of rows) {
+    if (row.kind === 'add') {
+      added++
+    } else if (row.kind === 'remove') {
+      removed++
+    }
   }
 
-  return res.diffFound ? 'Differences found' : 'No differences'
+  return { added, removed }
 }
 
 function renderMenuCheck(active: boolean) {
@@ -1931,13 +1941,15 @@ export function App() {
     const hasTextResult = !!textResult
     const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
     const canSearchRich = showRich
+    const diffCounts = summarizeTextDiffCounts(textRichRows)
+    const showDiffStats =
+      hasTextResult &&
+      !textResult?.error &&
+      !!textResult?.diffFound &&
+      (diffCounts.added > 0 || diffCounts.removed > 0)
 
     return (
       <div className="text-result-shell">
-        {hasTextResult ? (
-          <div className="result-summary">{summarizeTextResultForGUI(textResult)}</div>
-        ) : null}
-
         <div className="text-result-toolbar">
           <div className="text-result-primary-controls">
             <input
@@ -1993,6 +2005,21 @@ export function App() {
                 <IconChevronDown size={15} />
               </ActionIcon>
             </Tooltip>
+
+            {hasTextResult ? (
+              <div className="text-result-summary-inline">
+                {textResult?.error ? (
+                  <span className="text-diff-stat error">Execution error</span>
+                ) : showDiffStats ? (
+                  <>
+                    <span className="text-diff-stat added">+{diffCounts.added}</span>
+                    <span className="text-diff-stat removed">-{diffCounts.removed}</span>
+                  </>
+                ) : textResult?.diffFound ? null : (
+                  <span className="text-diff-stat neutral">No differences</span>
+                )}
+              </div>
+            ) : null}
           </div>
 
           <div className="text-result-secondary-controls">

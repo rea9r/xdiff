@@ -589,6 +589,43 @@ button {
   flex: 0 0 auto;
 }
 
+.text-result-summary-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.text-diff-stat {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.text-diff-stat.added {
+  background: var(--xdiff-diff-add-bg);
+  color: var(--mantine-color-green-8);
+}
+
+.text-diff-stat.removed {
+  background: var(--xdiff-diff-remove-bg);
+  color: var(--mantine-color-red-8);
+}
+
+.text-diff-stat.neutral {
+  background: var(--xdiff-viewer-surface-subtle);
+  color: var(--xdiff-viewer-text-dimmed);
+}
+
+.text-diff-stat.error {
+  background: var(--xdiff-diff-remove-bg);
+  color: var(--mantine-color-red-8);
+}
+
 .text-search-input {
   width: 240px;
   max-width: min(240px, 100%);
