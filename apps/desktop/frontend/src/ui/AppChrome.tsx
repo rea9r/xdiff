@@ -17,9 +17,9 @@ type AppChromeProps = {
 }
 
 const MODE_OPTIONS = [
+  { value: 'text', label: 'Text compare' },
   { value: 'json', label: 'JSON compare' },
   { value: 'spec', label: 'OpenAPI spec compare' },
-  { value: 'text', label: 'Text compare' },
   { value: 'folder', label: 'Folder compare' },
   { value: 'scenario', label: 'Scenario run' },
 ]
