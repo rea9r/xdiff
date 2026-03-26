@@ -2,7 +2,6 @@ import { Tooltip, useMantineColorScheme } from '@mantine/core'
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react'
 import {
   HEADER_RAIL_ICON_SIZE,
-  HeaderRailGroup,
   HeaderRailToggleIcon,
 } from './HeaderRail'
 
@@ -10,7 +9,7 @@ export function ThemeModeControl() {
   const { colorScheme, setColorScheme } = useMantineColorScheme()
 
   return (
-    <HeaderRailGroup className="xdiff-theme-toggle-group">
+    <div className="xdiff-theme-toggle-shell">
       <Tooltip label="Follow system theme">
         <div>
           <HeaderRailToggleIcon
@@ -19,11 +18,14 @@ export function ThemeModeControl() {
             label="Follow system theme"
             activeVariant="light"
             activeColor="gray"
+            className="xdiff-theme-toggle-button"
           >
             <IconDeviceDesktop size={HEADER_RAIL_ICON_SIZE} />
           </HeaderRailToggleIcon>
         </div>
       </Tooltip>
+
+      <span className="xdiff-theme-toggle-divider" aria-hidden="true" />
 
       <Tooltip label="Light theme">
         <div>
@@ -33,11 +35,14 @@ export function ThemeModeControl() {
             label="Light theme"
             activeVariant="light"
             activeColor="gray"
+            className="xdiff-theme-toggle-button"
           >
             <IconSun size={HEADER_RAIL_ICON_SIZE} />
           </HeaderRailToggleIcon>
         </div>
       </Tooltip>
+
+      <span className="xdiff-theme-toggle-divider" aria-hidden="true" />
 
       <Tooltip label="Dark theme">
         <div>
@@ -47,11 +52,12 @@ export function ThemeModeControl() {
             label="Dark theme"
             activeVariant="light"
             activeColor="gray"
+            className="xdiff-theme-toggle-button"
           >
             <IconMoon size={HEADER_RAIL_ICON_SIZE} />
           </HeaderRailToggleIcon>
         </div>
       </Tooltip>
-    </HeaderRailGroup>
+    </div>
   )
 }

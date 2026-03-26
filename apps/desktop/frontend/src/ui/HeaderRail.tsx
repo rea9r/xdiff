@@ -72,6 +72,7 @@ export function HeaderRailToggleIcon({
   children,
   activeVariant = 'filled',
   activeColor,
+  className,
 }: {
   active: boolean
   onClick: () => void
@@ -79,12 +80,16 @@ export function HeaderRailToggleIcon({
   children: ReactNode
   activeVariant?: 'filled' | 'light' | 'outline' | 'default'
   activeColor?: string
+  className?: string
 }) {
+  const mergedClassName = `${className ?? ''} ${active ? 'is-active' : ''}`.trim()
+
   return (
     <HeaderRailAction
       aria-label={label}
       variant={active ? activeVariant : 'default'}
       color={active ? activeColor : undefined}
+      className={mergedClassName}
       onClick={onClick}
     >
       {children}

@@ -174,6 +174,14 @@ function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
   return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
 }
 
+function shouldShowTextHunkHeaders(items: RichDiffItem[]): boolean {
+  const hunkCount = items.filter(
+    (item) => item.kind === 'row' && item.row.kind === 'hunk',
+  ).length
+  const hasOmitted = items.some((item) => item.kind === 'omitted')
+  return hunkCount > 1 || hasOmitted
+}
+
 function summarizeTextDiffCounts(rows: UnifiedDiffRow[] | null): {
   added: number
   removed: number
@@ -827,6 +835,9 @@ export function App() {
     null,
   )
   const [textCopyBusy, setTextCopyBusy] = useState(false)
+  const [textPaneCopyBusyTarget, setTextPaneCopyBusyTarget] = useState<TextInputTarget | null>(
+    null,
+  )
 
   const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
 
@@ -1475,6 +1486,51 @@ export function App() {
     }
   }
 
+  const copyTextInput = async (target: TextInputTarget) => {
+    const writeClipboard = getRuntimeClipboardWrite()
+    if (!writeClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    const value = target === 'old' ? textOld : textNew
+    if (!value) {
+      return
+    }
+
+    setTextPaneCopyBusyTarget(target)
+
+    try {
+      const ok = await writeClipboard(value)
+      if (!ok) {
+        notifications.show({
+          title: 'Copy failed',
+          message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} text.`,
+          color: 'red',
+        })
+        return
+      }
+
+      notifications.show({
+        title: 'Copied',
+        message: `${target === 'old' ? 'Old' : 'New'} text copied to clipboard.`,
+        color: 'green',
+      })
+    } catch (error) {
+      notifications.show({
+        title: 'Copy failed',
+        message: `Failed to copy text: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setTextPaneCopyBusyTarget(null)
+    }
+  }
+
   const loadScenarioChecks = async () => {
     const fn = api.listScenarioChecks
     if (!fn) throw new Error('Wails bridge not available (ListScenarioChecks)')
@@ -1788,6 +1844,8 @@ export function App() {
   }
 
   const renderTextDiffRows = (items: RichDiffItem[]) => {
+    const showHunkHeaders = shouldShowTextHunkHeaders(items)
+
     return (
       <div className="text-diff-grid">
         {items.map((item, idx) => {
@@ -1797,6 +1855,9 @@ export function App() {
 
           const row = item.row
           if (shouldHideTextRichMetaRow(row)) {
+            return null
+          }
+          if (row.kind === 'hunk' && !showHunkHeaders) {
             return null
           }
 
@@ -1821,6 +1882,7 @@ export function App() {
   }
 
   const renderTextSplitRows = (items: RichDiffItem[]) => {
+    const showHunkHeaders = shouldShowTextHunkHeaders(items)
     const splitNodes: JSX.Element[] = []
     let index = 0
 
@@ -1837,6 +1899,10 @@ export function App() {
 
       if (row.kind === 'meta' || row.kind === 'hunk') {
         if (shouldHideTextRichMetaRow(row)) {
+          index++
+          continue
+        }
+        if (row.kind === 'hunk' && !showHunkHeaders) {
           index++
           continue
         }
@@ -1972,13 +2038,13 @@ export function App() {
               }}
             />
 
-            <span className="muted text-search-status">
-              {normalizedTextSearchQuery
-                ? textSearchMatches.length > 0
-                  ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length} matching rows`
-                  : '0 matching rows'
-                : 'Search rich diff'}
-            </span>
+            {normalizedTextSearchQuery ? (
+              <span className="muted text-search-status">
+                {textSearchMatches.length > 0
+                  ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length}`
+                  : '0 matches'}
+              </span>
+            ) : null}
 
             <Tooltip label="Previous match">
               <ActionIcon
@@ -2649,12 +2715,25 @@ export function App() {
                       <IconClipboardText size={15} />
                     </ActionIcon>
                   </Tooltip>
+                  <Tooltip label="Copy Old text">
+                    <ActionIcon
+                      variant="default"
+                      size={28}
+                      aria-label="Copy Old text"
+                      className="text-editor-action"
+                      onClick={() => void copyTextInput('old')}
+                      disabled={textEditorBusy || !textOld}
+                      loading={textPaneCopyBusyTarget === 'old'}
+                    >
+                      <IconCopy size={15} />
+                    </ActionIcon>
+                  </Tooltip>
                   <Tooltip label="Clear Old text">
                     <ActionIcon
                       variant="default"
                       size={28}
                       aria-label="Clear Old text"
-                      className="text-editor-action"
+                      className="text-editor-action is-danger"
                       onClick={() => clearTextInput('old')}
                       disabled={textEditorBusy || !textOld}
                     >
@@ -2725,12 +2804,25 @@ export function App() {
                       <IconClipboardText size={15} />
                     </ActionIcon>
                   </Tooltip>
+                  <Tooltip label="Copy New text">
+                    <ActionIcon
+                      variant="default"
+                      size={28}
+                      aria-label="Copy New text"
+                      className="text-editor-action"
+                      onClick={() => void copyTextInput('new')}
+                      disabled={textEditorBusy || !textNew}
+                      loading={textPaneCopyBusyTarget === 'new'}
+                    >
+                      <IconCopy size={15} />
+                    </ActionIcon>
+                  </Tooltip>
                   <Tooltip label="Clear New text">
                     <ActionIcon
                       variant="default"
                       size={28}
                       aria-label="Clear New text"
-                      className="text-editor-action"
+                      className="text-editor-action is-danger"
                       onClick={() => clearTextInput('new')}
                       disabled={textEditorBusy || !textNew}
                     >
