@@ -492,28 +492,24 @@ button {
   flex: 1;
 }
 
-.text-result-tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.text-result-controls {
+.text-result-primary-controls {
   display: flex;
   align-items: center;
-  gap: var(--xdiff-toolbar-gap);
+  gap: 6px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
-.text-search-controls {
+.text-result-secondary-controls {
   display: flex;
   align-items: center;
-  gap: var(--xdiff-toolbar-gap);
-  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .text-search-input {
-  min-width: 220px;
-  max-width: 320px;
+  width: 240px;
+  max-width: min(240px, 100%);
 }
 
 .text-search-status {
@@ -524,16 +520,11 @@ button {
   flex: 0 0 auto;
 }
 
-.text-diff-layout-tabs {
-  display: flex;
-  gap: 8px;
-}
-
 .text-result-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--xdiff-toolbar-gap);
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -543,12 +534,6 @@ button {
 
 .text-unchanged-toggle {
   flex: 0 0 auto;
-}
-
-.text-result-tabs button.active,
-.text-diff-layout-tabs button.active {
-  border-color: var(--xdiff-search-hit-border);
-  background: color-mix(in srgb, var(--xdiff-search-hit-border) 12%, transparent);
 }
 
 .text-result-body {

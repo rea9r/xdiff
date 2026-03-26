@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActionIcon, Drawer, Tooltip } from '@mantine/core'
+import { ActionIcon, Drawer, Menu, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   IconAdjustmentsHorizontal,
   IconBackspace,
+  IconCheck,
   IconChevronDown,
   IconChevronUp,
   IconClipboardText,
@@ -1921,6 +1922,7 @@ export function App() {
     const raw = textResult ? renderResult(textResult) : ''
     const hasTextResult = !!textResult
     const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
+    const canSearchRich = showRich
 
     return (
       <div className="text-result-shell">
@@ -1929,125 +1931,133 @@ export function App() {
         ) : null}
 
         <div className="text-result-toolbar">
-          <div className="text-result-controls">
-            <div className="text-result-tabs">
-              <button
-                type="button"
-                className={`button-secondary button-compact ${textResultView === 'rich' ? 'active' : ''}`}
-                onClick={() => setTextResultView('rich')}
-                disabled={!canRenderTextRich}
+          <div className="text-result-primary-controls">
+            <input
+              type="text"
+              className="text-search-input"
+              placeholder="Search rich diff"
+              value={textSearchQuery}
+              disabled={!canSearchRich}
+              onChange={(e) => setTextSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  moveTextSearch(e.shiftKey ? -1 : 1)
+                  return
+                }
+
+                if (e.key === 'Escape') {
+                  setTextSearchQuery('')
+                }
+              }}
+            />
+
+            <span className="muted text-search-status">
+              {normalizedTextSearchQuery
+                ? textSearchMatches.length > 0
+                  ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length} matching rows`
+                  : '0 matching rows'
+                : 'Search rich diff'}
+            </span>
+
+            <Tooltip label="Previous match">
+              <ActionIcon
+                variant="default"
+                size={28}
+                aria-label="Previous match"
+                className="text-search-action"
+                onClick={() => moveTextSearch(-1)}
+                disabled={!canSearchRich || textSearchMatches.length === 0}
               >
-                Rich diff
-              </button>
-              <button
-                type="button"
-                className={`button-secondary button-compact ${textResultView === 'raw' ? 'active' : ''}`}
-                onClick={() => setTextResultView('raw')}
+                <IconChevronUp size={15} />
+              </ActionIcon>
+            </Tooltip>
+
+            <Tooltip label="Next match">
+              <ActionIcon
+                variant="default"
+                size={28}
+                aria-label="Next match"
+                className="text-search-action"
+                onClick={() => moveTextSearch(1)}
+                disabled={!canSearchRich || textSearchMatches.length === 0}
               >
-                Raw output
-              </button>
-            </div>
-
-            <div className="text-diff-layout-tabs">
-              <button
-                type="button"
-                className={`button-secondary button-compact ${textDiffLayout === 'split' ? 'active' : ''}`}
-                onClick={() => setTextDiffLayout('split')}
-                disabled={!canRenderTextRich}
-              >
-                Split
-              </button>
-              <button
-                type="button"
-                className={`button-secondary button-compact ${textDiffLayout === 'unified' ? 'active' : ''}`}
-                onClick={() => setTextDiffLayout('unified')}
-                disabled={!canRenderTextRich}
-              >
-                Unified
-              </button>
-            </div>
-
-            {showRich ? (
-              <div className="text-search-controls">
-                <input
-                  type="text"
-                  className="text-search-input"
-                  placeholder="Search rich diff"
-                  value={textSearchQuery}
-                  onChange={(e) => setTextSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      moveTextSearch(e.shiftKey ? -1 : 1)
-                      return
-                    }
-
-                    if (e.key === 'Escape') {
-                      setTextSearchQuery('')
-                    }
-                  }}
-                />
-
-                <span className="muted text-search-status">
-                  {normalizedTextSearchQuery
-                    ? textSearchMatches.length > 0
-                      ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length} matching rows`
-                      : '0 matching rows'
-                    : 'Search rich diff'}
-                </span>
-
-                <Tooltip label="Previous match">
-                  <ActionIcon
-                    variant="default"
-                    size={28}
-                    aria-label="Previous match"
-                    className="text-search-action"
-                    onClick={() => moveTextSearch(-1)}
-                    disabled={textSearchMatches.length === 0}
-                  >
-                    <IconChevronUp size={15} />
-                  </ActionIcon>
-                </Tooltip>
-
-                <Tooltip label="Next match">
-                  <ActionIcon
-                    variant="default"
-                    size={28}
-                    aria-label="Next match"
-                    className="text-search-action"
-                    onClick={() => moveTextSearch(1)}
-                    disabled={textSearchMatches.length === 0}
-                  >
-                    <IconChevronDown size={15} />
-                  </ActionIcon>
-                </Tooltip>
-              </div>
-            ) : null}
-
-            {showRich && omittedSectionIds.length > 0 ? (
-              <button
-                type="button"
-                className="text-unchanged-toggle button-secondary button-compact"
-                onClick={toggleAllTextUnchangedSections}
-              >
-                {allOmittedSectionsExpanded ? 'Collapse unchanged' : 'Expand unchanged'}
-              </button>
-            ) : null}
+                <IconChevronDown size={15} />
+              </ActionIcon>
+            </Tooltip>
           </div>
 
-          <Tooltip label="Copy raw output">
-            <ActionIcon
-              variant="default"
-              size={28}
-              aria-label="Copy raw output"
-              className="text-result-action"
-              onClick={() => void copyTextResultRawOutput()}
-              disabled={textCopyBusy || !raw}
-              loading={textCopyBusy}
-            >
-              <IconCopy size={15} />
-            </ActionIcon>
-          </Tooltip>
+          <div className="text-result-secondary-controls">
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <ActionIcon
+                  variant="default"
+                  size={28}
+                  aria-label="View settings"
+                  className="text-result-action"
+                >
+                  <IconAdjustmentsHorizontal size={15} />
+                </ActionIcon>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>Display</Menu.Label>
+                <Menu.Item
+                  leftSection={textResultView === 'rich' ? <IconCheck size={14} /> : null}
+                  onClick={() => setTextResultView('rich')}
+                  disabled={!canRenderTextRich}
+                >
+                  Rich diff
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={textResultView === 'raw' ? <IconCheck size={14} /> : null}
+                  onClick={() => setTextResultView('raw')}
+                >
+                  Raw output
+                </Menu.Item>
+
+                <Menu.Divider />
+                <Menu.Label>Layout</Menu.Label>
+                <Menu.Item
+                  leftSection={textDiffLayout === 'split' ? <IconCheck size={14} /> : null}
+                  onClick={() => setTextDiffLayout('split')}
+                  disabled={!canRenderTextRich}
+                >
+                  Split
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={textDiffLayout === 'unified' ? <IconCheck size={14} /> : null}
+                  onClick={() => setTextDiffLayout('unified')}
+                  disabled={!canRenderTextRich}
+                >
+                  Unified
+                </Menu.Item>
+
+                {showRich && omittedSectionIds.length > 0 ? (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item onClick={toggleAllTextUnchangedSections}>
+                      {allOmittedSectionsExpanded ? 'Collapse unchanged' : 'Expand unchanged'}
+                    </Menu.Item>
+                  </>
+                ) : null}
+              </Menu.Dropdown>
+            </Menu>
+
+            <Tooltip label="Copy raw output">
+              <ActionIcon
+                variant="default"
+                size={28}
+                aria-label="Copy raw output"
+                className="text-result-action"
+                onClick={() => void copyTextResultRawOutput()}
+                disabled={textCopyBusy || !raw}
+                loading={textCopyBusy}
+              >
+                <IconCopy size={15} />
+              </ActionIcon>
+            </Tooltip>
+          </div>
         </div>
 
         <div className="text-result-body">
