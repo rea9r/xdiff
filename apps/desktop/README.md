@@ -1,8 +1,8 @@
-# xdiff Desktop (Wails, Phase 7D-1)
+# xdiff Desktop (Wails, Phase 7D-1.5)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 7D-1)
+## Scope (Phase 7D-1.5)
 
 - Mantine-based visual foundation with light / dark / system theme support
 - App shell refresh with shared header / sidebar / main layout
@@ -16,6 +16,7 @@ This app is an experimental desktop GUI for xdiff.
 - Shared compare interaction primitives for compare-centric modes, including source actions, source body variants, header actions, and result status surfaces
 - JSON input workspace aligned with text compare, supporting file load, paste/edit, copy, and semantic rich compare from editor content
 - OpenAPI spec rich viewer with grouped semantic sections, canonical path detail, and rich/raw fallback on the shared compare workspace
+- Code-editor input for JSON and OpenAPI spec compare, with syntax highlighting and pane-local parse feedback
 - Theme-aware viewer tokens and responsive sidebar toggle for narrower window widths
 - Compact density pass and adaptive layout polish for narrower non-fullscreen window sizes
 - Text compare dense controls with icon-based editor actions and resizable desktop sidebar

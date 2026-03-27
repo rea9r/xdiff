@@ -690,7 +690,7 @@ button {
   flex: 1;
 }
 
-.compare-json-input-body {
+.compare-code-input-body-wrap {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -698,11 +698,38 @@ button {
   flex: 1;
 }
 
-.compare-json-input-editor {
-  flex: 1;
+.compare-code-input-body {
+  min-height: 220px;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--xdiff-viewer-surface);
 }
 
-.compare-json-parse-error {
+.compare-code-input-body .cm-editor {
+  height: 100%;
+  background: var(--xdiff-viewer-surface);
+}
+
+.compare-code-input-body .cm-scroller {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
+}
+
+.compare-code-input-body .cm-content {
+  padding: 8px 10px;
+}
+
+.compare-code-input-body .cm-focused {
+  outline: none;
+}
+
+.compare-code-input-meta {
+  min-height: 18px;
+}
+
+.compare-code-input-error {
   font-size: 0.82rem;
   color: var(--mantine-color-red-7);
 }

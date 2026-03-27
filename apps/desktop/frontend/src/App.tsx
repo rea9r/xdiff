@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import YAML from 'yaml'
 import {
   IconBackspace,
   IconChevronRight,
@@ -53,7 +54,7 @@ import {
 import { CompareStatusState } from './ui/CompareStatusState'
 import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
-import { CompareJsonInputBody } from './ui/CompareJsonInputBody'
+import { CompareCodeInputBody } from './ui/CompareCodeInputBody'
 import { SpecRichDiffViewer } from './ui/SpecRichDiffViewer'
 
 const defaultJSONCommon: CompareCommon = {
@@ -374,6 +375,40 @@ function getJSONParseError(input: string): string | null {
 
   try {
     JSON.parse(input)
+    return null
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
+  }
+}
+
+function detectSpecInputLanguage(sourcePath: string, value: string): 'json' | 'yaml' {
+  const lowerPath = sourcePath.toLowerCase()
+  if (lowerPath.endsWith('.json')) {
+    return 'json'
+  }
+  if (lowerPath.endsWith('.yaml') || lowerPath.endsWith('.yml')) {
+    return 'yaml'
+  }
+
+  const trimmed = value.trimStart()
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return 'json'
+  }
+  return 'yaml'
+}
+
+function getSpecParseError(input: string, language: 'json' | 'yaml'): string | null {
+  const trimmed = input.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  try {
+    if (language === 'json') {
+      JSON.parse(trimmed)
+    } else {
+      YAML.parse(trimmed)
+    }
     return null
   } catch (error) {
     return error instanceof Error ? error.message : String(error)
@@ -1225,6 +1260,23 @@ export function App() {
     () => new Set(specSearchMatches),
     [specSearchMatches],
   )
+  const specOldLanguage = useMemo(
+    () => detectSpecInputLanguage(specOldSourcePath, specOldText),
+    [specOldSourcePath, specOldText],
+  )
+  const specNewLanguage = useMemo(
+    () => detectSpecInputLanguage(specNewSourcePath, specNewText),
+    [specNewSourcePath, specNewText],
+  )
+  const specOldParseError = useMemo(
+    () => getSpecParseError(specOldText, specOldLanguage),
+    [specOldText, specOldLanguage],
+  )
+  const specNewParseError = useMemo(
+    () => getSpecParseError(specNewText, specNewLanguage),
+    [specNewText, specNewLanguage],
+  )
+  const specInputInvalid = !!specOldParseError || !!specNewParseError
   const specInputEmpty = !specOldText.trim() || !specNewText.trim()
   const specEditorBusy = specClipboardBusyTarget !== null || specFileBusyTarget !== null
 
@@ -3532,7 +3584,7 @@ export function App() {
         ? 'JSON compare options'
         : 'Spec compare options'
   const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
-  const specCompareDisabled = specEditorBusy || specInputEmpty
+  const specCompareDisabled = specEditorBusy || specInputEmpty || specInputInvalid
 
   const compareModeHeaderActions = isCompareCentricMode ? (
     <CompareModeHeaderActions
@@ -4048,12 +4100,13 @@ export function App() {
                   </ComparePaneActions>
                 }
               >
-                <CompareJsonInputBody
+                <CompareCodeInputBody
                   value={jsonOldText}
                   onChange={(value) => {
                     setJSONOldText(value)
                     if (jsonOldSourcePath) setJSONOldSourcePath('')
                   }}
+                  language="json"
                   parseError={jsonOldParseError}
                 />
               </CompareSourcePane>
@@ -4099,12 +4152,13 @@ export function App() {
                   </ComparePaneActions>
                 }
               >
-                <CompareJsonInputBody
+                <CompareCodeInputBody
                   value={jsonNewText}
                   onChange={(value) => {
                     setJSONNewText(value)
                     if (jsonNewSourcePath) setJSONNewSourcePath('')
                   }}
+                  language="json"
                   parseError={jsonNewParseError}
                 />
               </CompareSourcePane>
@@ -4158,12 +4212,14 @@ export function App() {
                   </ComparePaneActions>
                 }
               >
-                <CompareTextInputBody
+                <CompareCodeInputBody
                   value={specOldText}
                   onChange={(value) => {
                     setSpecOldText(value)
                     if (specOldSourcePath) setSpecOldSourcePath('')
                   }}
+                  language={specOldLanguage}
+                  parseError={specOldParseError}
                 />
               </CompareSourcePane>
             }
@@ -4208,12 +4264,14 @@ export function App() {
                   </ComparePaneActions>
                 }
               >
-                <CompareTextInputBody
+                <CompareCodeInputBody
                   value={specNewText}
                   onChange={(value) => {
                     setSpecNewText(value)
                     if (specNewSourcePath) setSpecNewSourcePath('')
                   }}
+                  language={specNewLanguage}
+                  parseError={specNewParseError}
                 />
               </CompareSourcePane>
             }
