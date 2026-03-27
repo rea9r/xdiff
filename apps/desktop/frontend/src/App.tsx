@@ -2939,8 +2939,8 @@ export function App() {
                                     .filter(Boolean)
                                     .join(' ')}
                                 >
-                                  <td>
-                                    <div className="json-type-cell">
+                                  <td className="json-diff-cell json-diff-cell-type">
+                                    <div className="json-cell-inline json-type-cell">
                                       <span className={`json-type-badge ${diff.type}`}>
                                         {renderJSONTypeLabel(diff.type)}
                                       </span>
@@ -2949,8 +2949,10 @@ export function App() {
                                       ) : null}
                                     </div>
                                   </td>
-                                  <td className="json-path-cell">
-                                    {renderHighlightedText(diff.path, normalizedJSONSearchQuery)}
+                                  <td className="json-diff-cell json-diff-cell-path">
+                                    <div className="json-cell-inline json-path-cell">
+                                      {renderHighlightedText(diff.path, normalizedJSONSearchQuery)}
+                                    </div>
                                   </td>
                                   <td>
                                     {renderJSONValueCell(
