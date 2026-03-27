@@ -698,12 +698,44 @@ button {
   flex: 1;
 }
 
+.compare-code-input-shell {
+  position: relative;
+}
+
 .compare-code-input-body {
   min-height: 220px;
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: 8px;
   overflow: hidden;
   background: var(--xdiff-viewer-surface);
+}
+
+.compare-code-input-placeholder {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  color: var(--xdiff-viewer-text-dimmed);
+  font-size: 0.88rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.compare-code-input-language {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--xdiff-viewer-text-dimmed);
+  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 82%, transparent);
+  border: 1px solid var(--xdiff-viewer-border);
 }
 
 .compare-code-input-body .cm-editor {
@@ -727,6 +759,12 @@ button {
 
 .compare-code-input-meta {
   min-height: 18px;
+}
+
+.compare-code-input-helper {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--xdiff-viewer-text-dimmed);
 }
 
 .compare-code-input-error {
