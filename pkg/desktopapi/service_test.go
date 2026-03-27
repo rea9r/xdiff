@@ -217,6 +217,126 @@ func TestCompareJSONRich_IgnoreOrder(t *testing.T) {
 	}
 }
 
+func TestCompareJSONValuesRich_Basic(t *testing.T) {
+	svc := NewService()
+
+	res, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+		OldValue: `{"name":"Taro","age":"20","email":"old@example.com"}`,
+		NewValue: `{"name":"Hanako","age":20,"phone":"090-xxxx-xxxx"}`,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONValuesRich returned error: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected response")
+	}
+	if !res.Result.DiffFound {
+		t.Fatal("expected diffFound=true")
+	}
+	if strings.TrimSpace(res.Result.Output) == "" {
+		t.Fatal("expected output")
+	}
+	if len(res.Diffs) == 0 {
+		t.Fatal("expected structured diffs")
+	}
+	if res.Summary.Breaking == 0 {
+		t.Fatalf("expected breaking diffs, got summary: %+v", res.Summary)
+	}
+}
+
+func TestCompareJSONValuesRich_InvalidOldJSON(t *testing.T) {
+	svc := NewService()
+
+	_, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+		OldValue: `{`,
+		NewValue: `{"name":"Hanako"}`,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid old JSON")
+	}
+	if !strings.Contains(err.Error(), "invalid old JSON") {
+		t.Fatalf("expected invalid old JSON error, got: %v", err)
+	}
+}
+
+func TestCompareJSONValuesRich_InvalidNewJSON(t *testing.T) {
+	svc := NewService()
+
+	_, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+		OldValue: `{"name":"Taro"}`,
+		NewValue: `{`,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid new JSON")
+	}
+	if !strings.Contains(err.Error(), "invalid new JSON") {
+		t.Fatalf("expected invalid new JSON error, got: %v", err)
+	}
+}
+
+func TestCompareJSONValuesRich_IgnoreOrder(t *testing.T) {
+	svc := NewService()
+
+	res, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+		OldValue: `{"items":[1,2,3]}`,
+		NewValue: `{"items":[3,2,1]}`,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+		IgnoreOrder: true,
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONValuesRich returned error: %v", err)
+	}
+	if res.Result.DiffFound {
+		t.Fatalf("expected no diff when ignoreOrder=true, got %+v", res.Result)
+	}
+	if len(res.Diffs) != 0 {
+		t.Fatalf("expected no diffs, got %+v", res.Diffs)
+	}
+}
+
+func TestCompareJSONValuesRich_IgnorePaths(t *testing.T) {
+	svc := NewService()
+
+	res, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+		OldValue: `{"name":"Taro","age":20}`,
+		NewValue: `{"name":"Hanako","age":20}`,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+			IgnorePaths:  []string{"name"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareJSONValuesRich returned error: %v", err)
+	}
+	if res.Result.DiffFound {
+		t.Fatalf("expected no diff when ignorePaths suppresses all, got %+v", res.Result)
+	}
+	if len(res.Diffs) != 0 {
+		t.Fatalf("expected no diffs, got %+v", res.Diffs)
+	}
+}
+
 func TestCompareSpecFiles_MissingFile(t *testing.T) {
 	svc := NewService()
 	res, err := svc.CompareSpecFiles(CompareSpecRequest{

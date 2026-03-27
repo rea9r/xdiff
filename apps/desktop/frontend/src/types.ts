@@ -40,6 +40,13 @@ export type CompareJSONRichResponse = {
   diffs: JSONRichDiffItem[]
 }
 
+export type CompareJSONValuesRequest = {
+  oldValue: string
+  newValue: string
+  common: CompareCommon
+  ignoreOrder: boolean
+}
+
 export type LoadTextFileRequest = {
   path: string
 }

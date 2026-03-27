@@ -35,6 +35,10 @@ func (a *App) CompareJSONRich(req desktopapi.CompareJSONRequest) (*desktopapi.Co
 	return a.api.CompareJSONRich(req)
 }
 
+func (a *App) CompareJSONValuesRich(req desktopapi.CompareJSONValuesRequest) (*desktopapi.CompareJSONRichResponse, error) {
+	return a.api.CompareJSONValuesRich(req)
+}
+
 func (a *App) CompareSpecFiles(req desktopapi.CompareSpecRequest) (*desktopapi.CompareResponse, error) {
 	return a.api.CompareSpecFiles(req)
 }

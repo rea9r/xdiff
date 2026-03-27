@@ -17,6 +17,13 @@ type CompareJSONRequest struct {
 	IgnoreOrder bool          `json:"ignoreOrder"`
 }
 
+type CompareJSONValuesRequest struct {
+	OldValue    string        `json:"oldValue"`
+	NewValue    string        `json:"newValue"`
+	Common      CompareCommon `json:"common"`
+	IgnoreOrder bool          `json:"ignoreOrder"`
+}
+
 type CompareSpecRequest struct {
 	OldPath string        `json:"oldPath"`
 	NewPath string        `json:"newPath"`

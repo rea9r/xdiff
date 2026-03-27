@@ -5,6 +5,7 @@ import { HeaderRailAction, HeaderRailGroup, HeaderRailPrimaryButton } from './He
 
 type CompareModeHeaderActionsProps = {
   loading?: boolean
+  compareDisabled?: boolean
   compareLabel?: string
   onCompare: () => void
   optionsOpen?: boolean
@@ -14,6 +15,7 @@ type CompareModeHeaderActionsProps = {
 
 export function CompareModeHeaderActions({
   loading = false,
+  compareDisabled = false,
   compareLabel = 'Compare',
   onCompare,
   optionsOpen = false,
@@ -24,7 +26,7 @@ export function CompareModeHeaderActions({
 
   return (
     <HeaderRailGroup className="compare-mode-header-actions">
-      <HeaderRailPrimaryButton onClick={onCompare} loading={loading}>
+      <HeaderRailPrimaryButton onClick={onCompare} loading={loading} disabled={compareDisabled}>
         {compareLabel}
       </HeaderRailPrimaryButton>
       <Tooltip label={optionsLabel}>

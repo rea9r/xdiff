@@ -1,8 +1,8 @@
-# xdiff Desktop (Wails, Phase 7C-1)
+# xdiff Desktop (Wails, Phase 7C-2)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 7C-1)
+## Scope (Phase 7C-2)
 
 - Mantine-based visual foundation with light / dark / system theme support
 - App shell refresh with shared header / sidebar / main layout
@@ -14,6 +14,7 @@ This app is an experimental desktop GUI for xdiff.
 - Shared compare workspace primitives for compare-centric modes, with text compare as the baseline and JSON compare aligned onto the same result/source shell
 - Shared compare source actions, path slots, and result shell surfaces across compare-centric modes
 - Shared compare interaction primitives for compare-centric modes, including source actions, source body variants, header actions, and result status surfaces
+- JSON input workspace aligned with text compare, supporting file load, paste/edit, copy, and semantic rich compare from editor content
 - Theme-aware viewer tokens and responsive sidebar toggle for narrower window widths
 - Compact density pass and adaptive layout polish for narrower non-fullscreen window sizes
 - Text compare dense controls with icon-based editor actions and resizable desktop sidebar
@@ -32,7 +33,7 @@ This app is an experimental desktop GUI for xdiff.
 - Output format and text style controls
 - Fail-on and ignore-path controls for JSON/spec
 - Paste-first text compare workspace with local file load and rich/raw diff views
-- Text compare uses compact icon actions per editor (`Open`, `Paste`, `Clear`, `Swap sides`) and a `Copy raw output` icon action in the result toolbar
+- Text compare uses compact icon actions per editor (`Open`, `Paste`, `Copy`, `Clear`) and a `Copy raw output` icon action in the result toolbar
 - Text rich diff supports `Unified` / `Split` view toggle
 - Text rich diff keeps omitted unchanged sections collapsed by default, with per-section and global expand/collapse controls
 - Text rich diff supports row search with next/prev navigation and auto-reveal of the active hidden unchanged section

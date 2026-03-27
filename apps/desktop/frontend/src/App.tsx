@@ -8,13 +8,13 @@ import {
   IconClipboardText,
   IconCopy,
   IconFolderOpen,
-  IconSwitchHorizontal,
 } from '@tabler/icons-react'
 import type {
   CompareCommon,
   CompareFoldersRequest,
   CompareFoldersResponse,
   CompareJSONRichResponse,
+  CompareJSONValuesRequest,
   CompareResponse,
   FolderCompareEntry,
   JSONRichDiffItem,
@@ -51,6 +51,7 @@ import { CompareStatusState } from './ui/CompareStatusState'
 import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
 import { ComparePathInputBody } from './ui/ComparePathInputBody'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
+import { CompareJsonInputBody } from './ui/CompareJsonInputBody'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -335,6 +336,19 @@ function stringifyJSONValue(value: unknown): string {
     return JSON.stringify(value, null, 2)
   } catch {
     return String(value)
+  }
+}
+
+function getJSONParseError(input: string): string | null {
+  if (!input.trim()) {
+    return null
+  }
+
+  try {
+    JSON.parse(input)
+    return null
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
   }
 }
 
@@ -976,8 +990,10 @@ function renderSplitDiffCell(
 export function App() {
   const [mode, setMode] = useState<Mode>(() => getInitialMode())
 
-  const [jsonOldPath, setJSONOldPath] = useState('')
-  const [jsonNewPath, setJSONNewPath] = useState('')
+  const [jsonOldText, setJSONOldText] = useState('')
+  const [jsonNewText, setJSONNewText] = useState('')
+  const [jsonOldSourcePath, setJSONOldSourcePath] = useState('')
+  const [jsonNewSourcePath, setJSONNewSourcePath] = useState('')
   const [ignoreOrder, setIgnoreOrder] = useState(false)
   const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
   const [jsonResultView, setJSONResultView] = useState<JSONResultView>('rich')
@@ -987,6 +1003,10 @@ export function App() {
   const [jsonExpandedGroups, setJSONExpandedGroups] = useState<string[]>([])
   const [jsonExpandedValueKeys, setJSONExpandedValueKeys] = useState<string[]>([])
   const [jsonCopyBusy, setJSONCopyBusy] = useState(false)
+  const [jsonClipboardBusyTarget, setJSONClipboardBusyTarget] =
+    useState<TextInputTarget | null>(null)
+  const [jsonFileBusyTarget, setJSONFileBusyTarget] = useState<TextInputTarget | null>(null)
+  const [jsonCopyBusyTarget, setJSONCopyBusyTarget] = useState<TextInputTarget | null>(null)
   const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultJSONCommon.ignorePaths),
   )
@@ -1136,6 +1156,11 @@ export function App() {
 
   const jsonPatchBlockedByFilters =
     ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
+  const jsonOldParseError = useMemo(() => getJSONParseError(jsonOldText), [jsonOldText])
+  const jsonNewParseError = useMemo(() => getJSONParseError(jsonNewText), [jsonNewText])
+  const jsonInputInvalid = !!jsonOldParseError || !!jsonNewParseError
+  const jsonInputEmpty = !jsonOldText.trim() || !jsonNewText.trim()
+  const jsonEditorBusy = jsonClipboardBusyTarget !== null || jsonFileBusyTarget !== null
 
   useEffect(() => {
     try {
@@ -1239,8 +1264,7 @@ export function App() {
 
   const api = useMemo(
     () => ({
-      compareJSON: (window as any).go?.main?.App?.CompareJSONFiles,
-      compareJSONRich: (window as any).go?.main?.App?.CompareJSONRich,
+      compareJSONValuesRich: (window as any).go?.main?.App?.CompareJSONValuesRich,
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
       compareText: (window as any).go?.main?.App?.CompareText,
       compareFolders: (window as any).go?.main?.App?.CompareFolders,
@@ -1430,10 +1454,10 @@ export function App() {
 
     try {
       if (entry.compareModeHint === 'json') {
-        const fn = api.compareJSON
-        const richFn = api.compareJSONRich
-        if (!fn) {
-          throw new Error('Wails bridge not available (CompareJSONFiles)')
+        const richFn = api.compareJSONValuesRich
+        const loader = api.loadTextFile
+        if (!richFn || !loader) {
+          throw new Error('Wails bridge not available (CompareJSONValuesRich/LoadTextFile)')
         }
 
         const safeJSONCommon = {
@@ -1445,49 +1469,30 @@ export function App() {
               : jsonCommon.textStyle,
         }
 
-        const oldPath = entry.leftPath
-        const newPath = entry.rightPath
+        const oldLoaded: LoadTextFileResponse = await loader({
+          path: entry.leftPath,
+        } satisfies LoadTextFileRequest)
+        const newLoaded: LoadTextFileResponse = await loader({
+          path: entry.rightPath,
+        } satisfies LoadTextFileRequest)
 
-        let res: CompareResponse
-        if (richFn) {
-          const richRes: CompareJSONRichResponse = await richFn({
-            oldPath,
-            newPath,
-            common: safeJSONCommon,
-            ignoreOrder,
-          })
-          setJSONRichResult(richRes)
-          setJSONSearchQuery('')
-          setJSONActiveSearchIndex(0)
-          setJSONResultView('rich')
-          res = richRes.result
-        } else {
-          res = await fn({
-            oldPath,
-            newPath,
-            common: safeJSONCommon,
-            ignoreOrder,
-          })
-          setJSONRichResult({
-            result: res,
-            summary: {
-              added: 0,
-              removed: 0,
-              changed: 0,
-              typeChanged: 0,
-              breaking: 0,
-            },
-            diffs: [],
-          })
-          setJSONSearchQuery('')
-          setJSONActiveSearchIndex(0)
-          setJSONResultView('raw')
-        }
+        const richRes: CompareJSONRichResponse = await richFn({
+          oldValue: oldLoaded.content,
+          newValue: newLoaded.content,
+          common: safeJSONCommon,
+          ignoreOrder,
+        } satisfies CompareJSONValuesRequest)
 
-        setJSONOldPath(oldPath)
-        setJSONNewPath(newPath)
+        setJSONOldText(oldLoaded.content)
+        setJSONNewText(newLoaded.content)
+        setJSONOldSourcePath(oldLoaded.path)
+        setJSONNewSourcePath(newLoaded.path)
+        setJSONRichResult(richRes)
+        setJSONSearchQuery('')
+        setJSONActiveSearchIndex(0)
+        setJSONResultView('rich')
         setMode('json')
-        setResult(res)
+        setResult(richRes.result)
         return
       }
 
@@ -1567,9 +1572,8 @@ export function App() {
   }
 
   const runJSON = async () => {
-    const fn = api.compareJSON
-    const richFn = api.compareJSONRich
-    if (!fn) throw new Error('Wails bridge not available (CompareJSONFiles)')
+    const richFn = api.compareJSONValuesRich
+    if (!richFn) throw new Error('Wails bridge not available (CompareJSONValuesRich)')
 
     const safeJSONCommon = {
       ...jsonCommon,
@@ -1580,42 +1584,17 @@ export function App() {
           : jsonCommon.textStyle,
     }
 
-    if (richFn) {
-      const richRes: CompareJSONRichResponse = await richFn({
-        oldPath: jsonOldPath,
-        newPath: jsonNewPath,
-        common: safeJSONCommon,
-        ignoreOrder,
-      })
-      setJSONRichResult(richRes)
-      setJSONResultView('rich')
-      setJSONSearchQuery('')
-      setJSONActiveSearchIndex(0)
-      setResult(richRes.result)
-      return
-    }
-
-    const res: CompareResponse = await fn({
-      oldPath: jsonOldPath,
-      newPath: jsonNewPath,
+    const richRes: CompareJSONRichResponse = await richFn({
+      oldValue: jsonOldText,
+      newValue: jsonNewText,
       common: safeJSONCommon,
       ignoreOrder,
-    })
-    setJSONRichResult({
-      result: res,
-      summary: {
-        added: 0,
-        removed: 0,
-        changed: 0,
-        typeChanged: 0,
-        breaking: 0,
-      },
-      diffs: [],
-    })
-    setJSONResultView('raw')
+    } satisfies CompareJSONValuesRequest)
+    setJSONRichResult(richRes)
+    setJSONResultView('rich')
     setJSONSearchQuery('')
     setJSONActiveSearchIndex(0)
-    setResult(res)
+    setResult(richRes.result)
   }
 
   const runSpec = async () => {
@@ -1742,13 +1721,6 @@ export function App() {
     }
   }
 
-  const swapTextInputs = () => {
-    setTextOld(textNew)
-    setTextNew(textOld)
-    setTextOldSourcePath(textNewSourcePath)
-    setTextNewSourcePath(textOldSourcePath)
-  }
-
   const clearTextInput = (target: TextInputTarget) => {
     if (target === 'old') {
       setTextOld('')
@@ -1758,6 +1730,145 @@ export function App() {
 
     setTextNew('')
     setTextNewSourcePath('')
+  }
+
+  const pasteJSONFromClipboard = async (target: TextInputTarget) => {
+    const readClipboard = getRuntimeClipboardRead()
+    if (!readClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    setJSONClipboardBusyTarget(target)
+
+    try {
+      const pasted = await readClipboard()
+      if (!pasted) {
+        notifications.show({
+          title: 'Clipboard is empty',
+          message: 'Nothing to paste.',
+          color: 'yellow',
+        })
+        return
+      }
+
+      if (target === 'old') {
+        setJSONOldText(pasted)
+        setJSONOldSourcePath('')
+      } else {
+        setJSONNewText(pasted)
+        setJSONNewSourcePath('')
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Failed to paste from clipboard',
+        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setJSONClipboardBusyTarget(null)
+    }
+  }
+
+  const loadJSONFromFile = async (target: TextInputTarget) => {
+    const picker = api.pickJSONFile
+    const loader = api.loadTextFile
+    if (!picker || !loader) {
+      notifications.show({
+        title: 'JSON loader unavailable',
+        message: 'JSON file loader is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    setJSONFileBusyTarget(target)
+
+    try {
+      const selected = await picker()
+      if (!selected) {
+        return
+      }
+
+      const loaded: LoadTextFileResponse = await loader({
+        path: selected,
+      } satisfies LoadTextFileRequest)
+
+      if (target === 'old') {
+        setJSONOldText(loaded.content)
+        setJSONOldSourcePath(loaded.path)
+      } else {
+        setJSONNewText(loaded.content)
+        setJSONNewSourcePath(loaded.path)
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Failed to load JSON file',
+        message: `Failed to load JSON file: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setJSONFileBusyTarget(null)
+    }
+  }
+
+  const copyJSONInput = async (target: TextInputTarget) => {
+    const writeClipboard = getRuntimeClipboardWrite()
+    if (!writeClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    const value = target === 'old' ? jsonOldText : jsonNewText
+    if (!value) {
+      return
+    }
+
+    setJSONCopyBusyTarget(target)
+    try {
+      const ok = await writeClipboard(value)
+      if (!ok) {
+        notifications.show({
+          title: 'Copy failed',
+          message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} JSON.`,
+          color: 'red',
+        })
+        return
+      }
+
+      notifications.show({
+        title: 'Copied',
+        message: `${target === 'old' ? 'Old' : 'New'} JSON copied to clipboard.`,
+        color: 'green',
+      })
+    } catch (error) {
+      notifications.show({
+        title: 'Copy failed',
+        message: `Failed to copy JSON: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setJSONCopyBusyTarget(null)
+    }
+  }
+
+  const clearJSONInput = (target: TextInputTarget) => {
+    if (target === 'old') {
+      setJSONOldText('')
+      setJSONOldSourcePath('')
+      return
+    }
+
+    setJSONNewText('')
+    setJSONNewSourcePath('')
   }
 
   const copyTextResultRawOutput = async () => {
@@ -3019,10 +3130,12 @@ export function App() {
       : mode === 'json'
         ? 'JSON compare options'
         : 'Spec compare options'
+  const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
 
   const compareModeHeaderActions = isCompareCentricMode ? (
     <CompareModeHeaderActions
       loading={loading}
+      compareDisabled={mode === 'json' ? jsonCompareDisabled : false}
       onCompare={() => void onRun()}
       optionsOpen={compareOptionsOpened}
       onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
@@ -3381,119 +3494,108 @@ export function App() {
     mode === 'text' ? (
       <CompareWorkspaceShell
         source={
-          <div className="compare-source-stack">
-            <div className="compare-source-shared-actions">
-              <ComparePaneAction
-                label="Swap old and new texts"
-                onClick={swapTextInputs}
-                disabled={textEditorBusy}
+          <CompareSourceGrid
+            left={
+              <CompareSourcePane
+                title="Old text"
+                sourcePath={textOldSourcePath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Open file into Old text"
+                      onClick={() => void loadTextFromFile('old')}
+                      disabled={textEditorBusy}
+                      loading={textFileBusyTarget === 'old'}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Paste clipboard into Old text"
+                      onClick={() => void pasteTextFromClipboard('old')}
+                      disabled={textEditorBusy}
+                      loading={textClipboardBusyTarget === 'old'}
+                    >
+                      <IconClipboardText size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Copy Old text"
+                      onClick={() => void copyTextInput('old')}
+                      disabled={textEditorBusy || !textOld}
+                      loading={textPaneCopyBusyTarget === 'old'}
+                    >
+                      <IconCopy size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear Old text"
+                      onClick={() => clearTextInput('old')}
+                      disabled={textEditorBusy || !textOld}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
               >
-                <IconSwitchHorizontal size={14} />
-              </ComparePaneAction>
-            </div>
-            <CompareSourceGrid
-              left={
-                <CompareSourcePane
-                  title="Old text"
-                  sourcePath={textOldSourcePath}
-                  actions={
-                    <ComparePaneActions>
-                      <ComparePaneAction
-                        label="Open file into Old text"
-                        onClick={() => void loadTextFromFile('old')}
-                        disabled={textEditorBusy}
-                        loading={textFileBusyTarget === 'old'}
-                      >
-                        <IconFolderOpen size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Paste clipboard into Old text"
-                        onClick={() => void pasteTextFromClipboard('old')}
-                        disabled={textEditorBusy}
-                        loading={textClipboardBusyTarget === 'old'}
-                      >
-                        <IconClipboardText size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Copy Old text"
-                        onClick={() => void copyTextInput('old')}
-                        disabled={textEditorBusy || !textOld}
-                        loading={textPaneCopyBusyTarget === 'old'}
-                      >
-                        <IconCopy size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Clear Old text"
-                        onClick={() => clearTextInput('old')}
-                        disabled={textEditorBusy || !textOld}
-                        danger
-                      >
-                        <IconBackspace size={14} />
-                      </ComparePaneAction>
-                    </ComparePaneActions>
-                  }
-                >
-                  <CompareTextInputBody
-                    value={textOld}
-                    onChange={(value) => {
-                      setTextOld(value)
-                      if (textOldSourcePath) setTextOldSourcePath('')
-                    }}
-                  />
-                </CompareSourcePane>
-              }
-              right={
-                <CompareSourcePane
-                  title="New text"
-                  sourcePath={textNewSourcePath}
-                  actions={
-                    <ComparePaneActions>
-                      <ComparePaneAction
-                        label="Open file into New text"
-                        onClick={() => void loadTextFromFile('new')}
-                        disabled={textEditorBusy}
-                        loading={textFileBusyTarget === 'new'}
-                      >
-                        <IconFolderOpen size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Paste clipboard into New text"
-                        onClick={() => void pasteTextFromClipboard('new')}
-                        disabled={textEditorBusy}
-                        loading={textClipboardBusyTarget === 'new'}
-                      >
-                        <IconClipboardText size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Copy New text"
-                        onClick={() => void copyTextInput('new')}
-                        disabled={textEditorBusy || !textNew}
-                        loading={textPaneCopyBusyTarget === 'new'}
-                      >
-                        <IconCopy size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Clear New text"
-                        onClick={() => clearTextInput('new')}
-                        disabled={textEditorBusy || !textNew}
-                        danger
-                      >
-                        <IconBackspace size={14} />
-                      </ComparePaneAction>
-                    </ComparePaneActions>
-                  }
-                >
-                  <CompareTextInputBody
-                    value={textNew}
-                    onChange={(value) => {
-                      setTextNew(value)
-                      if (textNewSourcePath) setTextNewSourcePath('')
-                    }}
-                  />
-                </CompareSourcePane>
-              }
-            />
-          </div>
+                <CompareTextInputBody
+                  value={textOld}
+                  onChange={(value) => {
+                    setTextOld(value)
+                    if (textOldSourcePath) setTextOldSourcePath('')
+                  }}
+                />
+              </CompareSourcePane>
+            }
+            right={
+              <CompareSourcePane
+                title="New text"
+                sourcePath={textNewSourcePath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Open file into New text"
+                      onClick={() => void loadTextFromFile('new')}
+                      disabled={textEditorBusy}
+                      loading={textFileBusyTarget === 'new'}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Paste clipboard into New text"
+                      onClick={() => void pasteTextFromClipboard('new')}
+                      disabled={textEditorBusy}
+                      loading={textClipboardBusyTarget === 'new'}
+                    >
+                      <IconClipboardText size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Copy New text"
+                      onClick={() => void copyTextInput('new')}
+                      disabled={textEditorBusy || !textNew}
+                      loading={textPaneCopyBusyTarget === 'new'}
+                    >
+                      <IconCopy size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear New text"
+                      onClick={() => clearTextInput('new')}
+                      disabled={textEditorBusy || !textNew}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
+              >
+                <CompareTextInputBody
+                  value={textNew}
+                  onChange={(value) => {
+                    setTextNew(value)
+                    if (textNewSourcePath) setTextNewSourcePath('')
+                  }}
+                />
+              </CompareSourcePane>
+            }
+          />
         }
         result={renderTextResultPanel()}
       />
@@ -3504,32 +3606,102 @@ export function App() {
             left={
               <CompareSourcePane
                 title="Old JSON"
-                sourcePath={jsonOldPath}
+                sourcePath={jsonOldSourcePath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Open file into Old JSON"
+                      onClick={() => void loadJSONFromFile('old')}
+                      disabled={jsonEditorBusy}
+                      loading={jsonFileBusyTarget === 'old'}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Paste clipboard into Old JSON"
+                      onClick={() => void pasteJSONFromClipboard('old')}
+                      disabled={jsonEditorBusy}
+                      loading={jsonClipboardBusyTarget === 'old'}
+                    >
+                      <IconClipboardText size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Copy Old JSON"
+                      onClick={() => void copyJSONInput('old')}
+                      disabled={jsonEditorBusy || !jsonOldText}
+                      loading={jsonCopyBusyTarget === 'old'}
+                    >
+                      <IconCopy size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear Old JSON"
+                      onClick={() => clearJSONInput('old')}
+                      disabled={jsonEditorBusy || !jsonOldText}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
               >
-                <ComparePathInputBody
-                  value={jsonOldPath}
-                  onChange={setJSONOldPath}
-                  onBrowse={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
-                  onClear={() => setJSONOldPath('')}
-                  clearDisabled={!jsonOldPath}
-                  browseLabel="Browse old JSON file"
-                  clearLabel="Clear old JSON path"
+                <CompareJsonInputBody
+                  value={jsonOldText}
+                  onChange={(value) => {
+                    setJSONOldText(value)
+                    if (jsonOldSourcePath) setJSONOldSourcePath('')
+                  }}
+                  parseError={jsonOldParseError}
                 />
               </CompareSourcePane>
             }
             right={
               <CompareSourcePane
                 title="New JSON"
-                sourcePath={jsonNewPath}
+                sourcePath={jsonNewSourcePath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Open file into New JSON"
+                      onClick={() => void loadJSONFromFile('new')}
+                      disabled={jsonEditorBusy}
+                      loading={jsonFileBusyTarget === 'new'}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Paste clipboard into New JSON"
+                      onClick={() => void pasteJSONFromClipboard('new')}
+                      disabled={jsonEditorBusy}
+                      loading={jsonClipboardBusyTarget === 'new'}
+                    >
+                      <IconClipboardText size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Copy New JSON"
+                      onClick={() => void copyJSONInput('new')}
+                      disabled={jsonEditorBusy || !jsonNewText}
+                      loading={jsonCopyBusyTarget === 'new'}
+                    >
+                      <IconCopy size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear New JSON"
+                      onClick={() => clearJSONInput('new')}
+                      disabled={jsonEditorBusy || !jsonNewText}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
               >
-                <ComparePathInputBody
-                  value={jsonNewPath}
-                  onChange={setJSONNewPath}
-                  onBrowse={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
-                  onClear={() => setJSONNewPath('')}
-                  clearDisabled={!jsonNewPath}
-                  browseLabel="Browse new JSON file"
-                  clearLabel="Clear new JSON path"
+                <CompareJsonInputBody
+                  value={jsonNewText}
+                  onChange={(value) => {
+                    setJSONNewText(value)
+                    if (jsonNewSourcePath) setJSONNewSourcePath('')
+                  }}
+                  parseError={jsonNewParseError}
                 />
               </CompareSourcePane>
             }

@@ -662,6 +662,23 @@ button {
   flex: 1;
 }
 
+.compare-json-input-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  flex: 1;
+}
+
+.compare-json-input-editor {
+  flex: 1;
+}
+
+.compare-json-parse-error {
+  font-size: 0.82rem;
+  color: var(--mantine-color-red-7);
+}
+
 .compare-source-stack {
   display: flex;
   flex-direction: column;
