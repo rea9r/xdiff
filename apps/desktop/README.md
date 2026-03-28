@@ -41,6 +41,7 @@ This app is an experimental desktop GUI for xdiff.
 - Text rich diff supports row search with next/prev navigation and auto-reveal of the active hidden unchanged section
 - Folder compare MVP with recursive directory scan, flat result list, and child compare launch
 - Folder compare workflow polish with scanned/visible summaries, quick filters, and selected-row detail pane
+- Folder compare now uses a simpler table-first workflow inspired by WinMerge, with inline summaries and selected-row detail below the list
 
 Not included yet:
 

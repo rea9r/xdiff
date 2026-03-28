@@ -20,6 +20,7 @@ import type {
   CompareSpecValuesRequest,
   CompareResponse,
   FolderCompareEntry,
+  FolderCompareSummary,
   JSONRichDiffItem,
   LoadTextFileRequest,
   LoadTextFileResponse,
@@ -532,13 +533,6 @@ function formatFolderStatusLabel(status: FolderCompareEntry['status']): string {
   }
 }
 
-function formatFolderKindLabel(entry: FolderCompareEntry): string {
-  if (entry.leftKind === entry.rightKind) {
-    return entry.leftKind
-  }
-  return `${entry.leftKind} / ${entry.rightKind}`
-}
-
 function canOpenFolderEntry(entry: FolderCompareEntry): boolean {
   return (
     entry.compareModeHint !== 'none' &&
@@ -554,11 +548,11 @@ function getFolderEntryActionReason(entry: FolderCompareEntry): string | null {
     return null
   }
 
-  if (!entry.leftExists) return 'Only exists on right'
-  if (!entry.rightExists) return 'Only exists on left'
+  if (!entry.leftExists) return 'Only on right'
+  if (!entry.rightExists) return 'Only on left'
   if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
   if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
-  if (entry.compareModeHint === 'none') return 'No compare mode available'
+  if (entry.compareModeHint === 'none') return 'No compare mode'
   return 'Not comparable'
 }
 
@@ -585,6 +579,44 @@ function folderQuickFilterLabel(filter: FolderQuickFilter): string {
 
 function ignorePathsToText(paths: string[]): string {
   return paths.join('\n')
+}
+
+function formatBytes(size: number): string {
+  if (size < 1024) {
+    return `${size} B`
+  }
+  if (size < 1024*1024) {
+    return `${(size / 1024).toFixed(1)} KB`
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatFolderSide(exists: boolean, kind: string, size: number): string {
+  if (!exists || kind === 'missing') {
+    return '—'
+  }
+  if (kind === 'dir') {
+    return 'dir'
+  }
+  if (kind === 'file') {
+    return size > 0 ? `file · ${formatBytes(size)}` : 'file'
+  }
+  return kind
+}
+
+function renderFolderSummaryLine(label: string, summary: FolderCompareSummary) {
+  return (
+    <div className="folder-summary-line">
+      <span className="folder-summary-heading">{label}:</span>
+      <span>{summary.total} total</span>
+      <span>{summary.changed} changed</span>
+      <span>{summary.same} same</span>
+      <span>{summary.leftOnly} left only</span>
+      <span>{summary.rightOnly} right only</span>
+      <span>{summary.typeMismatch} type mismatch</span>
+      <span>{summary.error} error</span>
+    </div>
+  )
 }
 
 function parseIgnorePaths(input: string): string[] {
@@ -3568,72 +3600,9 @@ export function App() {
             <pre className="result-output">{res.error}</pre>
           ) : res ? (
             <>
-              <div className="folder-summary-section">
-                <div className="folder-summary-title">Scanned</div>
-                <div className="folder-summary-grid">
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Total</div>
-                    <div className="folder-summary-value">{res.scannedSummary.total}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Changed</div>
-                    <div className="folder-summary-value">{res.scannedSummary.changed}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Same</div>
-                    <div className="folder-summary-value">{res.scannedSummary.same}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Left only</div>
-                    <div className="folder-summary-value">{res.scannedSummary.leftOnly}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Right only</div>
-                    <div className="folder-summary-value">{res.scannedSummary.rightOnly}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Type mismatch</div>
-                    <div className="folder-summary-value">{res.scannedSummary.typeMismatch}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Error</div>
-                    <div className="folder-summary-value">{res.scannedSummary.error}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="folder-summary-section">
-                <div className="folder-summary-title">Visible</div>
-                <div className="folder-summary-grid">
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Total</div>
-                    <div className="folder-summary-value">{res.visibleSummary.total}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Changed</div>
-                    <div className="folder-summary-value">{res.visibleSummary.changed}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Same</div>
-                    <div className="folder-summary-value">{res.visibleSummary.same}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Left only</div>
-                    <div className="folder-summary-value">{res.visibleSummary.leftOnly}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Right only</div>
-                    <div className="folder-summary-value">{res.visibleSummary.rightOnly}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Type mismatch</div>
-                    <div className="folder-summary-value">{res.visibleSummary.typeMismatch}</div>
-                  </div>
-                  <div className="folder-summary-item">
-                    <div className="folder-summary-label">Error</div>
-                    <div className="folder-summary-value">{res.visibleSummary.error}</div>
-                  </div>
-                </div>
+              <div className="folder-summary-block">
+                {renderFolderSummaryLine('Scanned', res.scannedSummary)}
+                {renderFolderSummaryLine('Visible', res.visibleSummary)}
               </div>
 
               <div className="folder-quick-filters">
@@ -3651,146 +3620,140 @@ export function App() {
                 ))}
               </div>
 
-              <div className="folder-layout">
-                <div className="folder-master">
-                  <div className="folder-table-wrap">
-                    <table className="folder-results-table">
-                      <thead>
-                        <tr>
-                          <th>Status</th>
-                          <th>Path</th>
-                          <th>Kind</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredFolderEntries.length === 0 ? (
-                          <tr>
-                            <td colSpan={4}>
-                              <div className="muted">No entries to show.</div>
+              <div className="folder-table-wrap">
+                <table className="folder-results-table">
+                  <thead>
+                    <tr>
+                      <th>Path</th>
+                      <th>Status</th>
+                      <th>Left</th>
+                      <th>Right</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFolderEntries.length === 0 ? (
+                      <tr>
+                        <td colSpan={5}>
+                          <div className="muted">No entries to show.</div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredFolderEntries.map((entry) => {
+                        const openable = canOpenFolderEntry(entry)
+                        const actionReason = getFolderEntryActionReason(entry)
+                        const selected = entry.relativePath === selectedFolderEntryPath
+
+                        return (
+                          <tr
+                            key={entry.relativePath}
+                            className={selected ? 'folder-row-selected' : ''}
+                            onClick={() => setSelectedFolderEntryPath(entry.relativePath)}
+                          >
+                            <td>
+                              <div
+                                className="folder-entry-path"
+                                title={`${entry.leftPath || '(missing)'}\n${entry.rightPath || '(missing)'}`}
+                              >
+                                {entry.relativePath}
+                              </div>
+                              {entry.message ? (
+                                <div className="folder-entry-sub muted">{entry.message}</div>
+                              ) : null}
+                            </td>
+                            <td>
+                              <StatusBadge tone={toneForFolderStatus(entry.status)}>
+                                {formatFolderStatusLabel(entry.status)}
+                              </StatusBadge>
+                            </td>
+                            <td>{formatFolderSide(entry.leftExists, entry.leftKind, entry.leftSize)}</td>
+                            <td>
+                              {formatFolderSide(entry.rightExists, entry.rightKind, entry.rightSize)}
+                            </td>
+                            <td>
+                              {openable ? (
+                                <button
+                                  type="button"
+                                  className="folder-action-button button-secondary button-compact"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    void openFolderEntryDiff(entry)
+                                  }}
+                                  disabled={folderOpenBusyPath === entry.relativePath}
+                                >
+                                  {folderOpenBusyPath === entry.relativePath
+                                    ? 'Opening...'
+                                    : 'Open diff'}
+                                </button>
+                              ) : (
+                                <span className="folder-action-reason muted">
+                                  {actionReason ?? '—'}
+                                </span>
+                              )}
                             </td>
                           </tr>
-                        ) : (
-                          filteredFolderEntries.map((entry) => {
-                            const openable = canOpenFolderEntry(entry)
-                            const actionReason = getFolderEntryActionReason(entry)
-                            const selected = entry.relativePath === selectedFolderEntryPath
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                            return (
-                              <tr
-                                key={entry.relativePath}
-                                className={selected ? 'folder-row-selected' : ''}
-                                onClick={() => setSelectedFolderEntryPath(entry.relativePath)}
-                              >
-                                <td>
-                                  <StatusBadge tone={toneForFolderStatus(entry.status)}>
-                                    {formatFolderStatusLabel(entry.status)}
-                                  </StatusBadge>
-                                </td>
-                                <td>
-                                  <div
-                                    className="folder-entry-path"
-                                    title={`${entry.leftPath || '(missing)'}\n${entry.rightPath || '(missing)'}`}
-                                  >
-                                    {entry.relativePath}
-                                  </div>
-                                  {entry.message ? (
-                                    <div className="folder-entry-sub muted">{entry.message}</div>
-                                  ) : null}
-                                </td>
-                                <td>{formatFolderKindLabel(entry)}</td>
-                                <td>
-                                  {openable ? (
-                                    <button
-                                      type="button"
-                                      className="folder-action-button button-secondary button-compact"
-                                      onClick={(event) => {
-                                        event.stopPropagation()
-                                        void openFolderEntryDiff(entry)
-                                      }}
-                                      disabled={folderOpenBusyPath === entry.relativePath}
-                                    >
-                                      {folderOpenBusyPath === entry.relativePath
-                                        ? 'Opening...'
-                                        : 'Open diff'}
-                                    </button>
-                                  ) : (
-                                    <span className="folder-action-reason muted">
-                                      {actionReason ?? '—'}
-                                    </span>
-                                  )}
-                                </td>
-                              </tr>
-                            )
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <aside className="folder-detail">
-                  <div className="folder-detail-card">
-                    <div className="folder-summary-title">Selected Entry</div>
-                    {selectedFolderEntry ? (
+              {selectedFolderEntry ? (
+                <div className="folder-detail-card">
+                  <div className="folder-summary-title">Selected Entry</div>
+                  <div className="folder-detail-grid">
+                    <div className="folder-detail-label">Relative path</div>
+                    <div className="folder-entry-path">{selectedFolderEntry.relativePath}</div>
+                    <div className="folder-detail-label">Status</div>
+                    <div>
+                      <StatusBadge tone={toneForFolderStatus(selectedFolderEntry.status)}>
+                        {formatFolderStatusLabel(selectedFolderEntry.status)}
+                      </StatusBadge>
+                    </div>
+                    <div className="folder-detail-label">Left path</div>
+                    <div className="folder-entry-path">
+                      {selectedFolderEntry.leftPath || '(missing)'}
+                    </div>
+                    <div className="folder-detail-label">Right path</div>
+                    <div className="folder-entry-path">
+                      {selectedFolderEntry.rightPath || '(missing)'}
+                    </div>
+                    <div className="folder-detail-label">Left kind</div>
+                    <div>{selectedFolderEntry.leftKind}</div>
+                    <div className="folder-detail-label">Right kind</div>
+                    <div>{selectedFolderEntry.rightKind}</div>
+                    <div className="folder-detail-label">Left size</div>
+                    <div>{selectedFolderEntry.leftSize}</div>
+                    <div className="folder-detail-label">Right size</div>
+                    <div>{selectedFolderEntry.rightSize}</div>
+                    <div className="folder-detail-label">Mode hint</div>
+                    <div>{selectedFolderEntry.compareModeHint}</div>
+                    {selectedFolderEntry.message ? (
                       <>
-                        <div className="folder-detail-grid">
-                          <div className="folder-detail-label">Relative path</div>
-                          <div className="folder-entry-path">{selectedFolderEntry.relativePath}</div>
-                          <div className="folder-detail-label">Status</div>
-                          <div>
-                            <StatusBadge tone={toneForFolderStatus(selectedFolderEntry.status)}>
-                              {formatFolderStatusLabel(selectedFolderEntry.status)}
-                            </StatusBadge>
-                          </div>
-                          <div className="folder-detail-label">Left path</div>
-                          <div className="folder-entry-path">
-                            {selectedFolderEntry.leftPath || '(missing)'}
-                          </div>
-                          <div className="folder-detail-label">Right path</div>
-                          <div className="folder-entry-path">
-                            {selectedFolderEntry.rightPath || '(missing)'}
-                          </div>
-                          <div className="folder-detail-label">Left kind</div>
-                          <div>{selectedFolderEntry.leftKind}</div>
-                          <div className="folder-detail-label">Right kind</div>
-                          <div>{selectedFolderEntry.rightKind}</div>
-                          <div className="folder-detail-label">Left size</div>
-                          <div>{selectedFolderEntry.leftSize}</div>
-                          <div className="folder-detail-label">Right size</div>
-                          <div>{selectedFolderEntry.rightSize}</div>
-                          <div className="folder-detail-label">Mode hint</div>
-                          <div>{selectedFolderEntry.compareModeHint}</div>
-                          {selectedFolderEntry.message ? (
-                            <>
-                              <div className="folder-detail-label">Message</div>
-                              <div>{selectedFolderEntry.message}</div>
-                            </>
-                          ) : null}
-                        </div>
-                        <div className="folder-detail-action">
-                          {canOpenFolderEntry(selectedFolderEntry) ? (
-                            <button
-                              type="button"
-                              className="folder-action-button button-secondary button-compact"
-                              onClick={() => void openFolderEntryDiff(selectedFolderEntry)}
-                              disabled={folderOpenBusyPath === selectedFolderEntry.relativePath}
-                            >
-                              {folderOpenBusyPath === selectedFolderEntry.relativePath
-                                ? 'Opening...'
-                                : 'Open diff'}
-                            </button>
-                          ) : (
-                            <div className="muted">{detailActionReason}</div>
-                          )}
-                        </div>
+                        <div className="folder-detail-label">Message</div>
+                        <div>{selectedFolderEntry.message}</div>
                       </>
+                    ) : null}
+                  </div>
+                  <div className="folder-detail-action">
+                    {canOpenFolderEntry(selectedFolderEntry) ? (
+                      <button
+                        type="button"
+                        className="folder-action-button button-secondary button-compact"
+                        onClick={() => void openFolderEntryDiff(selectedFolderEntry)}
+                        disabled={folderOpenBusyPath === selectedFolderEntry.relativePath}
+                      >
+                        {folderOpenBusyPath === selectedFolderEntry.relativePath
+                          ? 'Opening...'
+                          : 'Open diff'}
+                      </button>
                     ) : (
-                      <div className="muted">(no selection)</div>
+                      <div className="muted">{detailActionReason}</div>
                     )}
                   </div>
-                </aside>
-              </div>
+                </div>
+              ) : null}
             </>
           ) : (
             <pre className="result-output">(no folder result yet)</pre>
