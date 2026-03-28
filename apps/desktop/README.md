@@ -65,6 +65,7 @@ wails dev
 
 Use Browse... in file-based modes to select local files. Text mode supports paste-first input and per-editor open/paste actions.
 Folder compare is desktop-only in this phase and does not add a new CLI command yet.
+For folder compare sample data, use `examples/folder/basic` and `examples/folder/filters`.
 
 ## Build frontend only
 

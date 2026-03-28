@@ -1,0 +1,1 @@
+Folder compare fixture: same text file.

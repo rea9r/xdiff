@@ -1,0 +1,10 @@
+{
+  "user": {
+    "id": 10,
+    "name": "New User",
+    "tier": "gold"
+  },
+  "flags": {
+    "beta": true
+  }
+}

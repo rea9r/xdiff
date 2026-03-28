@@ -1,0 +1,2 @@
+Folder compare fixture: right side content.
+Line: new value

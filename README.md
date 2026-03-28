@@ -253,6 +253,13 @@ Small runnable examples are available under:
 - `examples/scenario`
 - `examples/url`
 
+## Desktop fixture examples
+
+Desktop-only fixture sets are available under:
+
+- `examples/folder/basic`
+- `examples/folder/filters`
+
 ## Examples
 
 Compare local JSON files:
