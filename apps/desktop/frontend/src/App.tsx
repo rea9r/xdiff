@@ -8,6 +8,7 @@ import {
   IconChevronDown,
   IconClipboardText,
   IconCopy,
+  IconFile,
   IconFolderOpen,
 } from '@tabler/icons-react'
 import type {
@@ -1896,6 +1897,18 @@ export function App() {
     setFolderCurrentPath(nextPath)
   }
 
+  const handleFolderRowDoubleClick = async (item: FolderCompareItem) => {
+    const enterable = item.isDir && item.status !== 'type-mismatch'
+    if (enterable) {
+      navigateFolderPath(item.relativePath)
+      return
+    }
+
+    if (canOpenFolderItem(item)) {
+      await openFolderEntryDiff(item)
+    }
+  }
+
   const runJSON = async () => {
     const richFn = api.compareJSONValuesRich
     if (!richFn) throw new Error('Wails bridge not available (CompareJSONValuesRich)')
@@ -3708,7 +3721,7 @@ export function App() {
                 <table className="folder-results-table">
                   <thead>
                     <tr>
-                      <th>Path</th>
+                      <th>Name</th>
                       <th>Status</th>
                       <th>Left</th>
                       <th>Right</th>
@@ -3732,8 +3745,14 @@ export function App() {
                         return (
                           <tr
                             key={item.relativePath}
-                            className={selected ? 'folder-row-selected' : ''}
+                            className={[
+                              selected ? 'folder-row-selected' : '',
+                              enterable || openable ? 'folder-row-clickable' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
                             onClick={() => setSelectedFolderItemPath(item.relativePath)}
+                            onDoubleClick={() => void handleFolderRowDoubleClick(item)}
                           >
                             <td>
                               <div
@@ -3744,19 +3763,22 @@ export function App() {
                                   void navigateFolderPath(item.relativePath)
                                 }}
                               >
-                                {item.isDir ? <IconFolderOpen size={14} /> : null}
+                                {item.isDir ? <IconFolderOpen size={14} /> : <IconFile size={14} />}
                                 <span
-                                className="folder-entry-path"
-                                title={`${item.leftPath || '(missing)'}\n${item.rightPath || '(missing)'}`}
-                              >
+                                  className="folder-entry-path"
+                                  title={`${item.leftPath || '(missing)'}\n${item.rightPath || '(missing)'}`}
+                                >
                                   {item.name}
                                 </span>
                               </div>
+                              {item.relativePath !== item.name ? (
+                                <div className="folder-entry-sub muted">{item.relativePath}</div>
+                              ) : null}
                               {item.message ? (
                                 <div className="folder-entry-sub muted">{item.message}</div>
                               ) : null}
                             </td>
-                            <td>
+                            <td className="folder-status-cell">
                               <StatusBadge tone={toneForFolderStatus(item.status)}>
                                 {formatFolderStatusLabel(item.status)}
                               </StatusBadge>
@@ -3815,7 +3837,7 @@ export function App() {
                     <div className="folder-detail-label">Relative path</div>
                     <div className="folder-entry-path">{selectedFolderItem.relativePath}</div>
                     <div className="folder-detail-label">Status</div>
-                    <div>
+                    <div className="folder-status-cell">
                       <StatusBadge tone={toneForFolderStatus(selectedFolderItem.status)}>
                         {formatFolderStatusLabel(selectedFolderItem.status)}
                       </StatusBadge>

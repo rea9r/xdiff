@@ -1668,12 +1668,16 @@ button {
 }
 
 .folder-results-table tbody tr {
-  cursor: pointer;
+  cursor: default;
   transition: background-color 120ms ease;
 }
 
 .folder-results-table tbody tr:hover {
   background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 85%, transparent);
+}
+
+.folder-row-clickable {
+  cursor: pointer !important;
 }
 
 .folder-results-table th {
@@ -1694,8 +1698,19 @@ button {
   gap: 6px;
 }
 
+.folder-status-cell .mantine-Badge-root {
+  font-size: 0.68rem;
+  padding-inline: 6px;
+}
+
 .folder-item-name.is-dir {
   cursor: pointer;
+  color: color-mix(in srgb, var(--mantine-color-blue-7) 72%, var(--xdiff-viewer-text-dimmed));
+}
+
+.folder-item-name.is-dir:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .folder-entry-sub {
@@ -1756,7 +1771,7 @@ button {
 }
 
 .folder-row-selected {
-  background: var(--xdiff-viewer-surface-subtle);
+  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 80%, transparent);
 }
 
 .folder-detail-card {
