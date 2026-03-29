@@ -7,7 +7,7 @@ import {
   type KeyboardEvent,
   type MutableRefObject,
 } from 'react'
-import { ActionIcon, Tooltip } from '@mantine/core'
+import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import YAML from 'yaml'
 import {
@@ -21,6 +21,7 @@ import {
   IconCopy,
   IconFile,
   IconFolderOpen,
+  IconHistory,
   IconList,
 } from '@tabler/icons-react'
 import type {
@@ -32,6 +33,10 @@ import type {
   CompareSpecRichResponse,
   CompareSpecValuesRequest,
   CompareResponse,
+  DesktopRecentFolderPair,
+  DesktopRecentPair,
+  DesktopRecentScenarioPath,
+  DesktopState,
   FolderCompareItem,
   JSONRichDiffItem,
   LoadTextFileRequest,
@@ -70,6 +75,11 @@ import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
 import { CompareCodeInputBody } from './ui/CompareCodeInputBody'
 import { SpecRichDiffViewer } from './ui/SpecRichDiffViewer'
+import {
+  upsertRecentFolderPair,
+  upsertRecentPair,
+  upsertRecentScenarioPath,
+} from './persistence'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -1401,6 +1411,7 @@ export function App() {
   const [folderExpandedPaths, setFolderExpandedPaths] = useState<string[]>([])
   const [folderTreeLoadingPath, setFolderTreeLoadingPath] = useState('')
   const folderTreeCacheRef = useRef<Record<string, FolderCompareItem[]>>({})
+  const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -1409,6 +1420,14 @@ export function App() {
   const [scenarioListStatus, setScenarioListStatus] = useState('')
   const [scenarioRunResult, setScenarioRunResult] = useState<ScenarioRunResponse | null>(null)
   const [selectedScenarioResultName, setSelectedScenarioResultName] = useState('')
+  const [scenarioRecentPaths, setScenarioRecentPaths] = useState<DesktopRecentScenarioPath[]>(
+    [],
+  )
+
+  const [jsonRecentPairs, setJSONRecentPairs] = useState<DesktopRecentPair[]>([])
+  const [specRecentPairs, setSpecRecentPairs] = useState<DesktopRecentPair[]>([])
+  const [textRecentPairs, setTextRecentPairs] = useState<DesktopRecentPair[]>([])
+  const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
 
   const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
@@ -1947,14 +1966,209 @@ export function App() {
       pickTextFile: (window as any).go?.main?.App?.PickTextFile,
       pickFolderRoot: (window as any).go?.main?.App?.PickFolderRoot,
       loadTextFile: (window as any).go?.main?.App?.LoadTextFile,
+      loadDesktopState: (window as any).go?.main?.App?.LoadDesktopState,
+      saveDesktopState: (window as any).go?.main?.App?.SaveDesktopState,
     }),
     [],
   )
+
+  useEffect(() => {
+    let active = true
+
+    const hydrate = async () => {
+      const loadDesktopState = api.loadDesktopState as (() => Promise<DesktopState>) | undefined
+      const loadTextFile = api.loadTextFile
+
+      if (!loadDesktopState) {
+        if (active) {
+          setDesktopStateHydrated(true)
+        }
+        return
+      }
+
+      try {
+        const saved = await loadDesktopState()
+        if (!active || !saved) {
+          return
+        }
+
+        if (isMode(saved.lastUsedMode)) {
+          setMode(saved.lastUsedMode)
+        }
+
+        setIgnoreOrder(!!saved.json.ignoreOrder)
+        setJSONCommon(saved.json.common)
+        setJSONIgnorePathsDraft(ignorePathsToText(saved.json.common.ignorePaths))
+        setJSONOldSourcePath(saved.json.oldSourcePath || '')
+        setJSONNewSourcePath(saved.json.newSourcePath || '')
+
+        setSpecCommon(saved.spec.common)
+        setSpecIgnorePathsDraft(ignorePathsToText(saved.spec.common.ignorePaths))
+        setSpecOldSourcePath(saved.spec.oldSourcePath || '')
+        setSpecNewSourcePath(saved.spec.newSourcePath || '')
+
+        setTextCommon(saved.text.common)
+        setTextDiffLayout(saved.text.diffLayout === 'unified' ? 'unified' : 'split')
+        setTextOldSourcePath(saved.text.oldSourcePath || '')
+        setTextNewSourcePath(saved.text.newSourcePath || '')
+
+        setFolderLeftRoot(saved.folder.leftRoot || '')
+        setFolderRightRoot(saved.folder.rightRoot || '')
+        setFolderCurrentPath(saved.folder.currentPath || '')
+        setFolderViewMode(saved.folder.viewMode === 'tree' ? 'tree' : 'list')
+
+        setScenarioPath(saved.scenario.scenarioPath || '')
+        setReportFormat(saved.scenario.reportFormat === 'json' ? 'json' : 'text')
+
+        setJSONRecentPairs(saved.jsonRecentPairs ?? [])
+        setSpecRecentPairs(saved.specRecentPairs ?? [])
+        setTextRecentPairs(saved.textRecentPairs ?? [])
+        setFolderRecentPairs(saved.folderRecentPairs ?? [])
+        setScenarioRecentPaths(saved.scenarioRecentPaths ?? [])
+
+        if (loadTextFile) {
+          const safeLoad = async (path: string): Promise<string> => {
+            const trimmed = path.trim()
+            if (!trimmed) {
+              return ''
+            }
+            try {
+              const loaded: LoadTextFileResponse = await loadTextFile({
+                path: trimmed,
+              } satisfies LoadTextFileRequest)
+              return loaded.content
+            } catch {
+              return ''
+            }
+          }
+
+          const [jsonOld, jsonNew, specOld, specNew, textOldLoaded, textNewLoaded] =
+            await Promise.all([
+              safeLoad(saved.json.oldSourcePath || ''),
+              safeLoad(saved.json.newSourcePath || ''),
+              safeLoad(saved.spec.oldSourcePath || ''),
+              safeLoad(saved.spec.newSourcePath || ''),
+              safeLoad(saved.text.oldSourcePath || ''),
+              safeLoad(saved.text.newSourcePath || ''),
+            ])
+
+          if (!active) {
+            return
+          }
+
+          setJSONOldText(jsonOld)
+          setJSONNewText(jsonNew)
+          setSpecOldText(specOld)
+          setSpecNewText(specNew)
+          setTextOld(textOldLoaded)
+          setTextNew(textNewLoaded)
+        }
+      } catch {
+        // keep app usable even when persistence load fails
+      } finally {
+        if (active) {
+          setDesktopStateHydrated(true)
+        }
+      }
+    }
+
+    void hydrate()
+    return () => {
+      active = false
+    }
+  }, [api.loadDesktopState, api.loadTextFile])
+
+  useEffect(() => {
+    if (!desktopStateHydrated) {
+      return
+    }
+    const saveDesktopState = api.saveDesktopState as
+      | ((state: DesktopState) => Promise<void>)
+      | undefined
+    if (!saveDesktopState) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      const state: DesktopState = {
+        version: 1,
+        lastUsedMode: mode,
+        json: {
+          oldSourcePath: jsonOldSourcePath,
+          newSourcePath: jsonNewSourcePath,
+          ignoreOrder,
+          common: jsonCommon,
+        },
+        spec: {
+          oldSourcePath: specOldSourcePath,
+          newSourcePath: specNewSourcePath,
+          common: specCommon,
+        },
+        text: {
+          oldSourcePath: textOldSourcePath,
+          newSourcePath: textNewSourcePath,
+          common: textCommon,
+          diffLayout: textDiffLayout,
+        },
+        folder: {
+          leftRoot: folderLeftRoot,
+          rightRoot: folderRightRoot,
+          currentPath: folderCurrentPath,
+          viewMode: folderViewMode,
+        },
+        scenario: {
+          scenarioPath,
+          reportFormat,
+        },
+        jsonRecentPairs,
+        specRecentPairs,
+        textRecentPairs,
+        folderRecentPairs,
+        scenarioRecentPaths,
+      }
+
+      void saveDesktopState(state).catch(() => {
+        // keep save errors non-fatal
+      })
+    }, 500)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [
+    api.saveDesktopState,
+    desktopStateHydrated,
+    folderCurrentPath,
+    folderLeftRoot,
+    folderRecentPairs,
+    folderRightRoot,
+    folderViewMode,
+    ignoreOrder,
+    jsonCommon,
+    jsonNewSourcePath,
+    jsonOldSourcePath,
+    jsonRecentPairs,
+    mode,
+    reportFormat,
+    scenarioPath,
+    scenarioRecentPaths,
+    specCommon,
+    specNewSourcePath,
+    specOldSourcePath,
+    specRecentPairs,
+    textCommon,
+    textDiffLayout,
+    textNewSourcePath,
+    textOldSourcePath,
+    textRecentPairs,
+  ])
 
   const setResult = (res: unknown) => {
     setSummaryLine(summarizeResponse(res))
     setOutput(renderResult(res))
   }
+
+  const nowISO = () => new Date().toISOString()
 
   const updateJSONCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
     setJSONCommon((prev) => ({ ...prev, [key]: value }))
@@ -2117,6 +2331,15 @@ export function App() {
       return
     }
     setFolderStatus('')
+    setFolderRecentPairs((prev) =>
+      upsertRecentFolderPair(prev, {
+        leftRoot: folderLeftRoot,
+        rightRoot: folderRightRoot,
+        currentPath: res.currentPath ?? nextCurrentPath,
+        viewMode: folderViewMode,
+        usedAt: nowISO(),
+      }),
+    )
   }
 
   const loadFolderChildren = async (relativePath: string): Promise<FolderCompareItem[]> => {
@@ -2225,6 +2448,13 @@ export function App() {
             canRenderSemantic: !richRes.result.error,
           }),
         )
+        setJSONRecentPairs((prev) =>
+          upsertRecentPair(prev, {
+            oldPath: oldLoaded.path,
+            newPath: newLoaded.path,
+            usedAt: nowISO(),
+          }),
+        )
         setMode('json')
         setResult(richRes.result)
         return
@@ -2270,6 +2500,13 @@ export function App() {
             canRenderSemantic: !richRes.result.error,
           }),
         )
+        setSpecRecentPairs((prev) =>
+          upsertRecentPair(prev, {
+            oldPath: oldLoaded.path,
+            newPath: newLoaded.path,
+            usedAt: nowISO(),
+          }),
+        )
         setMode('spec')
         setResult(richRes.result)
         return
@@ -2306,6 +2543,13 @@ export function App() {
       setTextExpandedUnchangedSectionIds([])
       setTextSearchQuery('')
       setTextActiveSearchIndex(0)
+      setTextRecentPairs((prev) =>
+        upsertRecentPair(prev, {
+          oldPath: leftLoaded.path,
+          newPath: rightLoaded.path,
+          usedAt: nowISO(),
+        }),
+      )
       setMode('text')
       setResult(res)
     } catch (error) {
@@ -2499,6 +2743,15 @@ export function App() {
     setJSONSearchQuery('')
     setJSONActiveSearchIndex(0)
     setResult(richRes.result)
+    if (jsonOldSourcePath.trim() && jsonNewSourcePath.trim()) {
+      setJSONRecentPairs((prev) =>
+        upsertRecentPair(prev, {
+          oldPath: jsonOldSourcePath,
+          newPath: jsonNewSourcePath,
+          usedAt: nowISO(),
+        }),
+      )
+    }
   }
 
   const runSpec = async () => {
@@ -2527,6 +2780,15 @@ export function App() {
       }),
     )
     setResult(richRes.result)
+    if (specOldSourcePath.trim() && specNewSourcePath.trim()) {
+      setSpecRecentPairs((prev) =>
+        upsertRecentPair(prev, {
+          oldPath: specOldSourcePath,
+          newPath: specNewSourcePath,
+          usedAt: nowISO(),
+        }),
+      )
+    }
   }
 
   const runText = async () => {
@@ -2544,6 +2806,249 @@ export function App() {
     setTextLastRunNew(textNew)
     setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
     setResult(res)
+    if (textOldSourcePath.trim() && textNewSourcePath.trim()) {
+      setTextRecentPairs((prev) =>
+        upsertRecentPair(prev, {
+          oldPath: textOldSourcePath,
+          newPath: textNewSourcePath,
+          usedAt: nowISO(),
+        }),
+      )
+    }
+  }
+
+  const runJSONFromRecent = async (pair: DesktopRecentPair) => {
+    const loader = api.loadTextFile
+    const richFn = api.compareJSONValuesRich
+    if (!loader || !richFn) {
+      throw new Error('Wails bridge not available (LoadTextFile/CompareJSONValuesRich)')
+    }
+
+    const [oldLoaded, newLoaded] = await Promise.all([
+      loader({ path: pair.oldPath } satisfies LoadTextFileRequest),
+      loader({ path: pair.newPath } satisfies LoadTextFileRequest),
+    ])
+
+    const safeJSONCommon = {
+      ...jsonCommon,
+      ignorePaths: effectiveJSONIgnorePaths,
+      textStyle:
+        jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
+          ? 'semantic'
+          : jsonCommon.textStyle,
+    }
+
+    const richRes: CompareJSONRichResponse = await richFn({
+      oldValue: oldLoaded.content,
+      newValue: newLoaded.content,
+      common: safeJSONCommon,
+      ignoreOrder,
+    } satisfies CompareJSONValuesRequest)
+
+    setMode('json')
+    setJSONOldSourcePath(oldLoaded.path)
+    setJSONNewSourcePath(newLoaded.path)
+    setJSONOldText(oldLoaded.content)
+    setJSONNewText(newLoaded.content)
+    setJSONRichResult(richRes)
+    setJSONResultView(
+      chooseDefaultDisplayModeForMode({
+        mode: 'json',
+        hasDiffText: richRes.diffText.trim().length > 0,
+        canRenderSemantic: !richRes.result.error,
+      }),
+    )
+    setJSONSearchQuery('')
+    setJSONActiveSearchIndex(0)
+    setResult(richRes.result)
+    setJSONRecentPairs((prev) =>
+      upsertRecentPair(prev, {
+        oldPath: oldLoaded.path,
+        newPath: newLoaded.path,
+        usedAt: nowISO(),
+      }),
+    )
+  }
+
+  const runSpecFromRecent = async (pair: DesktopRecentPair) => {
+    const loader = api.loadTextFile
+    const richFn = api.compareSpecValuesRich
+    if (!loader || !richFn) {
+      throw new Error('Wails bridge not available (LoadTextFile/CompareSpecValuesRich)')
+    }
+
+    const [oldLoaded, newLoaded] = await Promise.all([
+      loader({ path: pair.oldPath } satisfies LoadTextFileRequest),
+      loader({ path: pair.newPath } satisfies LoadTextFileRequest),
+    ])
+
+    const safeSpecCommon = {
+      ...specCommon,
+      ignorePaths: effectiveSpecIgnorePaths,
+      textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
+    }
+
+    const richRes: CompareSpecRichResponse = await richFn({
+      oldValue: oldLoaded.content,
+      newValue: newLoaded.content,
+      common: safeSpecCommon,
+    } satisfies CompareSpecValuesRequest)
+
+    setMode('spec')
+    setSpecOldSourcePath(oldLoaded.path)
+    setSpecNewSourcePath(newLoaded.path)
+    setSpecOldText(oldLoaded.content)
+    setSpecNewText(newLoaded.content)
+    setSpecRichResult(richRes)
+    setSpecResultView(
+      chooseDefaultDisplayModeForMode({
+        mode: 'spec',
+        hasDiffText: richRes.diffText.trim().length > 0,
+        canRenderSemantic: !richRes.result.error,
+      }),
+    )
+    setSpecSearchQuery('')
+    setSpecActiveSearchIndex(0)
+    setResult(richRes.result)
+    setSpecRecentPairs((prev) =>
+      upsertRecentPair(prev, {
+        oldPath: oldLoaded.path,
+        newPath: newLoaded.path,
+        usedAt: nowISO(),
+      }),
+    )
+  }
+
+  const runTextFromRecent = async (pair: DesktopRecentPair) => {
+    const loader = api.loadTextFile
+    const compareText = api.compareText
+    if (!loader || !compareText) {
+      throw new Error('Wails bridge not available (LoadTextFile/CompareText)')
+    }
+
+    const [oldLoaded, newLoaded] = await Promise.all([
+      loader({ path: pair.oldPath } satisfies LoadTextFileRequest),
+      loader({ path: pair.newPath } satisfies LoadTextFileRequest),
+    ])
+
+    const res: CompareResponse = await compareText({
+      oldText: oldLoaded.content,
+      newText: newLoaded.content,
+      common: textCommon,
+    })
+
+    setMode('text')
+    setTextOldSourcePath(oldLoaded.path)
+    setTextNewSourcePath(newLoaded.path)
+    setTextOld(oldLoaded.content)
+    setTextNew(newLoaded.content)
+    setTextResult(res)
+    setTextLastRunOld(oldLoaded.content)
+    setTextLastRunNew(newLoaded.content)
+    setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
+    setTextExpandedUnchangedSectionIds([])
+    setTextSearchQuery('')
+    setTextActiveSearchIndex(0)
+    setResult(res)
+    setTextRecentPairs((prev) =>
+      upsertRecentPair(prev, {
+        oldPath: oldLoaded.path,
+        newPath: newLoaded.path,
+        usedAt: nowISO(),
+      }),
+    )
+  }
+
+  const runFolderFromRecent = async (entry: DesktopRecentFolderPair) => {
+    const fn = api.compareFolders
+    if (!fn) {
+      throw new Error('Wails bridge not available (CompareFolders)')
+    }
+
+    const leftRoot = entry.leftRoot
+    const rightRoot = entry.rightRoot
+    const currentPath = entry.currentPath
+    const viewMode = entry.viewMode
+
+    const res: CompareFoldersResponse = await fn({
+      leftRoot,
+      rightRoot,
+      currentPath,
+      recursive: true,
+      showSame: true,
+      nameFilter: folderNameFilter,
+    } satisfies CompareFoldersRequest)
+
+    setMode('folder')
+    setFolderLeftRoot(leftRoot)
+    setFolderRightRoot(rightRoot)
+    setFolderCurrentPath(res.currentPath ?? currentPath)
+    setFolderViewMode(viewMode === 'tree' ? 'tree' : 'list')
+    setFolderResult(res)
+    setFolderStatus(res.error ?? '')
+
+    if (!res.error) {
+      setFolderRecentPairs((prev) =>
+        upsertRecentFolderPair(prev, {
+          leftRoot,
+          rightRoot,
+          currentPath: res.currentPath ?? currentPath,
+          viewMode: viewMode === 'tree' ? 'tree' : 'list',
+          usedAt: nowISO(),
+        }),
+      )
+    }
+  }
+
+  const loadScenarioRecent = async (entry: DesktopRecentScenarioPath) => {
+    const fn = api.listScenarioChecks
+    if (!fn) {
+      throw new Error('Wails bridge not available (ListScenarioChecks)')
+    }
+
+    const path = entry.path
+    const nextReportFormat = entry.reportFormat === 'json' ? 'json' : 'text'
+    const res: ScenarioListResponse = await fn({
+      scenarioPath: path,
+      reportFormat: nextReportFormat,
+      only: [],
+    })
+
+    setMode('scenario')
+    setScenarioPath(path)
+    setReportFormat(nextReportFormat)
+    if (res.error) {
+      setScenarioChecks([])
+      setSelectedChecks([])
+      setScenarioListStatus(res.error)
+      return
+    }
+
+    setScenarioChecks(res.checks ?? [])
+    setSelectedChecks([])
+    setScenarioListStatus(`loaded ${res.checks?.length ?? 0} checks`)
+    setScenarioRecentPaths((prev) =>
+      upsertRecentScenarioPath(prev, {
+        path,
+        reportFormat: nextReportFormat,
+        usedAt: nowISO(),
+      }),
+    )
+  }
+
+  const runRecentAction = async (label: string, action: () => Promise<void>) => {
+    setLoading(true)
+    try {
+      await action()
+    } catch (error) {
+      notifications.show({
+        title: `${label} failed`,
+        message: formatUnknownError(error),
+        color: 'red',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const pasteTextFromClipboard = async (target: TextInputTarget) => {
@@ -3122,6 +3627,15 @@ export function App() {
     setScenarioChecks(res.checks ?? [])
     setSelectedChecks([])
     setScenarioListStatus(`loaded ${res.checks?.length ?? 0} checks`)
+    if (scenarioPath.trim()) {
+      setScenarioRecentPaths((prev) =>
+        upsertRecentScenarioPath(prev, {
+          path: scenarioPath,
+          reportFormat,
+          usedAt: nowISO(),
+        }),
+      )
+    }
   }
 
   const runScenario = async () => {
@@ -3137,6 +3651,15 @@ export function App() {
     setScenarioRunResultView(res)
     setSummaryLine('')
     setOutput('')
+    if (!res.error && scenarioPath.trim()) {
+      setScenarioRecentPaths((prev) =>
+        upsertRecentScenarioPath(prev, {
+          path: scenarioPath,
+          reportFormat,
+          usedAt: nowISO(),
+        }),
+      )
+    }
   }
 
   const runByMode = async () => {
@@ -5152,6 +5675,93 @@ export function App() {
   const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
   const specCompareDisabled = specEditorBusy || specInputEmpty || specInputInvalid
 
+  const compareRecentMenu =
+    isCompareCentricMode && mode === 'json' ? (
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <HeaderRailPrimaryButton
+            variant="default"
+            leftSection={<IconHistory size={14} />}
+            disabled={jsonRecentPairs.length === 0}
+          >
+            Recent
+          </HeaderRailPrimaryButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {jsonRecentPairs.map((pair) => (
+            <Menu.Item
+              key={`${pair.oldPath}::${pair.newPath}`}
+              onClick={() =>
+                void runRecentAction('Recent JSON compare', () => runJSONFromRecent(pair))
+              }
+            >
+              {`${pair.oldPath} -> ${pair.newPath}`}
+            </Menu.Item>
+          ))}
+          <Menu.Divider />
+          <Menu.Item color="red" onClick={() => setJSONRecentPairs([])}>
+            Clear recent
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    ) : isCompareCentricMode && mode === 'spec' ? (
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <HeaderRailPrimaryButton
+            variant="default"
+            leftSection={<IconHistory size={14} />}
+            disabled={specRecentPairs.length === 0}
+          >
+            Recent
+          </HeaderRailPrimaryButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {specRecentPairs.map((pair) => (
+            <Menu.Item
+              key={`${pair.oldPath}::${pair.newPath}`}
+              onClick={() =>
+                void runRecentAction('Recent Spec compare', () => runSpecFromRecent(pair))
+              }
+            >
+              {`${pair.oldPath} -> ${pair.newPath}`}
+            </Menu.Item>
+          ))}
+          <Menu.Divider />
+          <Menu.Item color="red" onClick={() => setSpecRecentPairs([])}>
+            Clear recent
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    ) : isCompareCentricMode && mode === 'text' ? (
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <HeaderRailPrimaryButton
+            variant="default"
+            leftSection={<IconHistory size={14} />}
+            disabled={textRecentPairs.length === 0}
+          >
+            Recent
+          </HeaderRailPrimaryButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {textRecentPairs.map((pair) => (
+            <Menu.Item
+              key={`${pair.oldPath}::${pair.newPath}`}
+              onClick={() =>
+                void runRecentAction('Recent Text compare', () => runTextFromRecent(pair))
+              }
+            >
+              {`${pair.oldPath} -> ${pair.newPath}`}
+            </Menu.Item>
+          ))}
+          <Menu.Divider />
+          <Menu.Item color="red" onClick={() => setTextRecentPairs([])}>
+            Clear recent
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    ) : null
+
   const compareModeHeaderActions = isCompareCentricMode ? (
     <CompareModeHeaderActions
       loading={loading}
@@ -5161,6 +5771,7 @@ export function App() {
       onCompare={() => void onRun()}
       optionsOpen={compareOptionsOpened}
       onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
+      extraActions={compareRecentMenu}
     />
   ) : undefined
   const folderHeaderActions =
@@ -5174,6 +5785,35 @@ export function App() {
         >
           Compare
         </HeaderRailPrimaryButton>
+        <Menu position="bottom-end" withinPortal>
+          <Menu.Target>
+            <HeaderRailPrimaryButton
+              variant="default"
+              leftSection={<IconHistory size={14} />}
+              disabled={folderRecentPairs.length === 0}
+            >
+              Recent roots
+            </HeaderRailPrimaryButton>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {folderRecentPairs.map((entry) => (
+              <Menu.Item
+                key={`${entry.leftRoot}::${entry.rightRoot}::${entry.currentPath}::${entry.viewMode}`}
+                onClick={() =>
+                  void runRecentAction('Recent directory compare', () =>
+                    runFolderFromRecent(entry),
+                  )
+                }
+              >
+                {`${entry.leftRoot} <> ${entry.rightRoot}`}
+              </Menu.Item>
+            ))}
+            <Menu.Divider />
+            <Menu.Item color="red" onClick={() => setFolderRecentPairs([])}>
+              Clear recent
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </HeaderRailGroup>
     ) : undefined
 
@@ -5394,6 +6034,37 @@ export function App() {
             >
               Browse...
             </button>
+          </div>
+          <div className="button-row">
+            <Menu position="bottom-start" withinPortal>
+              <Menu.Target>
+                <button
+                  type="button"
+                  className="button-secondary button-compact"
+                  disabled={scenarioRecentPaths.length === 0}
+                >
+                  Recent scenarios
+                </button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {scenarioRecentPaths.map((entry) => (
+                  <Menu.Item
+                    key={`${entry.path}::${entry.reportFormat}`}
+                    onClick={() =>
+                      void runRecentAction('Recent scenario load', () =>
+                        loadScenarioRecent(entry),
+                      )
+                    }
+                  >
+                    {entry.path} ({entry.reportFormat})
+                  </Menu.Item>
+                ))}
+                <Menu.Divider />
+                <Menu.Item color="red" onClick={() => setScenarioRecentPaths([])}>
+                  Clear recent
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </div>
         </div>
 

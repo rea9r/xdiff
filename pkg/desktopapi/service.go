@@ -21,7 +21,9 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-type Service struct{}
+type Service struct {
+	stateStore *desktopStateStore
+}
 
 type folderEntrySnapshot struct {
 	Path string
@@ -31,7 +33,31 @@ type folderEntrySnapshot struct {
 }
 
 func NewService() *Service {
-	return &Service{}
+	store, err := newDesktopStateStore()
+	if err != nil {
+		return &Service{}
+	}
+	return &Service{stateStore: store}
+}
+
+func (s *Service) LoadDesktopState() (*DesktopState, error) {
+	state := defaultDesktopState()
+	if s.stateStore == nil {
+		return &state, nil
+	}
+	loaded, err := s.stateStore.Load()
+	if err != nil {
+		return &state, nil
+	}
+	normalized := normalizeDesktopState(loaded)
+	return &normalized, nil
+}
+
+func (s *Service) SaveDesktopState(req DesktopState) error {
+	if s.stateStore == nil {
+		return nil
+	}
+	return s.stateStore.Save(req)
 }
 
 func guiUseColor() bool {

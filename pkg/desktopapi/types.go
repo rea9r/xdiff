@@ -205,3 +205,70 @@ type ScenarioListResponse struct {
 	Output   string                   `json:"output,omitempty"`
 	Error    string                   `json:"error,omitempty"`
 }
+
+type DesktopJSONSession struct {
+	OldSourcePath string        `json:"oldSourcePath"`
+	NewSourcePath string        `json:"newSourcePath"`
+	IgnoreOrder   bool          `json:"ignoreOrder"`
+	Common        CompareCommon `json:"common"`
+}
+
+type DesktopSpecSession struct {
+	OldSourcePath string        `json:"oldSourcePath"`
+	NewSourcePath string        `json:"newSourcePath"`
+	Common        CompareCommon `json:"common"`
+}
+
+type DesktopTextSession struct {
+	OldSourcePath string        `json:"oldSourcePath"`
+	NewSourcePath string        `json:"newSourcePath"`
+	Common        CompareCommon `json:"common"`
+	DiffLayout    string        `json:"diffLayout"`
+}
+
+type DesktopFolderSession struct {
+	LeftRoot    string `json:"leftRoot"`
+	RightRoot   string `json:"rightRoot"`
+	CurrentPath string `json:"currentPath"`
+	ViewMode    string `json:"viewMode"`
+}
+
+type DesktopScenarioSession struct {
+	ScenarioPath string `json:"scenarioPath"`
+	ReportFormat string `json:"reportFormat"`
+}
+
+type DesktopRecentPair struct {
+	OldPath string `json:"oldPath"`
+	NewPath string `json:"newPath"`
+	UsedAt  string `json:"usedAt"`
+}
+
+type DesktopRecentFolderPair struct {
+	LeftRoot    string `json:"leftRoot"`
+	RightRoot   string `json:"rightRoot"`
+	CurrentPath string `json:"currentPath"`
+	ViewMode    string `json:"viewMode"`
+	UsedAt      string `json:"usedAt"`
+}
+
+type DesktopRecentScenarioPath struct {
+	Path         string `json:"path"`
+	ReportFormat string `json:"reportFormat"`
+	UsedAt       string `json:"usedAt"`
+}
+
+type DesktopState struct {
+	Version             int                         `json:"version"`
+	LastUsedMode        string                      `json:"lastUsedMode"`
+	JSON                DesktopJSONSession          `json:"json"`
+	Spec                DesktopSpecSession          `json:"spec"`
+	Text                DesktopTextSession          `json:"text"`
+	Folder              DesktopFolderSession        `json:"folder"`
+	Scenario            DesktopScenarioSession      `json:"scenario"`
+	JSONRecentPairs     []DesktopRecentPair         `json:"jsonRecentPairs"`
+	SpecRecentPairs     []DesktopRecentPair         `json:"specRecentPairs"`
+	TextRecentPairs     []DesktopRecentPair         `json:"textRecentPairs"`
+	FolderRecentPairs   []DesktopRecentFolderPair   `json:"folderRecentPairs"`
+	ScenarioRecentPaths []DesktopRecentScenarioPath `json:"scenarioRecentPaths"`
+}

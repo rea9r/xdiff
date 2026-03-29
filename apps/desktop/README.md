@@ -54,6 +54,8 @@ This app is an experimental desktop GUI for xdiff.
 - Opening a diff from directory compare preserves a return path back to the directory workflow context
 - Directory compare separates context (title + breadcrumb + roots) from result controls (summary + list/tree + filters), and keeps a visible return path from child diff views
 - Unified compare result model across text/json/spec, with `Diff` as the default display and `Semantic`/`Raw` as secondary views where applicable
+- Persistent last-session restore for desktop compare workflows (paths/roots/options) without persisting editor text or diff output
+- Recent compare/scenario/directory targets with lightweight history recall and per-mode clear actions
 
 Not included yet:
 

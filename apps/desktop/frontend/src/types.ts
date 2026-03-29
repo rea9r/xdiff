@@ -174,3 +174,70 @@ export type ScenarioListResponse = {
   output?: string
   error?: string
 }
+
+export type DesktopJSONSession = {
+  oldSourcePath: string
+  newSourcePath: string
+  ignoreOrder: boolean
+  common: CompareCommon
+}
+
+export type DesktopSpecSession = {
+  oldSourcePath: string
+  newSourcePath: string
+  common: CompareCommon
+}
+
+export type DesktopTextSession = {
+  oldSourcePath: string
+  newSourcePath: string
+  common: CompareCommon
+  diffLayout: 'split' | 'unified'
+}
+
+export type DesktopFolderSession = {
+  leftRoot: string
+  rightRoot: string
+  currentPath: string
+  viewMode: 'list' | 'tree'
+}
+
+export type DesktopScenarioSession = {
+  scenarioPath: string
+  reportFormat: 'text' | 'json'
+}
+
+export type DesktopRecentPair = {
+  oldPath: string
+  newPath: string
+  usedAt: string
+}
+
+export type DesktopRecentFolderPair = {
+  leftRoot: string
+  rightRoot: string
+  currentPath: string
+  viewMode: 'list' | 'tree'
+  usedAt: string
+}
+
+export type DesktopRecentScenarioPath = {
+  path: string
+  reportFormat: 'text' | 'json'
+  usedAt: string
+}
+
+export type DesktopState = {
+  version: number
+  lastUsedMode: Mode
+  json: DesktopJSONSession
+  spec: DesktopSpecSession
+  text: DesktopTextSession
+  folder: DesktopFolderSession
+  scenario: DesktopScenarioSession
+  jsonRecentPairs: DesktopRecentPair[]
+  specRecentPairs: DesktopRecentPair[]
+  textRecentPairs: DesktopRecentPair[]
+  folderRecentPairs: DesktopRecentFolderPair[]
+  scenarioRecentPaths: DesktopRecentScenarioPath[]
+}

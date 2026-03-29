@@ -71,6 +71,14 @@ func (a *App) ListScenarioChecks(req desktopapi.ListScenarioChecksRequest) (*des
 	return a.api.ListScenarioChecks(req)
 }
 
+func (a *App) LoadDesktopState() (*desktopapi.DesktopState, error) {
+	return a.api.LoadDesktopState()
+}
+
+func (a *App) SaveDesktopState(req desktopapi.DesktopState) error {
+	return a.api.SaveDesktopState(req)
+}
+
 func (a *App) PickJSONFile() (string, error) {
 	return a.pickFile("Select JSON file", []runtime.FileFilter{
 		{
