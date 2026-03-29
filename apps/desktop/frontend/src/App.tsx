@@ -697,6 +697,42 @@ function flattenFolderTreeRows(nodes: FolderTreeNode[], depth = 0): FolderTreeRo
   return rows
 }
 
+function treeNodeMatchesQuickFilter(
+  node: FolderTreeNode,
+  quickFilter: FolderQuickFilter,
+): boolean {
+  if (quickFilter === 'all') {
+    return true
+  }
+  return node.status === quickFilter
+}
+
+function filterFolderTreeNodesByQuickFilter(
+  nodes: FolderTreeNode[],
+  quickFilter: FolderQuickFilter,
+): FolderTreeNode[] {
+  if (quickFilter === 'all') {
+    return nodes
+  }
+
+  return nodes.flatMap((node) => {
+    const filteredChildren = filterFolderTreeNodesByQuickFilter(node.children ?? [], quickFilter)
+    const keepNode =
+      treeNodeMatchesQuickFilter(node, quickFilter) || filteredChildren.length > 0
+
+    if (!keepNode) {
+      return []
+    }
+
+    return [
+      {
+        ...node,
+        children: filteredChildren,
+      },
+    ]
+  })
+}
+
 function renderFolderSummaryLine(label: string, summary: FolderCompareSummary) {
   return (
     <div className="folder-summary-line">
@@ -1532,9 +1568,13 @@ export function App() {
     () => sortedFolderItems.find((item) => item.relativePath === selectedFolderItemPath) ?? null,
     [sortedFolderItems, selectedFolderItemPath],
   )
+  const filteredFolderTreeRoots = useMemo(
+    () => filterFolderTreeNodesByQuickFilter(folderTreeRoots, folderQuickFilter),
+    [folderTreeRoots, folderQuickFilter],
+  )
   const flattenedFolderTreeRows = useMemo(
-    () => flattenFolderTreeRows(folderTreeRoots),
-    [folderTreeRoots],
+    () => flattenFolderTreeRows(filteredFolderTreeRoots),
+    [filteredFolderTreeRoots],
   )
   const selectedFolderTreeItem = useMemo(
     () =>
@@ -1616,10 +1656,9 @@ export function App() {
   }, [mode, folderResult, folderCurrentPath, folderLeftRoot, folderRightRoot])
 
   useEffect(() => {
-    const filteredRoots = filterFolderItemsByQuickFilter(folderItems, folderQuickFilter)
     setFolderTreeRoots((prevRoots) => {
       const previousByPath = new Map(prevRoots.map((node) => [node.path, node]))
-      return folderItemsToTreeNodes(filteredRoots).map((node) => {
+      return folderItemsToTreeNodes(folderItems).map((node) => {
         const previous = previousByPath.get(node.path)
         if (!previous) {
           return {
@@ -1636,7 +1675,7 @@ export function App() {
       })
     })
     folderTreeCacheRef.current[''] = folderItems
-  }, [folderItems, folderQuickFilter, folderExpandedPaths])
+  }, [folderItems, folderExpandedPaths])
 
   useEffect(() => {
     folderTreeCacheRef.current = {}
@@ -2162,8 +2201,7 @@ export function App() {
 
     try {
       const items = await loadFolderChildren(path)
-      const filteredChildren = filterFolderItemsByQuickFilter(items, folderQuickFilter)
-      const childNodes = folderItemsToTreeNodes(filteredChildren)
+      const childNodes = folderItemsToTreeNodes(items)
 
       setFolderTreeRoots((prev) =>
         updateTreeNodes(prev, path, (node) => ({
@@ -4306,7 +4344,11 @@ export function App() {
                             onClick={() => setSelectedFolderItemPath(node.path)}
                             onDoubleClick={() => void handleFolderTreeRowDoubleClick(node)}
                           >
-                            <div className="folder-tree-name">
+                            <div
+                              className={`folder-tree-name ${node.isDir ? 'is-dir' : 'is-file'} ${
+                                openable ? 'is-openable' : ''
+                              }`}
+                            >
                               <span
                                 className="folder-tree-indent"
                                 style={{ ['--tree-depth' as string]: depth }}
