@@ -359,11 +359,12 @@ func deriveSpecGroupAndLabel(path, diffType string) (groupKey, groupKind, label 
 			groupKind = "operation"
 			switch {
 			case rest == "":
-				if diffType == "added" {
+				switch diffType {
+				case "added":
 					label = "Operation added"
-				} else if diffType == "removed" {
+				case "removed":
 					label = "Operation removed"
-				} else {
+				default:
 					label = "Operation changed"
 				}
 			case rest == ".requestBody.required":
