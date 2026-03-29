@@ -4,12 +4,14 @@ import { notifications } from '@mantine/notifications'
 import YAML from 'yaml'
 import {
   IconBackspace,
+  IconBinaryTree2,
   IconChevronRight,
   IconChevronDown,
   IconClipboardText,
   IconCopy,
   IconFile,
   IconFolderOpen,
+  IconList,
 } from '@tabler/icons-react'
 import type {
   CompareCommon,
@@ -1331,8 +1333,6 @@ export function App() {
 
   const [folderLeftRoot, setFolderLeftRoot] = useState('')
   const [folderRightRoot, setFolderRightRoot] = useState('')
-  const [folderRecursive, setFolderRecursive] = useState(true)
-  const [folderShowSame, setFolderShowSame] = useState(true)
   const [folderNameFilter, setFolderNameFilter] = useState('')
   const [folderCurrentPath, setFolderCurrentPath] = useState('')
   const [folderResult, setFolderResult] = useState<CompareFoldersResponse | null>(null)
@@ -1665,7 +1665,7 @@ export function App() {
     folderTreeCacheRef.current = {}
     setFolderTreeRoots([])
     setFolderExpandedPaths([])
-  }, [folderLeftRoot, folderRightRoot, folderRecursive, folderShowSame, folderNameFilter])
+  }, [folderLeftRoot, folderRightRoot, folderNameFilter])
 
   useEffect(() => {
     try {
@@ -1967,8 +1967,8 @@ export function App() {
       leftRoot: folderLeftRoot,
       rightRoot: folderRightRoot,
       currentPath: nextCurrentPath,
-      recursive: folderRecursive,
-      showSame: folderShowSame,
+      recursive: true,
+      showSame: true,
       nameFilter: folderNameFilter,
     } satisfies CompareFoldersRequest)
 
@@ -1997,8 +1997,8 @@ export function App() {
       leftRoot: folderLeftRoot,
       rightRoot: folderRightRoot,
       currentPath: relativePath,
-      recursive: folderRecursive,
-      showSame: folderShowSame,
+      recursive: true,
+      showSame: true,
       nameFilter: folderNameFilter,
     } satisfies CompareFoldersRequest)
 
@@ -4096,6 +4096,7 @@ export function App() {
                   role="tab"
                   aria-selected={folderViewMode === 'list'}
                 >
+                  <IconList size={13} />
                   List
                 </button>
                 <button
@@ -4107,6 +4108,7 @@ export function App() {
                   role="tab"
                   aria-selected={folderViewMode === 'tree'}
                 >
+                  <IconBinaryTree2 size={13} />
                   Tree
                 </button>
               </div>
@@ -4121,26 +4123,78 @@ export function App() {
             </div>
           </div>
           <div className="folder-root-bar">
-            <button
-              type="button"
+            <div
               className="folder-root-field"
               onClick={() => void browseFolderRoot('left')}
-              disabled={loading}
-              title={folderLeftRoot || 'Select left folder'}
+              role="button"
+              tabIndex={loading ? -1 : 0}
+              onKeyDown={(event) => {
+                if (loading) {
+                  return
+                }
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  void browseFolderRoot('left')
+                }
+              }}
             >
               <span className="folder-root-label">Left</span>
-              <span className="folder-root-path">{folderLeftRoot || 'Select left folder'}</span>
-            </button>
-            <button
-              type="button"
+              <input
+                className="folder-root-input"
+                readOnly
+                value={folderLeftRoot}
+                placeholder="Select left folder"
+                title={folderLeftRoot || 'Select left folder'}
+              />
+              <ActionIcon
+                variant="default"
+                size={24}
+                aria-label="Pick left folder"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void browseFolderRoot('left')
+                }}
+                disabled={loading}
+              >
+                <IconFolderOpen size={14} />
+              </ActionIcon>
+            </div>
+            <div
               className="folder-root-field"
               onClick={() => void browseFolderRoot('right')}
-              disabled={loading}
-              title={folderRightRoot || 'Select right folder'}
+              role="button"
+              tabIndex={loading ? -1 : 0}
+              onKeyDown={(event) => {
+                if (loading) {
+                  return
+                }
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  void browseFolderRoot('right')
+                }
+              }}
             >
               <span className="folder-root-label">Right</span>
-              <span className="folder-root-path">{folderRightRoot || 'Select right folder'}</span>
-            </button>
+              <input
+                className="folder-root-input"
+                readOnly
+                value={folderRightRoot}
+                placeholder="Select right folder"
+                title={folderRightRoot || 'Select right folder'}
+              />
+              <ActionIcon
+                variant="default"
+                size={24}
+                aria-label="Pick right folder"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void browseFolderRoot('right')
+                }}
+                disabled={loading}
+              >
+                <IconFolderOpen size={14} />
+              </ActionIcon>
+            </div>
           </div>
 
           {folderStatus ? <div className="muted">{folderStatus}</div> : null}
@@ -4164,22 +4218,6 @@ export function App() {
                 ))}
               </div>
               <div className="folder-secondary-controls">
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={folderRecursive}
-                    onChange={(event) => setFolderRecursive(event.target.checked)}
-                  />
-                  recursive
-                </label>
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={folderShowSame}
-                    onChange={(event) => setFolderShowSame(event.target.checked)}
-                  />
-                  show same
-                </label>
                 <input
                   className="folder-name-filter-input"
                   value={folderNameFilter}

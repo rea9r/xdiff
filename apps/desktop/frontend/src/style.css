@@ -1604,6 +1604,8 @@ button {
   gap: 8px;
   min-height: 0;
   flex: 1;
+  height: 100%;
+  min-width: 0;
 }
 
 .folder-header-bar {
@@ -1682,15 +1684,12 @@ button {
   background: var(--xdiff-viewer-surface);
   padding: 6px 8px;
   cursor: pointer;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  width: 100%;
+  outline: none;
 }
 
-.folder-root-field:disabled {
-  cursor: default;
-  opacity: 0.8;
+.folder-root-field:focus-visible {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-blue-5) 35%, transparent);
 }
 
 .folder-root-label {
@@ -1699,20 +1698,32 @@ button {
   white-space: nowrap;
 }
 
-.folder-root-path {
+.folder-root-input {
   min-width: 0;
-  overflow: hidden;
+  flex: 1 1 auto;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  outline: none;
+  cursor: pointer;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.folder-root-input::placeholder {
+  color: var(--xdiff-viewer-text-dimmed);
 }
 
 .folder-table-wrap {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: 8px;
   background: var(--xdiff-viewer-surface);
+  max-height: 100%;
 }
 
 .folder-table-wrap:focus {
@@ -1864,11 +1875,6 @@ button {
   flex-wrap: wrap;
 }
 
-.folder-secondary-controls .checkbox-row {
-  margin: 0;
-  font-size: var(--xdiff-folder-small-font-size);
-}
-
 .folder-name-filter-input {
   min-width: 220px;
   max-width: 320px;
@@ -1879,6 +1885,12 @@ button {
   align-items: center;
   gap: 4px;
   margin-right: 2px;
+}
+
+.folder-view-mode-toggle .button-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .folder-quick-filter-active {

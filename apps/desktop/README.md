@@ -49,6 +49,7 @@ This app is an experimental desktop GUI for xdiff.
 - Folder compare list/tree views use a lighter, denser result presentation aligned with other compare screens
 - Folder compare uses a compact main-first workflow with current-path header, breadcrumb/up navigation, and table-first list/tree switching
 - Folder compare uses a compact main-first header with clickable breadcrumb navigation and always-visible left/right root context
+- Folder compare uses always-visible left/right root selectors with input-like fields, compact list/tree toggle, and a scrollable table-first result area
 
 Not included yet:
 
