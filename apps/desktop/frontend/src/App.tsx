@@ -4435,7 +4435,7 @@ export function App() {
                                 style={{ ['--tree-depth' as string]: depth }}
                                 aria-hidden="true"
                               />
-                              {node.isDir ? (
+                              {enterable ? (
                                 <button
                                   type="button"
                                   className="folder-tree-chevron"
@@ -4467,7 +4467,7 @@ export function App() {
                               {formatFolderSide(node.item.rightExists, node.item.rightKind, node.item.rightSize)}
                             </div>
                             <div className="folder-tree-action">
-                              {node.isDir ? (
+                              {enterable ? (
                                 <button
                                   type="button"
                                   className="folder-action-button button-secondary button-compact"
