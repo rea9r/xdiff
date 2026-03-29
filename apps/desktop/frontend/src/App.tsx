@@ -126,6 +126,7 @@ import {
   type RichDiffItem,
   type UnifiedDiffRow,
 } from './features/text/textDiff'
+import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -157,9 +158,7 @@ const defaultTextCommon: CompareCommon = {
   noColor: true,
 }
 
-type TextResultView = 'diff' | 'raw'
 type StructuredResultView = 'diff' | 'semantic' | 'raw'
-type TextDiffLayout = 'split' | 'unified'
 type TextInputTarget = 'old' | 'new'
 type FolderReturnContext = {
   leftRoot: string
@@ -575,20 +574,12 @@ export function App() {
   const [textOldSourcePath, setTextOldSourcePath] = useState('')
   const [textNewSourcePath, setTextNewSourcePath] = useState('')
   const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
-  const [textResultView, setTextResultView] = useState<TextResultView>('diff')
-  const [textDiffLayout, setTextDiffLayout] = useState<TextDiffLayout>('split')
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
   const [textLastRunOld, setTextLastRunOld] = useState('')
   const [textLastRunNew, setTextLastRunNew] = useState('')
   const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
     'text' | 'json' | null
   >(null)
-  const [textExpandedUnchangedSectionIds, setTextExpandedUnchangedSectionIds] = useState<
-    string[]
-  >([])
-  const [textSearchQuery, setTextSearchQuery] = useState('')
-  const [textActiveSearchIndex, setTextActiveSearchIndex] = useState(0)
-  const textSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const jsonDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const specDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
@@ -602,6 +593,37 @@ export function App() {
   )
 
   const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
+
+  const {
+    textResultView,
+    setTextResultView,
+    textDiffLayout,
+    setTextDiffLayout,
+    textSearchQuery,
+    setTextSearchQuery,
+    textActiveSearchIndex,
+    normalizedTextSearchQuery,
+    textSearchMatches,
+    textRichRows,
+    textRichItems,
+    omittedSectionIds,
+    allOmittedSectionsExpanded,
+    canRenderTextRich,
+    clearTextExpandedSections,
+    resetTextSearch,
+    isTextSectionExpanded,
+    isTextSearchMatchId,
+    registerTextSearchRowRef,
+    getTextSearchClassName,
+    moveTextSearch,
+    toggleTextUnchangedSection,
+    toggleAllTextUnchangedSections,
+  } = useTextDiffViewState({
+    textResult,
+    textLastRunOld,
+    textLastRunNew,
+    textLastRunOutputFormat,
+  })
 
   const [folderLeftRoot, setFolderLeftRoot] = useState('')
   const [folderRightRoot, setFolderRightRoot] = useState('')
@@ -647,49 +669,6 @@ export function App() {
 
   const effectiveJSONIgnorePaths = parseIgnorePaths(jsonIgnorePathsDraft)
   const effectiveSpecIgnorePaths = parseIgnorePaths(specIgnorePathsDraft)
-  const textRichRows = useMemo(
-    () => (textResult?.output ? parseUnifiedDiff(textResult.output) : null),
-    [textResult?.output],
-  )
-  const textRichItems = useMemo(
-    () =>
-      textRichRows ? buildRichDiffItems(textRichRows, textLastRunOld, textLastRunNew) : null,
-    [textRichRows, textLastRunOld, textLastRunNew],
-  )
-  const normalizedTextSearchQuery = useMemo(
-    () => normalizeSearchQuery(textSearchQuery),
-    [textSearchQuery],
-  )
-  const textSearchMatches = useMemo(
-    () =>
-      textRichItems ? buildTextSearchMatches(textRichItems, normalizedTextSearchQuery) : [],
-    [textRichItems, normalizedTextSearchQuery],
-  )
-  const textSearchMatchIds = useMemo(
-    () => new Set(textSearchMatches.map((match) => match.id)),
-    [textSearchMatches],
-  )
-  const activeTextSearchMatch = textSearchMatches[textActiveSearchIndex] ?? null
-  const omittedSectionIds = useMemo(
-    () =>
-      textRichItems?.flatMap((item) => (item.kind === 'omitted' ? [item.sectionId] : [])) ?? [],
-    [textRichItems],
-  )
-  const allOmittedSectionsExpanded =
-    omittedSectionIds.length > 0 &&
-    omittedSectionIds.every((id) => textExpandedUnchangedSectionIds.includes(id))
-  const effectiveExpandedSectionIds = useMemo(() => {
-    const ids = new Set(textExpandedUnchangedSectionIds)
-    if (activeTextSearchMatch?.sectionId) {
-      ids.add(activeTextSearchMatch.sectionId)
-    }
-    return [...ids]
-  }, [textExpandedUnchangedSectionIds, activeTextSearchMatch?.sectionId])
-  const canRenderTextRich =
-    textLastRunOutputFormat === 'text' &&
-    !!textResult &&
-    !textResult.error &&
-    !!textRichRows
 
   const jsonResult = jsonRichResult?.result ?? null
   const jsonDiffRows = jsonRichResult?.diffs ?? []
@@ -1014,16 +993,6 @@ export function App() {
   }, [jsonCommon.textStyle, jsonPatchBlockedByFilters])
 
   useEffect(() => {
-    if (!textResult) {
-      return
-    }
-
-    if (textResultView === 'diff' && !canRenderTextRich) {
-      setTextResultView('raw')
-    }
-  }, [canRenderTextRich, textResult, textResultView])
-
-  useEffect(() => {
     if (!jsonRichResult) {
       return
     }
@@ -1064,29 +1033,12 @@ export function App() {
   }, [jsonDiffGroups])
 
   useEffect(() => {
-    setTextActiveSearchIndex(0)
-  }, [normalizedTextSearchQuery, textResult?.output])
-
-  useEffect(() => {
     setJSONActiveSearchIndex(0)
   }, [normalizedJSONSearchQuery, jsonRichResult?.result.output])
 
   useEffect(() => {
     setSpecActiveSearchIndex(0)
   }, [normalizedSpecSearchQuery, specRichResult?.result.output])
-
-  useEffect(() => {
-    if (textSearchMatches.length === 0) {
-      if (textActiveSearchIndex !== 0) {
-        setTextActiveSearchIndex(0)
-      }
-      return
-    }
-
-    if (textActiveSearchIndex >= textSearchMatches.length) {
-      setTextActiveSearchIndex(0)
-    }
-  }, [textSearchMatches.length, textActiveSearchIndex])
 
   useEffect(() => {
     const targetLength =
@@ -1119,23 +1071,6 @@ export function App() {
   }, [specSearchMatches.length, specDiffSearchMatches.length, specActiveSearchIndex, specResultView])
 
   useEffect(() => {
-    if (textResultView !== 'diff' || !canRenderTextRich || !activeTextSearchMatch) {
-      return
-    }
-
-    const node = textSearchRowRefs.current[activeTextSearchMatch.id]
-    if (node) {
-      node.scrollIntoView({ block: 'center' })
-    }
-  }, [
-    activeTextSearchMatch?.id,
-    canRenderTextRich,
-    textDiffLayout,
-    textResultView,
-    effectiveExpandedSectionIds.join('|'),
-  ])
-
-  useEffect(() => {
     if (jsonResultView !== 'diff' || !canRenderJSONDiff || !activeJSONDiffSearchMatch) {
       return
     }
@@ -1154,12 +1089,6 @@ export function App() {
       node.scrollIntoView({ block: 'center' })
     }
   }, [activeSpecDiffSearchMatch?.id, canRenderSpecDiff, specResultView, textDiffLayout])
-
-  useEffect(() => {
-    setTextExpandedUnchangedSectionIds((prev) =>
-      prev.filter((id) => omittedSectionIds.includes(id)),
-    )
-  }, [omittedSectionIds])
 
   const api = useMemo(
     () => ({
@@ -1391,56 +1320,6 @@ export function App() {
 
   const updateTextCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
     setTextCommon((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const isTextSectionExpanded = (sectionId: string) =>
-    effectiveExpandedSectionIds.includes(sectionId)
-
-  const isTextSearchMatchId = (matchId: string) => textSearchMatchIds.has(matchId)
-
-  const isActiveTextSearchMatchId = (matchId: string) => activeTextSearchMatch?.id === matchId
-
-  const registerTextSearchRowRef = (matchId: string) => (node: HTMLDivElement | null) => {
-    if (node) {
-      textSearchRowRefs.current[matchId] = node
-      return
-    }
-
-    delete textSearchRowRefs.current[matchId]
-  }
-
-  const getTextSearchClassName = (matchId: string) => {
-    if (!isTextSearchMatchId(matchId)) {
-      return ''
-    }
-
-    return isActiveTextSearchMatchId(matchId) ? 'active-search-hit' : 'search-hit'
-  }
-
-  const moveTextSearch = (direction: 1 | -1) => {
-    if (!canRenderTextRich || textSearchMatches.length === 0) {
-      return
-    }
-
-    if (textResultView !== 'diff') {
-      setTextResultView('diff')
-    }
-
-    setTextActiveSearchIndex((prev) =>
-      direction === 1
-        ? (prev + 1) % textSearchMatches.length
-        : (prev - 1 + textSearchMatches.length) % textSearchMatches.length,
-    )
-  }
-
-  const toggleTextUnchangedSection = (sectionId: string) => {
-    setTextExpandedUnchangedSectionIds((prev) =>
-      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
-    )
-  }
-
-  const toggleAllTextUnchangedSections = () => {
-    setTextExpandedUnchangedSectionIds(allOmittedSectionsExpanded ? [] : omittedSectionIds)
   }
 
   const setScenarioRunResultView = (res: ScenarioRunResponse) => {
@@ -1751,9 +1630,8 @@ export function App() {
       setTextLastRunOld(oldText)
       setTextLastRunNew(newText)
       setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
-      setTextExpandedUnchangedSectionIds([])
-      setTextSearchQuery('')
-      setTextActiveSearchIndex(0)
+      clearTextExpandedSections()
+      resetTextSearch()
       setTextRecentPairs((prev) =>
         upsertRecentPair(prev, {
           oldPath: leftLoaded.path,
@@ -2005,7 +1883,7 @@ export function App() {
   const runText = async () => {
     const fn = api.compareText
     if (!fn) throw new Error('Wails bridge not available (CompareText)')
-    setTextExpandedUnchangedSectionIds([])
+    clearTextExpandedSections()
 
     const res: CompareResponse = await fn({
       oldText: textOld,
@@ -2157,9 +2035,8 @@ export function App() {
     setTextLastRunOld(oldLoaded.content)
     setTextLastRunNew(newLoaded.content)
     setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
-    setTextExpandedUnchangedSectionIds([])
-    setTextSearchQuery('')
-    setTextActiveSearchIndex(0)
+    clearTextExpandedSections()
+    resetTextSearch()
     setResult(res)
     setTextRecentPairs((prev) =>
       upsertRecentPair(prev, {
@@ -2905,7 +2782,7 @@ export function App() {
       setTextLastRunOld('')
       setTextLastRunNew('')
       setTextLastRunOutputFormat(null)
-      setTextExpandedUnchangedSectionIds([])
+      clearTextExpandedSections()
     }
     if (mode === 'spec') {
       setSpecRichResult(null)
