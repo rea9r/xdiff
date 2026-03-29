@@ -1626,6 +1626,10 @@ button {
   flex: 1;
 }
 
+.folder-result-shell.is-tree-mode {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .folder-result-header {
   display: flex;
   flex-direction: column;

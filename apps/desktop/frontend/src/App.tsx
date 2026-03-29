@@ -4083,10 +4083,14 @@ export function App() {
     const visibleCount =
       folderViewMode === 'tree' ? flattenedFolderTreeRows.length : sortedFolderItems.length
     const canCompareFolders = !!folderLeftRoot && !!folderRightRoot
+    const shouldShowFolderDetail =
+      folderViewMode === 'list' && !!selectedFolderItemForDetail
 
     return (
       <SectionCard>
-        <div className="folder-result-shell">
+        <div
+          className={`folder-result-shell ${folderViewMode === 'tree' ? 'is-tree-mode' : ''}`.trim()}
+        >
           <div className="folder-result-header">
             <div className="folder-header-bar">
               <div className="folder-header-context">
@@ -4503,7 +4507,7 @@ export function App() {
             )}
           </div>
 
-          {selectedFolderItemForDetail ? (
+          {shouldShowFolderDetail ? (
             <div className="folder-detail-pane folder-detail-card">
               <div className="folder-summary-title">Selected Entry</div>
               <div className="folder-detail-grid">
@@ -4542,24 +4546,13 @@ export function App() {
                   <button
                     type="button"
                     className="folder-action-button button-secondary button-compact"
-                    onClick={() => {
-                      if (folderViewMode === 'tree') {
-                        const node = flattenedFolderTreeRows.find(
-                          (row) => row.node.path === selectedFolderItemForDetail.relativePath,
-                        )?.node
-                        if (node) {
-                          void toggleFolderTreeNode(node)
-                        }
-                        return
-                      }
-                      void navigateFolderPath(selectedFolderItemForDetail.relativePath)
-                    }}
+                    onClick={() => void navigateFolderPath(selectedFolderItemForDetail.relativePath)}
                     disabled={
                       loading ||
                       folderTreeLoadingPath === selectedFolderItemForDetail.relativePath
                     }
                   >
-                    {folderViewMode === 'tree' ? 'Toggle folder' : 'Enter folder'}
+                    Enter folder
                   </button>
                 ) : canOpenFolderItem(selectedFolderItemForDetail) ? (
                   <button
