@@ -1783,6 +1783,13 @@ button {
   flex-wrap: wrap;
 }
 
+.folder-view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 2px;
+}
+
 .folder-quick-filter-active {
   border-color: var(--xdiff-search-hit-border);
   box-shadow: inset 0 0 0 1px
@@ -1792,6 +1799,82 @@ button {
 
 .folder-row-selected {
   background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 80%, transparent);
+}
+
+.folder-tree-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: 8px;
+  background: var(--xdiff-viewer-surface);
+  padding: 6px;
+}
+
+.folder-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.folder-tree-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.folder-tree-row:hover {
+  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 85%, transparent);
+}
+
+.folder-tree-row.is-selected {
+  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 80%, transparent);
+}
+
+.folder-tree-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.folder-tree-indent {
+  display: inline-block;
+  width: calc(var(--tree-depth, 0) * 14px);
+  flex: 0 0 auto;
+}
+
+.folder-tree-chevron {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--xdiff-viewer-text-dimmed);
+}
+
+.folder-tree-chevron-spacer {
+  width: 14px;
+  display: inline-block;
+}
+
+.folder-tree-secondary {
+  color: var(--xdiff-viewer-text-dimmed);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.folder-tree-action {
+  white-space: nowrap;
+}
+
+.folder-tree-status .mantine-Badge-root {
+  font-size: 0.74rem;
 }
 
 .folder-detail-card {
