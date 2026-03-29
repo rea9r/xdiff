@@ -612,8 +612,8 @@ function getFolderItemActionReason(entry: FolderCompareItem): string | null {
   if (!entry.leftExists) return 'Only on right'
   if (!entry.rightExists) return 'Only on left'
   if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
-  if (entry.isDir) return 'Folder item'
-  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Folder item'
+  if (entry.isDir) return 'Directory item'
+  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
   if (entry.compareModeHint === 'none') return 'No compare mode'
   return 'Not comparable'
 }
@@ -680,7 +680,7 @@ function formatFolderSide(exists: boolean, kind: string, size: number): string {
     return '—'
   }
   if (kind === 'dir') {
-    return 'folder'
+    return 'directory'
   }
   if (kind === 'file') {
     return size > 0 ? `file · ${formatBytes(size)}` : 'file'
@@ -690,7 +690,7 @@ function formatFolderSide(exists: boolean, kind: string, size: number): string {
 
 function formatFolderKindLabel(kind: FolderCompareItem['leftKind']): string {
   if (kind === 'dir') {
-    return 'folder'
+    return 'directory'
   }
   return kind
 }
@@ -2058,10 +2058,10 @@ export function App() {
     const picker = api.pickFolderRoot
 
     if (!picker) {
-      setFolderStatus('Folder picker is not available.')
+      setFolderStatus('Directory picker is not available.')
       notifications.show({
-        title: 'Folder picker unavailable',
-        message: 'Folder picker is not available.',
+        title: 'Directory picker unavailable',
+        message: 'Directory picker is not available.',
         color: 'red',
       })
       return
@@ -2084,10 +2084,10 @@ export function App() {
       setFolderResult(null)
       setFolderStatus('')
     } catch (error) {
-      const message = `Failed to pick folder: ${formatUnknownError(error)}`
+      const message = `Failed to pick directory: ${formatUnknownError(error)}`
       setFolderStatus(message)
       notifications.show({
-        title: 'Failed to pick folder',
+        title: 'Failed to pick directory',
         message,
         color: 'red',
       })
@@ -2359,10 +2359,10 @@ export function App() {
       )
       setFolderExpandedPaths((prev) => (prev.includes(path) ? prev : [...prev, path]))
     } catch (error) {
-      const message = `Failed to load folder children: ${formatUnknownError(error)}`
+      const message = `Failed to load directory children: ${formatUnknownError(error)}`
       setFolderStatus(message)
       notifications.show({
-        title: 'Failed to load folder',
+        title: 'Failed to load directory',
         message,
         color: 'red',
       })
@@ -4659,7 +4659,7 @@ export function App() {
           <div className="folder-result-header">
             <div className="folder-header-bar">
               <div className="folder-header-context">
-                <span className="folder-title">Folder Compare</span>
+                <span className="folder-title">Directory Compare</span>
                 <div className="folder-current-path" aria-label="Current path">
                   {folderBreadcrumbs.map((crumb, index) => (
                     <Fragment key={crumb.path || 'root'}>
@@ -4704,13 +4704,13 @@ export function App() {
                   className="folder-root-input"
                   readOnly
                   value={folderLeftRoot}
-                  placeholder="Select left folder"
-                  title={folderLeftRoot || 'Select left folder'}
+                  placeholder="Select left directory"
+                  title={folderLeftRoot || 'Select left directory'}
                 />
                 <ActionIcon
                   variant="default"
                   size={24}
-                  aria-label="Pick left folder"
+                  aria-label="Pick left directory"
                   onClick={(event) => {
                     event.stopPropagation()
                     void browseFolderRoot('left')
@@ -4740,13 +4740,13 @@ export function App() {
                   className="folder-root-input"
                   readOnly
                   value={folderRightRoot}
-                  placeholder="Select right folder"
-                  title={folderRightRoot || 'Select right folder'}
+                  placeholder="Select right directory"
+                  title={folderRightRoot || 'Select right directory'}
                 />
                 <ActionIcon
                   variant="default"
                   size={24}
-                  aria-label="Pick right folder"
+                  aria-label="Pick right directory"
                   onClick={(event) => {
                     event.stopPropagation()
                     void browseFolderRoot('right')
@@ -4770,7 +4770,7 @@ export function App() {
               <div
                 className="folder-view-mode-toggle"
                 role="tablist"
-                aria-label="Folder view mode"
+                aria-label="Directory view mode"
               >
                 <button
                   type="button"
@@ -5008,7 +5008,7 @@ export function App() {
                                     event.stopPropagation()
                                     void toggleFolderTreeNode(node)
                                   }}
-                                  aria-label={node.expanded ? 'Collapse folder' : 'Expand folder'}
+                                  aria-label={node.expanded ? 'Collapse directory' : 'Expand directory'}
                                 >
                                   {node.expanded ? (
                                     <IconChevronDown size={14} />
@@ -5068,7 +5068,7 @@ export function App() {
                 </div>
               )
             ) : (
-              <pre className="result-output">(no folder result yet)</pre>
+              <pre className="result-output">(no directory result yet)</pre>
             )}
           </div>
 
@@ -5117,7 +5117,7 @@ export function App() {
                       folderTreeLoadingPath === selectedFolderItemForDetail.relativePath
                     }
                   >
-                    Enter folder
+                    Enter directory
                   </button>
                 ) : canOpenFolderItem(selectedFolderItemForDetail) ? (
                   <button
@@ -5469,7 +5469,7 @@ export function App() {
           onClick={returnToFolderCompare}
         >
           <IconArrowLeft size={13} />
-          Back to folder compare
+          Back to directory compare
         </button>
       </div>
     ) : null
