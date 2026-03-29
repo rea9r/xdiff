@@ -80,6 +80,37 @@ import {
   upsertRecentPair,
   upsertRecentScenarioPath,
 } from './persistence'
+import {
+  getRuntimeClipboardRead,
+  getRuntimeClipboardWrite,
+  formatUnknownError,
+  ignorePathsToText,
+  parseIgnorePaths,
+  renderResult,
+  summarizeResponse,
+} from './utils/appHelpers'
+import {
+  buildFolderBreadcrumbs,
+  canOpenFolderItem,
+  filterFolderItemsByQuickFilter,
+  filterFolderTreeNodesByQuickFilter,
+  flattenFolderTreeRows,
+  folderItemsToTreeNodes,
+  folderQuickFilterLabel,
+  folderStatusSortRank,
+  formatFolderKindLabel,
+  formatFolderSide,
+  formatFolderStatusLabel,
+  getFolderItemActionReason,
+  toneForFolderStatus,
+  toggleFolderSort,
+  type FolderQuickFilter,
+  type FolderSortDirection,
+  type FolderSortKey,
+  type FolderTreeNode,
+  type FolderTreeRow,
+  type FolderViewMode,
+} from './features/folder/folderTree'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -115,31 +146,6 @@ type TextResultView = 'diff' | 'raw'
 type StructuredResultView = 'diff' | 'semantic' | 'raw'
 type TextDiffLayout = 'split' | 'unified'
 type TextInputTarget = 'old' | 'new'
-type FolderQuickFilter =
-  | 'all'
-  | 'changed'
-  | 'left-only'
-  | 'right-only'
-  | 'type-mismatch'
-  | 'error'
-  | 'same'
-type FolderSortKey = 'name' | 'status' | 'left' | 'right'
-type FolderSortDirection = 'asc' | 'desc'
-type FolderViewMode = 'list' | 'tree'
-type FolderTreeNode = {
-  path: string
-  name: string
-  isDir: boolean
-  status: FolderCompareItem['status']
-  item: FolderCompareItem
-  children?: FolderTreeNode[]
-  loaded?: boolean
-  expanded?: boolean
-}
-type FolderTreeRow = {
-  depth: number
-  node: FolderTreeNode
-}
 type FolderReturnContext = {
   leftRoot: string
   rightRoot: string
@@ -147,11 +153,6 @@ type FolderReturnContext = {
   selectedPath: string
   viewMode: FolderViewMode
 }
-type WailsRuntimeClipboard = {
-  ClipboardGetText?: () => Promise<string>
-  ClipboardSetText?: (text: string) => Promise<boolean>
-}
-
 type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
 type InlineDiffKind = 'same' | 'add' | 'remove'
 
@@ -220,43 +221,6 @@ function getInitialMode(): Mode {
   } catch {
     return fallback
   }
-}
-
-function renderResult(res: unknown): string {
-  if (typeof res === 'string') return res
-  if (!res) return '(no response)'
-
-  const maybe = res as {
-    error?: string
-    output?: string
-  }
-
-  if (maybe.error) return String(maybe.error)
-  if (maybe.output) return String(maybe.output)
-
-  return JSON.stringify(res, null, 2)
-}
-
-function summarizeResponse(res: unknown): string {
-  if (!res || typeof res !== 'object') return ''
-
-  const r = res as {
-    exitCode?: number
-    diffFound?: boolean
-    error?: string
-    summary?: { total: number; ok: number; diff: number; error: number; exitCode: number }
-  }
-
-  if (r.summary) {
-    return `exit=${r.summary.exitCode} total=${r.summary.total} ok=${r.summary.ok} diff=${r.summary.diff} error=${r.summary.error}`
-  }
-
-  const parts: string[] = []
-  if (typeof r.exitCode === 'number') parts.push(`exit=${r.exitCode}`)
-  if (typeof r.diffFound === 'boolean') parts.push(`diff=${r.diffFound ? 'yes' : 'no'}`)
-  if (r.error) parts.push('error=yes')
-
-  return parts.join(' ')
 }
 
 function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
@@ -551,45 +515,6 @@ function toneForScenarioStatus(status: string): 'success' | 'warning' | 'danger'
   return 'danger'
 }
 
-function toneForFolderStatus(
-  status: FolderCompareItem['status'],
-): 'default' | 'success' | 'warning' | 'danger' | 'accent' {
-  if (status === 'same') return 'success'
-  if (status === 'changed') return 'warning'
-  if (status === 'left-only' || status === 'right-only') return 'accent'
-  if (status === 'error' || status === 'type-mismatch') return 'danger'
-  return 'default'
-}
-
-function formatFolderStatusLabel(status: FolderCompareItem['status']): string {
-  switch (status) {
-    case 'same':
-      return 'same'
-    case 'changed':
-      return 'changed'
-    case 'left-only':
-      return 'left only'
-    case 'right-only':
-      return 'right only'
-    case 'type-mismatch':
-      return 'type mismatch'
-    case 'error':
-      return 'error'
-    default:
-      return status
-  }
-}
-
-function canOpenFolderItem(entry: FolderCompareItem): boolean {
-  return (
-    entry.compareModeHint !== 'none' &&
-    entry.leftExists &&
-    entry.rightExists &&
-    entry.leftKind === 'file' &&
-    entry.rightKind === 'file'
-  )
-}
-
 function chooseDefaultDisplayModeForMode(options: {
   mode: 'json' | 'spec'
   hasDiffText: boolean
@@ -612,231 +537,6 @@ function chooseDefaultDisplayModeForMode(options: {
     return 'diff'
   }
   return 'raw'
-}
-
-function getFolderItemActionReason(entry: FolderCompareItem): string | null {
-  if (canOpenFolderItem(entry)) {
-    return null
-  }
-
-  if (!entry.leftExists) return 'Only on right'
-  if (!entry.rightExists) return 'Only on left'
-  if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
-  if (entry.isDir) return 'Directory item'
-  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
-  if (entry.compareModeHint === 'none') return 'No compare mode'
-  return 'Not comparable'
-}
-
-function folderQuickFilterLabel(filter: FolderQuickFilter): string {
-  switch (filter) {
-    case 'all':
-      return 'All'
-    case 'changed':
-      return 'Changed'
-    case 'left-only':
-      return 'Left only'
-    case 'right-only':
-      return 'Right only'
-    case 'type-mismatch':
-      return 'Type mismatch'
-    case 'error':
-      return 'Errors'
-    case 'same':
-      return 'Same'
-    default:
-      return filter
-  }
-}
-
-function filterFolderItemsByQuickFilter(
-  items: FolderCompareItem[],
-  quickFilter: FolderQuickFilter,
-): FolderCompareItem[] {
-  if (quickFilter === 'all') {
-    return items
-  }
-  return items.filter((item) => item.status === quickFilter)
-}
-
-function toggleFolderSort(
-  key: FolderSortKey,
-  currentKey: FolderSortKey,
-  currentDir: FolderSortDirection,
-): { key: FolderSortKey; dir: FolderSortDirection } {
-  if (key !== currentKey) {
-    return { key, dir: 'asc' }
-  }
-
-  return { key, dir: currentDir === 'asc' ? 'desc' : 'asc' }
-}
-
-function ignorePathsToText(paths: string[]): string {
-  return paths.join('\n')
-}
-
-function formatBytes(size: number): string {
-  if (size < 1024) {
-    return `${size} B`
-  }
-  if (size < 1024*1024) {
-    return `${(size / 1024).toFixed(1)} KB`
-  }
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function formatFolderSide(exists: boolean, kind: string, size: number): string {
-  if (!exists || kind === 'missing') {
-    return '—'
-  }
-  if (kind === 'dir') {
-    return 'directory'
-  }
-  if (kind === 'file') {
-    return size > 0 ? `file · ${formatBytes(size)}` : 'file'
-  }
-  return kind
-}
-
-function formatFolderKindLabel(kind: FolderCompareItem['leftKind']): string {
-  if (kind === 'dir') {
-    return 'directory'
-  }
-  return kind
-}
-
-function folderStatusSortRank(status: FolderCompareItem['status']): number {
-  switch (status) {
-    case 'changed':
-      return 0
-    case 'left-only':
-      return 1
-    case 'right-only':
-      return 2
-    case 'type-mismatch':
-      return 3
-    case 'error':
-      return 4
-    case 'same':
-      return 5
-    default:
-      return 99
-  }
-}
-
-function sortFolderItemsForTree(items: FolderCompareItem[]): FolderCompareItem[] {
-  return [...items].sort((left, right) => {
-    if (left.isDir !== right.isDir) {
-      return left.isDir ? -1 : 1
-    }
-    return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
-  })
-}
-
-function folderItemsToTreeNodes(items: FolderCompareItem[]): FolderTreeNode[] {
-  return sortFolderItemsForTree(items).map((item) => ({
-    path: item.relativePath,
-    name: item.name,
-    isDir: item.isDir,
-    status: item.status,
-    item,
-    children: item.isDir ? [] : undefined,
-    loaded: !item.isDir,
-    expanded: false,
-  }))
-}
-
-function flattenFolderTreeRows(nodes: FolderTreeNode[], depth = 0): FolderTreeRow[] {
-  const rows: FolderTreeRow[] = []
-  for (const node of nodes) {
-    rows.push({ depth, node })
-    if (node.isDir && node.expanded && node.children && node.children.length > 0) {
-      rows.push(...flattenFolderTreeRows(node.children, depth + 1))
-    }
-  }
-  return rows
-}
-
-function treeNodeMatchesQuickFilter(
-  node: FolderTreeNode,
-  quickFilter: FolderQuickFilter,
-): boolean {
-  if (quickFilter === 'all') {
-    return true
-  }
-  return node.status === quickFilter
-}
-
-function filterFolderTreeNodesByQuickFilter(
-  nodes: FolderTreeNode[],
-  quickFilter: FolderQuickFilter,
-): FolderTreeNode[] {
-  if (quickFilter === 'all') {
-    return nodes
-  }
-
-  return nodes.flatMap((node) => {
-    const filteredChildren = filterFolderTreeNodesByQuickFilter(node.children ?? [], quickFilter)
-    const keepNode =
-      treeNodeMatchesQuickFilter(node, quickFilter) || filteredChildren.length > 0
-
-    if (!keepNode) {
-      return []
-    }
-
-    return [
-      {
-        ...node,
-        children: filteredChildren,
-      },
-    ]
-  })
-}
-
-function buildFolderBreadcrumbs(currentPath: string): Array<{ label: string; path: string }> {
-  const crumbs: Array<{ label: string; path: string }> = [{ label: 'Root', path: '' }]
-  if (!currentPath) {
-    return crumbs
-  }
-
-  const parts = currentPath.split('/').filter((part) => part.length > 0)
-  let acc = ''
-  for (const part of parts) {
-    acc = acc ? `${acc}/${part}` : part
-    crumbs.push({ label: part, path: acc })
-  }
-  return crumbs
-}
-
-function parseIgnorePaths(input: string): string[] {
-  return input
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-}
-
-function getRuntimeClipboardRead(): (() => Promise<string>) | null {
-  const runtimeClipboard = (window as Window & {
-    runtime?: WailsRuntimeClipboard
-  }).runtime
-
-  return runtimeClipboard?.ClipboardGetText ?? null
-}
-
-function getRuntimeClipboardWrite(): ((text: string) => Promise<boolean>) | null {
-  const runtimeClipboard = (window as Window & {
-    runtime?: WailsRuntimeClipboard
-  }).runtime
-
-  return runtimeClipboard?.ClipboardSetText ?? null
-}
-
-function formatUnknownError(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-
-  return String(error)
 }
 
 function tokenizeInlineDiff(input: string): string[] {
