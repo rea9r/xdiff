@@ -1,7 +1,6 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type KeyboardEvent,
 } from 'react'
@@ -70,22 +69,12 @@ import {
   summarizeResponse,
 } from './utils/appHelpers'
 import {
-  buildFolderBreadcrumbs,
   canOpenFolderItem,
-  filterFolderItemsByQuickFilter,
-  filterFolderTreeNodesByQuickFilter,
-  flattenFolderTreeRows,
-  folderItemsToTreeNodes,
-  folderStatusSortRank,
-  formatFolderSide,
-  toggleFolderSort,
-  type FolderQuickFilter,
-  type FolderSortDirection,
-  type FolderSortKey,
   type FolderTreeNode,
   type FolderViewMode,
 } from './features/folder/folderTree'
 import { DirectoryCompareResultPanel } from './features/folder/DirectoryCompareResultPanel'
+import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
@@ -397,18 +386,9 @@ export function App() {
   const [folderResult, setFolderResult] = useState<CompareFoldersResponse | null>(null)
   const [folderStatus, setFolderStatus] = useState('')
   const [folderOpenBusyPath, setFolderOpenBusyPath] = useState('')
-  const [folderQuickFilter, setFolderQuickFilter] = useState<FolderQuickFilter>('all')
-  const [selectedFolderItemPath, setSelectedFolderItemPath] = useState('')
   const [folderReturnContext, setFolderReturnContext] = useState<FolderReturnContext | null>(
     null,
   )
-  const [folderSortKey, setFolderSortKey] = useState<FolderSortKey>('name')
-  const [folderSortDirection, setFolderSortDirection] = useState<FolderSortDirection>('asc')
-  const [folderViewMode, setFolderViewMode] = useState<FolderViewMode>('list')
-  const [folderTreeRoots, setFolderTreeRoots] = useState<FolderTreeNode[]>([])
-  const [folderExpandedPaths, setFolderExpandedPaths] = useState<string[]>([])
-  const [folderTreeLoadingPath, setFolderTreeLoadingPath] = useState('')
-  const folderTreeCacheRef = useRef<Record<string, FolderCompareItem[]>>({})
   const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
 
   const [scenarioPath, setScenarioPath] = useState('')
@@ -461,182 +441,6 @@ export function App() {
   const specInputInvalid = !!specOldParseError || !!specNewParseError
   const specInputEmpty = !specOldText.trim() || !specNewText.trim()
   const specEditorBusy = specClipboardBusyTarget !== null || specFileBusyTarget !== null
-  const folderItems = folderResult?.items ?? []
-  const filteredFolderItems = useMemo(() => {
-    return filterFolderItemsByQuickFilter(folderItems, folderQuickFilter)
-  }, [folderItems, folderQuickFilter])
-  const sortedFolderItems = useMemo(() => {
-    const items = [...filteredFolderItems]
-    const directionMultiplier = folderSortDirection === 'asc' ? 1 : -1
-
-    items.sort((left, right) => {
-      if (folderSortKey === 'name') {
-        if (left.isDir !== right.isDir) {
-          return left.isDir ? -1 : 1
-        }
-        const comparedName = left.name.localeCompare(right.name, undefined, {
-          sensitivity: 'base',
-        })
-        if (comparedName !== 0) {
-          return comparedName * directionMultiplier
-        }
-        return left.relativePath.localeCompare(right.relativePath, undefined, {
-          sensitivity: 'base',
-        })
-      }
-
-      if (folderSortKey === 'status') {
-        const rankDiff = folderStatusSortRank(left.status) - folderStatusSortRank(right.status)
-        if (rankDiff !== 0) {
-          return rankDiff * directionMultiplier
-        }
-        return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
-      }
-
-      if (folderSortKey === 'left') {
-        const compared = formatFolderSide(left.leftExists, left.leftKind, left.leftSize).localeCompare(
-          formatFolderSide(right.leftExists, right.leftKind, right.leftSize),
-          undefined,
-          { sensitivity: 'base' },
-        )
-        if (compared !== 0) {
-          return compared * directionMultiplier
-        }
-        return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
-      }
-
-      const compared = formatFolderSide(left.rightExists, left.rightKind, left.rightSize).localeCompare(
-        formatFolderSide(right.rightExists, right.rightKind, right.rightSize),
-        undefined,
-        { sensitivity: 'base' },
-      )
-      if (compared !== 0) {
-        return compared * directionMultiplier
-      }
-      return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
-    })
-
-    return items
-  }, [filteredFolderItems, folderSortDirection, folderSortKey])
-  const selectedFolderItem = useMemo(
-    () => sortedFolderItems.find((item) => item.relativePath === selectedFolderItemPath) ?? null,
-    [sortedFolderItems, selectedFolderItemPath],
-  )
-  const filteredFolderTreeRoots = useMemo(
-    () => filterFolderTreeNodesByQuickFilter(folderTreeRoots, folderQuickFilter),
-    [folderTreeRoots, folderQuickFilter],
-  )
-  const flattenedFolderTreeRows = useMemo(
-    () => flattenFolderTreeRows(filteredFolderTreeRoots),
-    [filteredFolderTreeRoots],
-  )
-  const selectedFolderTreeItem = useMemo(
-    () =>
-      flattenedFolderTreeRows.find((row) => row.node.path === selectedFolderItemPath)?.node.item ??
-      null,
-    [flattenedFolderTreeRows, selectedFolderItemPath],
-  )
-  const selectedFolderItemForDetail =
-    folderViewMode === 'tree' ? selectedFolderTreeItem : selectedFolderItem
-  const folderQuickFilterCounts = useMemo(
-    () => ({
-      all: folderResult?.currentSummary.total ?? 0,
-      changed: folderResult?.currentSummary.changed ?? 0,
-      'left-only': folderResult?.currentSummary.leftOnly ?? 0,
-      'right-only': folderResult?.currentSummary.rightOnly ?? 0,
-      'type-mismatch': folderResult?.currentSummary.typeMismatch ?? 0,
-      error: folderResult?.currentSummary.error ?? 0,
-      same: folderResult?.currentSummary.same ?? 0,
-    }),
-    [folderResult],
-  )
-  const folderBreadcrumbs = useMemo(
-    () => buildFolderBreadcrumbs(folderResult?.currentPath ?? folderCurrentPath),
-    [folderResult?.currentPath, folderCurrentPath],
-  )
-
-  useEffect(() => {
-    if (sortedFolderItems.length === 0) {
-      if (folderViewMode === 'list' && selectedFolderItemPath !== '') {
-        setSelectedFolderItemPath('')
-      }
-      return
-    }
-    if (folderViewMode !== 'list') {
-      return
-    }
-    const hasSelection = sortedFolderItems.some(
-      (item) => item.relativePath === selectedFolderItemPath,
-    )
-    if (!hasSelection) {
-      setSelectedFolderItemPath(sortedFolderItems[0].relativePath)
-    }
-  }, [folderViewMode, sortedFolderItems, selectedFolderItemPath])
-
-  useEffect(() => {
-    if (folderViewMode !== 'tree') {
-      return
-    }
-    if (flattenedFolderTreeRows.length === 0) {
-      if (selectedFolderItemPath !== '') {
-        setSelectedFolderItemPath('')
-      }
-      return
-    }
-    const hasSelection = flattenedFolderTreeRows.some(
-      (row) => row.node.path === selectedFolderItemPath,
-    )
-    if (!hasSelection) {
-      setSelectedFolderItemPath(flattenedFolderTreeRows[0].node.path)
-    }
-  }, [folderViewMode, flattenedFolderTreeRows, selectedFolderItemPath])
-
-  useEffect(() => {
-    if (mode !== 'folder') {
-      return
-    }
-    if (!folderResult) {
-      return
-    }
-    if (!folderLeftRoot || !folderRightRoot) {
-      return
-    }
-    const resultPath = folderResult.currentPath ?? ''
-    if (resultPath === folderCurrentPath) {
-      return
-    }
-
-    void runFolderCompare(folderCurrentPath)
-  }, [mode, folderResult, folderCurrentPath, folderLeftRoot, folderRightRoot])
-
-  useEffect(() => {
-    setFolderTreeRoots((prevRoots) => {
-      const previousByPath = new Map(prevRoots.map((node) => [node.path, node]))
-      return folderItemsToTreeNodes(folderItems).map((node) => {
-        const previous = previousByPath.get(node.path)
-        if (!previous) {
-          return {
-            ...node,
-            expanded: folderExpandedPaths.includes(node.path),
-          }
-        }
-        return {
-          ...node,
-          children: previous.children,
-          loaded: previous.loaded,
-          expanded: folderExpandedPaths.includes(node.path),
-        }
-      })
-    })
-    folderTreeCacheRef.current[''] = folderItems
-  }, [folderItems, folderExpandedPaths])
-
-  useEffect(() => {
-    folderTreeCacheRef.current = {}
-    setFolderTreeRoots([])
-    setFolderExpandedPaths([])
-  }, [folderLeftRoot, folderRightRoot, folderNameFilter])
-
   useEffect(() => {
     try {
       window.localStorage.setItem(LAST_USED_MODE_STORAGE_KEY, mode)
@@ -676,6 +480,61 @@ export function App() {
     }),
     [],
   )
+
+  const {
+    folderQuickFilter,
+    setFolderQuickFilter,
+    folderSortKey,
+    folderSortDirection,
+    applyFolderSort,
+    folderViewMode,
+    setFolderViewMode,
+    selectedFolderItemPath,
+    setSelectedFolderItemPath,
+    folderTreeLoadingPath,
+    sortedFolderItems,
+    flattenedFolderTreeRows,
+    selectedFolderItem,
+    selectedFolderItemForDetail,
+    folderQuickFilterCounts,
+    folderBreadcrumbs,
+    toggleFolderTreeNode,
+    resetFolderNavigationState,
+  } = useDirectoryCompareViewState({
+    folderResult,
+    folderLeftRoot,
+    folderRightRoot,
+    folderNameFilter,
+    folderCurrentPath,
+    compareFolders: api.compareFolders,
+    onFolderTreeLoadError: (error) => {
+      const message = `Failed to load directory children: ${formatUnknownError(error)}`
+      setFolderStatus(message)
+      notifications.show({
+        title: 'Failed to load directory',
+        message,
+        color: 'red',
+      })
+    },
+  })
+
+  useEffect(() => {
+    if (mode !== 'folder') {
+      return
+    }
+    if (!folderResult) {
+      return
+    }
+    if (!folderLeftRoot || !folderRightRoot) {
+      return
+    }
+    const resultPath = folderResult.currentPath ?? ''
+    if (resultPath === folderCurrentPath) {
+      return
+    }
+
+    void runFolderCompare(folderCurrentPath)
+  }, [mode, folderResult, folderCurrentPath, folderLeftRoot, folderRightRoot])
 
   useEffect(() => {
     let active = true
@@ -997,52 +856,6 @@ export function App() {
     )
   }
 
-  const loadFolderChildren = async (relativePath: string): Promise<FolderCompareItem[]> => {
-    const cached = folderTreeCacheRef.current[relativePath]
-    if (cached) {
-      return cached
-    }
-
-    const fn = api.compareFolders
-    if (!fn) {
-      throw new Error('Wails bridge not available (CompareFolders)')
-    }
-
-    const res: CompareFoldersResponse = await fn({
-      leftRoot: folderLeftRoot,
-      rightRoot: folderRightRoot,
-      currentPath: relativePath,
-      recursive: true,
-      showSame: true,
-      nameFilter: folderNameFilter,
-    } satisfies CompareFoldersRequest)
-
-    if (res.error) {
-      throw new Error(res.error)
-    }
-
-    folderTreeCacheRef.current[relativePath] = res.items
-    return res.items
-  }
-
-  const updateTreeNodes = (
-    nodes: FolderTreeNode[],
-    path: string,
-    updater: (node: FolderTreeNode) => FolderTreeNode,
-  ): FolderTreeNode[] =>
-    nodes.map((node) => {
-      if (node.path === path) {
-        return updater(node)
-      }
-      if (!node.children || node.children.length === 0) {
-        return node
-      }
-      return {
-        ...node,
-        children: updateTreeNodes(node.children, path, updater),
-      }
-    })
-
   const openFolderEntryDiff = async (entry: FolderCompareItem) => {
     if (!canOpenFolderItem(entry)) {
       return
@@ -1229,69 +1042,8 @@ export function App() {
   }
 
   const navigateFolderPath = (nextPath: string) => {
-    setFolderQuickFilter('all')
-    setSelectedFolderItemPath('')
+    resetFolderNavigationState()
     setFolderCurrentPath(nextPath)
-  }
-
-  const expandFolderTreeNode = async (path: string) => {
-    if (!folderLeftRoot || !folderRightRoot) {
-      return
-    }
-
-    setFolderTreeLoadingPath(path)
-
-    try {
-      const items = await loadFolderChildren(path)
-      const childNodes = folderItemsToTreeNodes(items)
-
-      setFolderTreeRoots((prev) =>
-        updateTreeNodes(prev, path, (node) => ({
-          ...node,
-          expanded: true,
-          loaded: true,
-          children: childNodes,
-        })),
-      )
-      setFolderExpandedPaths((prev) => (prev.includes(path) ? prev : [...prev, path]))
-    } catch (error) {
-      const message = `Failed to load directory children: ${formatUnknownError(error)}`
-      setFolderStatus(message)
-      notifications.show({
-        title: 'Failed to load directory',
-        message,
-        color: 'red',
-      })
-    } finally {
-      setFolderTreeLoadingPath('')
-    }
-  }
-
-  const collapseFolderTreeNode = (path: string) => {
-    setFolderTreeRoots((prev) =>
-      updateTreeNodes(prev, path, (node) => ({
-        ...node,
-        expanded: false,
-      })),
-    )
-    setFolderExpandedPaths((prev) => prev.filter((entry) => entry !== path))
-  }
-
-  const toggleFolderTreeNode = async (node: FolderTreeNode) => {
-    if (!node.isDir) {
-      return
-    }
-    if (node.expanded) {
-      collapseFolderTreeNode(node.path)
-      return
-    }
-    await expandFolderTreeNode(node.path)
-  }
-
-  const applyFolderSort = (key: FolderSortKey) => {
-    const next = toggleFolderSort(key, folderSortKey, folderSortDirection)
-    setFolderSortKey(next.key)
-    setFolderSortDirection(next.dir)
   }
 
   const handleFolderRowDoubleClick = async (item: FolderCompareItem) => {
