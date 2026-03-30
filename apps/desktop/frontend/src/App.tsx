@@ -37,7 +37,6 @@ import type {
   DesktopRecentScenarioPath,
   DesktopState,
   FolderCompareItem,
-  JSONRichDiffItem,
   LoadTextFileRequest,
   LoadTextFileResponse,
   Mode,
@@ -108,6 +107,7 @@ import {
 } from './features/text/textDiff'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
+import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
 
@@ -149,17 +149,6 @@ type FolderReturnContext = {
   currentPath: string
   selectedPath: string
   viewMode: FolderViewMode
-}
-type JSONDiffGroup = {
-  key: string
-  items: JSONRichDiffItem[]
-  summary: {
-    added: number
-    removed: number
-    changed: number
-    typeChanged: number
-    breaking: number
-  }
 }
 
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
@@ -243,63 +232,8 @@ function getSpecParseError(input: string, language: 'json' | 'yaml'): string | n
   }
 }
 
-function summarizeJSONSearchText(item: JSONRichDiffItem): string {
-  return `${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
-}
-
 function summarizeSpecSearchText(item: SpecRichDiffItem): string {
   return `${item.label}\n${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
-}
-
-function getJSONDiffGroupKey(path: string): string {
-  if (!path) {
-    return '(root)'
-  }
-
-  const dotIndex = path.indexOf('.')
-  const bracketIndex = path.indexOf('[')
-  const cutIndexes = [dotIndex, bracketIndex].filter((index) => index >= 0)
-  if (cutIndexes.length === 0) {
-    return path
-  }
-
-  const cutAt = Math.min(...cutIndexes)
-  return path.slice(0, cutAt) || '(root)'
-}
-
-function buildJSONDiffGroups(diffs: JSONRichDiffItem[]): JSONDiffGroup[] {
-  const map = new Map<string, JSONDiffGroup>()
-
-  for (const diff of diffs) {
-    const key = getJSONDiffGroupKey(diff.path)
-    const group =
-      map.get(key) ?? {
-        key,
-        items: [],
-        summary: { added: 0, removed: 0, changed: 0, typeChanged: 0, breaking: 0 },
-      }
-
-    group.items.push(diff)
-    if (diff.type === 'added') group.summary.added++
-    else if (diff.type === 'removed') group.summary.removed++
-    else if (diff.type === 'changed') group.summary.changed++
-    else if (diff.type === 'type_changed') group.summary.typeChanged++
-    if (diff.breaking) group.summary.breaking++
-
-    map.set(key, group)
-  }
-
-  return [...map.values()]
-}
-
-function buildJSONMatchGroupKeys(diffs: JSONRichDiffItem[], matchIndexes: number[]): string[] {
-  const keys = new Set<string>()
-  for (const index of matchIndexes) {
-    const diff = diffs[index]
-    if (!diff) continue
-    keys.add(getJSONDiffGroupKey(diff.path))
-  }
-  return [...keys]
 }
 
 function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
@@ -356,12 +290,7 @@ export function App() {
   const [jsonNewSourcePath, setJSONNewSourcePath] = useState('')
   const [ignoreOrder, setIgnoreOrder] = useState(false)
   const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
-  const [jsonResultView, setJSONResultView] = useState<StructuredResultView>('diff')
   const [jsonRichResult, setJSONRichResult] = useState<CompareJSONRichResponse | null>(null)
-  const [jsonSearchQuery, setJSONSearchQuery] = useState('')
-  const [jsonActiveSearchIndex, setJSONActiveSearchIndex] = useState(0)
-  const [jsonExpandedGroups, setJSONExpandedGroups] = useState<string[]>([])
-  const [jsonExpandedValueKeys, setJSONExpandedValueKeys] = useState<string[]>([])
   const [jsonCopyBusy, setJSONCopyBusy] = useState(false)
   const [jsonClipboardBusyTarget, setJSONClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
@@ -400,9 +329,7 @@ export function App() {
   const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
     'text' | 'json' | null
   >(null)
-  const jsonDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const specDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const registerJSONDiffSearchRowRef = createSearchRowRefRegistrar(jsonDiffSearchRowRefs)
   const registerSpecDiffSearchRowRef = createSearchRowRefRegistrar(specDiffSearchRowRefs)
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
@@ -443,6 +370,38 @@ export function App() {
     textLastRunOld,
     textLastRunNew,
     textLastRunOutputFormat,
+  })
+
+  const {
+    jsonResult,
+    jsonResultView,
+    setJSONResultView,
+    jsonSearchQuery,
+    setJSONSearchQuery,
+    jsonActiveSearchIndex,
+    normalizedJSONSearchQuery,
+    jsonSearchMatches,
+    jsonDiffSearchMatches,
+    jsonDiffSearchMatchIds,
+    activeJSONDiffSearchMatchId,
+    canRenderJSONRich,
+    canRenderJSONDiff,
+    jsonDiffRows,
+    jsonDiffTextItems,
+    jsonDiffGroups,
+    effectiveJSONExpandedGroups,
+    jsonSearchMatchIndexSet,
+    jsonExpandedValueKeys,
+    moveJSONSearch,
+    toggleJSONGroup,
+    toggleJSONExpandedValue,
+    registerJSONDiffSearchRowRef,
+    resetJSONSearch,
+  } = useJSONCompareViewState({
+    jsonRichResult,
+    jsonOldText,
+    jsonNewText,
+    textDiffLayout,
   })
 
   const [folderLeftRoot, setFolderLeftRoot] = useState('')
@@ -489,64 +448,6 @@ export function App() {
 
   const effectiveJSONIgnorePaths = parseIgnorePaths(jsonIgnorePathsDraft)
   const effectiveSpecIgnorePaths = parseIgnorePaths(specIgnorePathsDraft)
-
-  const jsonResult = jsonRichResult?.result ?? null
-  const jsonDiffRows = jsonRichResult?.diffs ?? []
-  const jsonDiffTextRows = useMemo(
-    () => (jsonRichResult?.diffText ? parseUnifiedDiff(jsonRichResult.diffText) : null),
-    [jsonRichResult?.diffText],
-  )
-  const jsonDiffTextItems = useMemo(
-    () =>
-      jsonDiffTextRows ? buildRichDiffItems(jsonDiffTextRows, jsonOldText, jsonNewText) : null,
-    [jsonDiffTextRows, jsonOldText, jsonNewText],
-  )
-  const jsonDiffGroups = useMemo(() => buildJSONDiffGroups(jsonDiffRows), [jsonDiffRows])
-  const canRenderJSONRich = !!jsonRichResult && !jsonRichResult.result.error
-  const canRenderJSONDiff = !!jsonRichResult && !jsonResult?.error && !!jsonDiffTextRows
-  const normalizedJSONSearchQuery = useMemo(
-    () => normalizeSearchQuery(jsonSearchQuery),
-    [jsonSearchQuery],
-  )
-  const jsonSearchMatches = useMemo(() => {
-    if (!normalizedJSONSearchQuery) {
-      return []
-    }
-
-    return jsonDiffRows
-      .map((item, index) => ({ item, index }))
-      .filter(({ item }) =>
-        summarizeJSONSearchText(item).toLowerCase().includes(normalizedJSONSearchQuery),
-      )
-      .map(({ index }) => index)
-  }, [jsonDiffRows, normalizedJSONSearchQuery])
-  const jsonDiffSearchMatches = useMemo(
-    () =>
-      jsonDiffTextItems
-        ? buildTextSearchMatches(jsonDiffTextItems, normalizedJSONSearchQuery)
-        : [],
-    [jsonDiffTextItems, normalizedJSONSearchQuery],
-  )
-  const jsonDiffSearchMatchIds = useMemo(
-    () => new Set(jsonDiffSearchMatches.map((match) => match.id)),
-    [jsonDiffSearchMatches],
-  )
-  const activeJSONDiffSearchMatch = jsonDiffSearchMatches[jsonActiveSearchIndex] ?? null
-  const jsonSearchMatchIndexSet = useMemo(
-    () => new Set(jsonSearchMatches),
-    [jsonSearchMatches],
-  )
-  const jsonMatchGroupKeys = useMemo(
-    () => buildJSONMatchGroupKeys(jsonDiffRows, jsonSearchMatches),
-    [jsonDiffRows, jsonSearchMatches],
-  )
-  const effectiveJSONExpandedGroups = useMemo(() => {
-    const keys = new Set<string>(jsonExpandedGroups)
-    for (const key of jsonMatchGroupKeys) {
-      keys.add(key)
-    }
-    return keys
-  }, [jsonExpandedGroups, jsonMatchGroupKeys])
 
   const jsonPatchBlockedByFilters =
     ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
@@ -813,21 +714,6 @@ export function App() {
   }, [jsonCommon.textStyle, jsonPatchBlockedByFilters])
 
   useEffect(() => {
-    if (!jsonRichResult) {
-      return
-    }
-
-    if (jsonResultView === 'semantic' && !canRenderJSONRich) {
-      setJSONResultView(canRenderJSONDiff ? 'diff' : 'raw')
-      return
-    }
-
-    if (jsonResultView === 'diff' && !canRenderJSONDiff) {
-      setJSONResultView(canRenderJSONRich ? 'semantic' : 'raw')
-    }
-  }, [canRenderJSONDiff, canRenderJSONRich, jsonRichResult, jsonResultView])
-
-  useEffect(() => {
     if (!specRichResult) {
       return
     }
@@ -848,32 +734,8 @@ export function App() {
   }, [canRenderSpecDiff, specRichResult, specResult?.error, specResultView])
 
   useEffect(() => {
-    setJSONExpandedGroups(jsonDiffGroups.map((group) => group.key))
-    setJSONExpandedValueKeys([])
-  }, [jsonDiffGroups])
-
-  useEffect(() => {
-    setJSONActiveSearchIndex(0)
-  }, [normalizedJSONSearchQuery, jsonRichResult?.result.output])
-
-  useEffect(() => {
     setSpecActiveSearchIndex(0)
   }, [normalizedSpecSearchQuery, specRichResult?.result.output])
-
-  useEffect(() => {
-    const targetLength =
-      jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length
-    if (targetLength === 0) {
-      if (jsonActiveSearchIndex !== 0) {
-        setJSONActiveSearchIndex(0)
-      }
-      return
-    }
-
-    if (jsonActiveSearchIndex >= targetLength) {
-      setJSONActiveSearchIndex(0)
-    }
-  }, [jsonSearchMatches.length, jsonDiffSearchMatches.length, jsonActiveSearchIndex, jsonResultView])
 
   useEffect(() => {
     const targetLength =
@@ -889,16 +751,6 @@ export function App() {
       setSpecActiveSearchIndex(0)
     }
   }, [specSearchMatches.length, specDiffSearchMatches.length, specActiveSearchIndex, specResultView])
-
-  useEffect(() => {
-    if (jsonResultView !== 'diff' || !canRenderJSONDiff || !activeJSONDiffSearchMatch) {
-      return
-    }
-    const node = jsonDiffSearchRowRefs.current[activeJSONDiffSearchMatch.id]
-    if (node) {
-      node.scrollIntoView({ block: 'center' })
-    }
-  }, [activeJSONDiffSearchMatch?.id, canRenderJSONDiff, jsonResultView, textDiffLayout])
 
   useEffect(() => {
     if (specResultView !== 'diff' || !canRenderSpecDiff || !activeSpecDiffSearchMatch) {
@@ -1349,8 +1201,7 @@ export function App() {
         setJSONOldSourcePath(oldLoaded.path)
         setJSONNewSourcePath(newLoaded.path)
         setJSONRichResult(richRes)
-        setJSONSearchQuery('')
-        setJSONActiveSearchIndex(0)
+        resetJSONSearch()
         setJSONResultView(
           chooseDefaultDisplayModeForMode({
             mode: 'json',
@@ -1649,8 +1500,7 @@ export function App() {
         canRenderSemantic: !richRes.result.error,
       }),
     )
-    setJSONSearchQuery('')
-    setJSONActiveSearchIndex(0)
+    resetJSONSearch()
     setResult(richRes.result)
     if (jsonOldSourcePath.trim() && jsonNewSourcePath.trim()) {
       setJSONRecentPairs((prev) =>
@@ -1767,8 +1617,7 @@ export function App() {
         canRenderSemantic: !richRes.result.error,
       }),
     )
-    setJSONSearchQuery('')
-    setJSONActiveSearchIndex(0)
+    resetJSONSearch()
     setResult(richRes.result)
     setJSONRecentPairs((prev) =>
       upsertRecentPair(prev, {
@@ -2825,42 +2674,6 @@ export function App() {
     />
   )
 
-  const moveJSONSearch = (direction: 1 | -1) => {
-    const targetMatches =
-      jsonResultView === 'semantic' ? jsonSearchMatches : jsonDiffSearchMatches
-    const canSearch =
-      jsonResultView === 'semantic'
-        ? canRenderJSONRich
-        : jsonResultView === 'diff'
-          ? canRenderJSONDiff
-          : false
-    if (!canSearch || targetMatches.length === 0) {
-      return
-    }
-
-    setJSONActiveSearchIndex((prev) =>
-      direction === 1
-        ? (prev + 1) % targetMatches.length
-        : (prev - 1 + targetMatches.length) % targetMatches.length,
-    )
-  }
-
-  const toggleJSONGroup = (groupKey: string) => {
-    setJSONExpandedGroups((prev) =>
-      prev.includes(groupKey)
-        ? prev.filter((key) => key !== groupKey)
-        : [...prev, groupKey],
-    )
-  }
-
-  const toggleJSONExpandedValue = (valueKey: string) => {
-    setJSONExpandedValueKeys((prev) =>
-      prev.includes(valueKey)
-        ? prev.filter((key) => key !== valueKey)
-        : [...prev, valueKey],
-    )
-  }
-
   const renderJSONResultPanel = () => (
     <JSONCompareResultPanel
       jsonResult={jsonResult}
@@ -2875,7 +2688,7 @@ export function App() {
       jsonSearchMatches={jsonSearchMatches}
       jsonDiffSearchMatches={jsonDiffSearchMatches}
       jsonDiffSearchMatchIds={jsonDiffSearchMatchIds}
-      activeJSONDiffSearchMatchId={activeJSONDiffSearchMatch?.id ?? null}
+      activeJSONDiffSearchMatchId={activeJSONDiffSearchMatchId}
       canRenderJSONRich={canRenderJSONRich}
       canRenderJSONDiff={canRenderJSONDiff}
       jsonCopyBusy={jsonCopyBusy}
