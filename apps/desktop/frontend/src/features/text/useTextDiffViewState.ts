@@ -50,10 +50,6 @@ export function useTextDiffViewState({
       textRichItems ? buildTextSearchMatches(textRichItems, normalizedTextSearchQuery) : [],
     [textRichItems, normalizedTextSearchQuery],
   )
-  const textSearchMatchIds = useMemo(
-    () => new Set(textSearchMatches.map((match) => match.id)),
-    [textSearchMatches],
-  )
   const activeTextSearchMatch = textSearchMatches[textActiveSearchIndex] ?? null
   const omittedSectionIds = useMemo(
     () =>
@@ -138,10 +134,6 @@ export function useTextDiffViewState({
   const isTextSectionExpanded = (sectionId: string) =>
     effectiveExpandedSectionIds.includes(sectionId)
 
-  const isTextSearchMatchId = (matchId: string) => textSearchMatchIds.has(matchId)
-
-  const isActiveTextSearchMatchId = (matchId: string) => activeTextSearchMatch?.id === matchId
-
   const registerTextSearchRowRef = (matchId: string) => (node: HTMLDivElement | null) => {
     if (node) {
       textSearchRowRefs.current[matchId] = node
@@ -149,14 +141,6 @@ export function useTextDiffViewState({
     }
 
     delete textSearchRowRefs.current[matchId]
-  }
-
-  const getTextSearchClassName = (matchId: string) => {
-    if (!isTextSearchMatchId(matchId)) {
-      return ''
-    }
-
-    return isActiveTextSearchMatchId(matchId) ? 'active-search-hit' : 'search-hit'
   }
 
   const moveTextSearch = (direction: 1 | -1) => {
@@ -203,9 +187,7 @@ export function useTextDiffViewState({
     clearTextExpandedSections,
     resetTextSearch,
     isTextSectionExpanded,
-    isTextSearchMatchId,
     registerTextSearchRowRef,
-    getTextSearchClassName,
     moveTextSearch,
     toggleTextUnchangedSection,
     toggleAllTextUnchangedSections,

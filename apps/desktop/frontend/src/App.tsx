@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
-  type MutableRefObject,
 } from 'react'
 import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -75,6 +74,7 @@ import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
 import { CompareCodeInputBody } from './ui/CompareCodeInputBody'
 import { SpecRichDiffViewer } from './ui/SpecRichDiffViewer'
+import { RichDiffViewer, createSearchRowRefRegistrar } from './ui/RichDiffViewer'
 import {
   upsertRecentFolderPair,
   upsertRecentPair,
@@ -112,17 +112,10 @@ import {
   type FolderViewMode,
 } from './features/folder/folderTree'
 import {
-  buildExpandedContextRow,
   buildRichDiffItems,
   buildTextSearchMatches,
-  buildTextSearchRowIDForItem,
-  buildTextSearchRowIDForOmitted,
   normalizeSearchQuery,
   parseUnifiedDiff,
-  shouldHideTextRichMetaRow,
-  shouldShowTextHunkHeaders,
-  type RichDiffItem,
-  type UnifiedDiffRow,
 } from './features/text/textDiff'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
@@ -453,50 +446,6 @@ function chooseDefaultDisplayModeForMode(options: {
   return 'raw'
 }
 
-function renderInlineDiffContent(row: UnifiedDiffRow, keyBase: string) {
-  if (!row.inlineSegments || row.inlineSegments.length === 0) {
-    return row.content
-  }
-
-  return row.inlineSegments.map((segment, index) => {
-    const className =
-      segment.kind === 'same'
-        ? undefined
-        : segment.kind === 'add'
-          ? 'text-inline-add'
-          : 'text-inline-remove'
-
-    return (
-      <span key={`${keyBase}-${index}`} className={className}>
-        {segment.text}
-      </span>
-    )
-  })
-}
-
-function renderSplitDiffCell(
-  row: UnifiedDiffRow | null,
-  side: 'left' | 'right',
-  keyBase: string,
-  searchClassName = '',
-  rowRef?: (node: HTMLDivElement | null) => void,
-) {
-  const lineNumber = side === 'left' ? row?.oldLine : row?.newLine
-  const kindClass = row?.kind ?? 'empty'
-
-  return (
-    <div
-      ref={rowRef}
-      className={['split-diff-cell', kindClass, searchClassName].filter(Boolean).join(' ')}
-    >
-      <div className="split-diff-line">{lineNumber ?? ''}</div>
-      <pre className="split-diff-content">
-        {row ? renderInlineDiffContent(row, keyBase) : ''}
-      </pre>
-    </div>
-  )
-}
-
 export function App() {
   const [mode, setMode] = useState<Mode>(() => getInitialMode())
 
@@ -552,6 +501,8 @@ export function App() {
   >(null)
   const jsonDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const specDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const registerJSONDiffSearchRowRef = createSearchRowRefRegistrar(jsonDiffSearchRowRefs)
+  const registerSpecDiffSearchRowRef = createSearchRowRefRegistrar(specDiffSearchRowRefs)
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(
@@ -582,9 +533,7 @@ export function App() {
     clearTextExpandedSections,
     resetTextSearch,
     isTextSectionExpanded,
-    isTextSearchMatchId,
     registerTextSearchRowRef,
-    getTextSearchClassName,
     moveTextSearch,
     toggleTextUnchangedSection,
     toggleAllTextUnchangedSections,
@@ -2948,284 +2897,6 @@ export function App() {
     )
   }
 
-  const buildModeRowId = (_modeKey: 'json' | 'spec', itemIndex: number) =>
-    buildTextSearchRowIDForItem(itemIndex)
-
-  const buildModeOmittedRowId = (
-    modeKey: 'json' | 'spec',
-    sectionId: string,
-    itemIndex: number,
-  ) => buildTextSearchRowIDForOmitted(sectionId, itemIndex)
-
-  const registerModeSearchRowRef =
-    (rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>, matchId: string) =>
-    (node: HTMLDivElement | null) => {
-      if (node) {
-        rowRefs.current[matchId] = node
-        return
-      }
-      delete rowRefs.current[matchId]
-    }
-
-  const renderModeUnifiedDiffRows = (
-    items: RichDiffItem[],
-    modeKey: 'json' | 'spec',
-    searchMatchIds: Set<string>,
-    activeMatchId: string | null,
-    rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>,
-  ) => {
-    const showHunkHeaders = shouldShowTextHunkHeaders(items)
-
-    return (
-      <div className="text-diff-grid">
-        {items.map((item, idx) => {
-          if (item.kind === 'omitted') {
-            const expanded = true
-            return (
-              <div key={`${modeKey}-${item.sectionId}`} className="text-omitted-block">
-                <div className={`text-omitted-banner ${expanded ? 'expanded' : ''}`}>
-                  <span className="muted">{item.lines.length} unchanged lines</span>
-                </div>
-                {item.lines.map((line, lineIndex) => {
-                  const row = buildExpandedContextRow(
-                    line,
-                    item.startOldLine + lineIndex,
-                    item.startNewLine + lineIndex,
-                  )
-                  const matchId = buildModeOmittedRowId(modeKey, item.sectionId, lineIndex)
-                  const matched = searchMatchIds.has(matchId)
-                  const rowClass = matched
-                    ? activeMatchId === matchId
-                      ? 'active-search-hit'
-                      : 'search-hit'
-                    : ''
-                  return (
-                    <div
-                      key={`${modeKey}-${item.sectionId}-${lineIndex}`}
-                      ref={
-                        matched
-                          ? registerModeSearchRowRef(rowRefs, matchId)
-                          : undefined
-                      }
-                      className={['text-diff-row', row.kind, rowClass].filter(Boolean).join(' ')}
-                    >
-                      <div className="text-diff-line">{row.oldLine ?? ''}</div>
-                      <div className="text-diff-line">{row.newLine ?? ''}</div>
-                      <pre className="text-diff-content">{row.content}</pre>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          }
-
-          const row = item.row
-          if (shouldHideTextRichMetaRow(row)) {
-            return null
-          }
-          if (row.kind === 'hunk' && !showHunkHeaders) {
-            return null
-          }
-          const matchId = buildModeRowId(modeKey, idx)
-          const matched = searchMatchIds.has(matchId)
-          const rowClass = matched
-            ? activeMatchId === matchId
-              ? 'active-search-hit'
-              : 'search-hit'
-            : ''
-          return (
-            <div
-              key={`${modeKey}-${idx}-${row.kind}`}
-              ref={matched ? registerModeSearchRowRef(rowRefs, matchId) : undefined}
-              className={['text-diff-row', row.kind, rowClass].filter(Boolean).join(' ')}
-            >
-              <div className="text-diff-line">{row.oldLine ?? ''}</div>
-              <div className="text-diff-line">{row.newLine ?? ''}</div>
-              <pre className="text-diff-content">
-                {renderInlineDiffContent(row, `${modeKey}-diff-${idx}`)}
-              </pre>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  const renderModeSplitDiffRows = (
-    items: RichDiffItem[],
-    modeKey: 'json' | 'spec',
-    searchMatchIds: Set<string>,
-    activeMatchId: string | null,
-    rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>,
-  ) => {
-    const showHunkHeaders = shouldShowTextHunkHeaders(items)
-    const splitNodes: JSX.Element[] = []
-    let index = 0
-
-    while (index < items.length) {
-      const item = items[index]
-
-      if (item.kind === 'omitted') {
-        splitNodes.push(
-          <div key={`${modeKey}-split-omitted-${item.sectionId}`} className="split-omitted-block">
-            <div className="split-diff-banner omitted">
-              <div className="split-omitted-banner-inner">
-                <span className="muted">{item.lines.length} unchanged lines</span>
-              </div>
-            </div>
-            {item.lines.map((line, lineIndex) => {
-              const row = buildExpandedContextRow(
-                line,
-                item.startOldLine + lineIndex,
-                item.startNewLine + lineIndex,
-              )
-              const matchId = buildModeOmittedRowId(modeKey, item.sectionId, lineIndex)
-              const matched = searchMatchIds.has(matchId)
-              const rowClass = matched
-                ? activeMatchId === matchId
-                  ? 'active-search-hit'
-                  : 'search-hit'
-                : ''
-              return (
-                <div key={`${modeKey}-split-omitted-row-${item.sectionId}-${lineIndex}`} className="split-diff-row">
-                  {renderSplitDiffCell(
-                    row,
-                    'left',
-                    `${modeKey}-split-omitted-left-${item.sectionId}-${lineIndex}`,
-                    rowClass,
-                    matched ? registerModeSearchRowRef(rowRefs, matchId) : undefined,
-                  )}
-                  {renderSplitDiffCell(
-                    row,
-                    'right',
-                    `${modeKey}-split-omitted-right-${item.sectionId}-${lineIndex}`,
-                    rowClass,
-                  )}
-                </div>
-              )
-            })}
-          </div>,
-        )
-        index++
-        continue
-      }
-
-      const row = item.row
-      if (row.kind === 'meta' || row.kind === 'hunk') {
-        if (shouldHideTextRichMetaRow(row)) {
-          index++
-          continue
-        }
-        if (row.kind === 'hunk' && !showHunkHeaders) {
-          index++
-          continue
-        }
-        splitNodes.push(
-          <div key={`${modeKey}-split-banner-${index}`} className={`split-diff-banner ${row.kind}`}>
-            <pre className="split-diff-banner-content">{row.content}</pre>
-          </div>,
-        )
-        index++
-        continue
-      }
-
-      if (row.kind === 'context') {
-        const matchId = buildModeRowId(modeKey, index)
-        const matched = searchMatchIds.has(matchId)
-        const rowClass = matched
-          ? activeMatchId === matchId
-            ? 'active-search-hit'
-            : 'search-hit'
-          : ''
-        splitNodes.push(
-          <div key={`${modeKey}-split-row-${index}`} className="split-diff-row">
-            {renderSplitDiffCell(
-              row,
-              'left',
-              `${modeKey}-split-left-${index}`,
-              rowClass,
-              matched ? registerModeSearchRowRef(rowRefs, matchId) : undefined,
-            )}
-            {renderSplitDiffCell(row, 'right', `${modeKey}-split-right-${index}`, rowClass)}
-          </div>,
-        )
-        index++
-        continue
-      }
-
-      const removed: Array<{ row: UnifiedDiffRow; matchId: string }> = []
-      const added: Array<{ row: UnifiedDiffRow; matchId: string }> = []
-      let end = index
-
-      while (end < items.length) {
-        const candidate = items[end]
-        if (candidate.kind !== 'row') {
-          break
-        }
-        if (candidate.row.kind !== 'remove' && candidate.row.kind !== 'add') {
-          break
-        }
-        const matchId = buildModeRowId(modeKey, end)
-        if (candidate.row.kind === 'remove') {
-          removed.push({ row: candidate.row, matchId })
-        } else {
-          added.push({ row: candidate.row, matchId })
-        }
-        end++
-      }
-
-      const pairCount = Math.max(removed.length, added.length)
-      for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
-        const left = removed[pairIndex] ?? null
-        const right = added[pairIndex] ?? null
-        const leftMatched = left ? searchMatchIds.has(left.matchId) : false
-        const rightMatched = right ? searchMatchIds.has(right.matchId) : false
-        splitNodes.push(
-          <div key={`${modeKey}-split-pair-${index}-${pairIndex}`} className="split-diff-row">
-            {renderSplitDiffCell(
-              left?.row ?? null,
-              'left',
-              `${modeKey}-split-pair-left-${index}-${pairIndex}`,
-              leftMatched
-                ? activeMatchId === left?.matchId
-                  ? 'active-search-hit'
-                  : 'search-hit'
-                : '',
-              left && leftMatched
-                ? registerModeSearchRowRef(rowRefs, left.matchId)
-                : undefined,
-            )}
-            {renderSplitDiffCell(
-              right?.row ?? null,
-              'right',
-              `${modeKey}-split-pair-right-${index}-${pairIndex}`,
-              rightMatched
-                ? activeMatchId === right?.matchId
-                  ? 'active-search-hit'
-                  : 'search-hit'
-                : '',
-              right && rightMatched
-                ? registerModeSearchRowRef(rowRefs, right.matchId)
-                : undefined,
-            )}
-          </div>,
-        )
-      }
-
-      index = end
-    }
-
-    return (
-      <div className="split-diff-grid">
-        <div className="split-diff-header">
-          <div className="split-diff-header-cell">Old</div>
-          <div className="split-diff-header-cell">New</div>
-        </div>
-        {splitNodes}
-      </div>
-    )
-  }
-
   const renderTextResultPanel = () => (
     <TextCompareResultPanel
       textResult={textResult}
@@ -3249,11 +2920,7 @@ export function App() {
       toggleTextUnchangedSection={toggleTextUnchangedSection}
       toggleAllTextUnchangedSections={toggleAllTextUnchangedSections}
       isTextSectionExpanded={isTextSectionExpanded}
-      isTextSearchMatchId={isTextSearchMatchId}
       registerTextSearchRowRef={registerTextSearchRowRef}
-      getTextSearchClassName={getTextSearchClassName}
-      renderInlineDiffContent={renderInlineDiffContent}
-      renderSplitDiffCell={renderSplitDiffCell}
     />
   )
 
@@ -3526,23 +3193,14 @@ export function App() {
         }
       >
         {showDiff && jsonDiffTextItems ? (
-          textDiffLayout === 'split' ? (
-            renderModeSplitDiffRows(
-              jsonDiffTextItems,
-              'json',
-              jsonDiffSearchMatchIds,
-              activeJSONDiffMatch?.id ?? null,
-              jsonDiffSearchRowRefs,
-            )
-          ) : (
-            renderModeUnifiedDiffRows(
-              jsonDiffTextItems,
-              'json',
-              jsonDiffSearchMatchIds,
-              activeJSONDiffMatch?.id ?? null,
-              jsonDiffSearchRowRefs,
-            )
-          )
+          <RichDiffViewer
+            items={jsonDiffTextItems}
+            layout={textDiffLayout}
+            keyPrefix="json"
+            searchMatchIds={jsonDiffSearchMatchIds}
+            activeMatchId={activeJSONDiffMatch?.id ?? null}
+            registerSearchRowRef={registerJSONDiffSearchRowRef}
+          />
         ) : showSemantic ? (
           <div className="json-diff-table-wrap">
             {jsonDiffRows.length === 0 ? (
@@ -3818,23 +3476,14 @@ export function App() {
         }
       >
         {showDiff && specDiffTextItems ? (
-          textDiffLayout === 'split' ? (
-            renderModeSplitDiffRows(
-              specDiffTextItems,
-              'spec',
-              specDiffSearchMatchIds,
-              activeSpecDiffMatch?.id ?? null,
-              specDiffSearchRowRefs,
-            )
-          ) : (
-            renderModeUnifiedDiffRows(
-              specDiffTextItems,
-              'spec',
-              specDiffSearchMatchIds,
-              activeSpecDiffMatch?.id ?? null,
-              specDiffSearchRowRefs,
-            )
-          )
+          <RichDiffViewer
+            items={specDiffTextItems}
+            layout={textDiffLayout}
+            keyPrefix="spec"
+            searchMatchIds={specDiffSearchMatchIds}
+            activeMatchId={activeSpecDiffMatch?.id ?? null}
+            registerSearchRowRef={registerSpecDiffSearchRowRef}
+          />
         ) : showSemantic && specRichResult ? (
           <SpecRichDiffViewer
             diffs={specRichResult.diffs}
