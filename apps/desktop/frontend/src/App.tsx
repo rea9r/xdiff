@@ -42,7 +42,6 @@ import type {
   Mode,
   ScenarioCheckListEntry,
   ScenarioListResponse,
-  SpecRichDiffItem,
   ScenarioResult,
   ScenarioRunResponse,
 } from './types'
@@ -62,7 +61,6 @@ import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
 import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
 import { CompareCodeInputBody } from './ui/CompareCodeInputBody'
-import { createSearchRowRefRegistrar } from './ui/RichDiffViewer'
 import {
   upsertRecentFolderPair,
   upsertRecentPair,
@@ -99,16 +97,11 @@ import {
   type FolderTreeRow,
   type FolderViewMode,
 } from './features/folder/folderTree'
-import {
-  buildRichDiffItems,
-  buildTextSearchMatches,
-  normalizeSearchQuery,
-  parseUnifiedDiff,
-} from './features/text/textDiff'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
+import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
 
 const defaultJSONCommon: CompareCommon = {
@@ -173,18 +166,6 @@ function getInitialMode(): Mode {
   }
 }
 
-function stringifyJSONValue(value: unknown): string {
-  if (value === null) return 'null'
-  if (value === undefined) return ''
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
-
 function getJSONParseError(input: string): string | null {
   if (!input.trim()) {
     return null
@@ -230,10 +211,6 @@ function getSpecParseError(input: string, language: 'json' | 'yaml'): string | n
   } catch (error) {
     return error instanceof Error ? error.message : String(error)
   }
-}
-
-function summarizeSpecSearchText(item: SpecRichDiffItem): string {
-  return `${item.label}\n${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
 }
 
 function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
@@ -305,10 +282,7 @@ export function App() {
   const [specOldSourcePath, setSpecOldSourcePath] = useState('')
   const [specNewSourcePath, setSpecNewSourcePath] = useState('')
   const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
-  const [specResultView, setSpecResultView] = useState<StructuredResultView>('diff')
   const [specRichResult, setSpecRichResult] = useState<CompareSpecRichResponse | null>(null)
-  const [specSearchQuery, setSpecSearchQuery] = useState('')
-  const [specActiveSearchIndex, setSpecActiveSearchIndex] = useState(0)
   const [specClipboardBusyTarget, setSpecClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [specFileBusyTarget, setSpecFileBusyTarget] = useState<TextInputTarget | null>(null)
@@ -329,8 +303,6 @@ export function App() {
   const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
     'text' | 'json' | null
   >(null)
-  const specDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const registerSpecDiffSearchRowRef = createSearchRowRefRegistrar(specDiffSearchRowRefs)
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(
@@ -404,6 +376,31 @@ export function App() {
     textDiffLayout,
   })
 
+  const {
+    specResult,
+    specResultView,
+    setSpecResultView,
+    specSearchQuery,
+    setSpecSearchQuery,
+    specActiveSearchIndex,
+    normalizedSpecSearchQuery,
+    specSearchMatches,
+    specDiffSearchMatches,
+    specDiffSearchMatchIds,
+    activeSpecDiffSearchMatchId,
+    canRenderSpecDiff,
+    specDiffTextItems,
+    specSearchMatchIndexSet,
+    moveSpecSearch,
+    registerSpecDiffSearchRowRef,
+    resetSpecSearch,
+  } = useSpecCompareViewState({
+    specRichResult,
+    specOldText,
+    specNewText,
+    textDiffLayout,
+  })
+
   const [folderLeftRoot, setFolderLeftRoot] = useState('')
   const [folderRightRoot, setFolderRightRoot] = useState('')
   const [folderNameFilter, setFolderNameFilter] = useState('')
@@ -456,50 +453,6 @@ export function App() {
   const jsonInputInvalid = !!jsonOldParseError || !!jsonNewParseError
   const jsonInputEmpty = !jsonOldText.trim() || !jsonNewText.trim()
   const jsonEditorBusy = jsonClipboardBusyTarget !== null || jsonFileBusyTarget !== null
-  const specResult = specRichResult?.result ?? null
-  const specDiffRows = specRichResult?.diffs ?? []
-  const specDiffTextRows = useMemo(
-    () => (specRichResult?.diffText ? parseUnifiedDiff(specRichResult.diffText) : null),
-    [specRichResult?.diffText],
-  )
-  const specDiffTextItems = useMemo(
-    () =>
-      specDiffTextRows ? buildRichDiffItems(specDiffTextRows, specOldText, specNewText) : null,
-    [specDiffTextRows, specOldText, specNewText],
-  )
-  const canRenderSpecDiff = !!specRichResult && !specResult?.error && !!specDiffTextRows
-  const normalizedSpecSearchQuery = useMemo(
-    () => normalizeSearchQuery(specSearchQuery),
-    [specSearchQuery],
-  )
-  const specSearchMatches = useMemo(() => {
-    if (!normalizedSpecSearchQuery) {
-      return []
-    }
-
-    return specDiffRows
-      .map((item, index) => ({ item, index }))
-      .filter(({ item }) =>
-        summarizeSpecSearchText(item).toLowerCase().includes(normalizedSpecSearchQuery),
-      )
-      .map(({ index }) => index)
-  }, [specDiffRows, normalizedSpecSearchQuery])
-  const specDiffSearchMatches = useMemo(
-    () =>
-      specDiffTextItems
-        ? buildTextSearchMatches(specDiffTextItems, normalizedSpecSearchQuery)
-        : [],
-    [specDiffTextItems, normalizedSpecSearchQuery],
-  )
-  const specDiffSearchMatchIds = useMemo(
-    () => new Set(specDiffSearchMatches.map((match) => match.id)),
-    [specDiffSearchMatches],
-  )
-  const activeSpecDiffSearchMatch = specDiffSearchMatches[specActiveSearchIndex] ?? null
-  const specSearchMatchIndexSet = useMemo(
-    () => new Set(specSearchMatches),
-    [specSearchMatches],
-  )
   const specOldLanguage = useMemo(
     () => detectSpecInputLanguage(specOldSourcePath, specOldText),
     [specOldSourcePath, specOldText],
@@ -712,55 +665,6 @@ export function App() {
     }
     setJSONCommon((prev) => ({ ...prev, textStyle: 'semantic' }))
   }, [jsonCommon.textStyle, jsonPatchBlockedByFilters])
-
-  useEffect(() => {
-    if (!specRichResult) {
-      return
-    }
-
-    if (specResultView === 'semantic' && !!specResult?.error) {
-      setSpecResultView(canRenderSpecDiff ? 'diff' : 'raw')
-      return
-    }
-
-    if (specResultView === 'semantic' && !specRichResult) {
-      setSpecResultView(canRenderSpecDiff ? 'diff' : 'raw')
-      return
-    }
-
-    if (specResultView === 'diff' && !canRenderSpecDiff) {
-      setSpecResultView(specRichResult && !specResult?.error ? 'semantic' : 'raw')
-    }
-  }, [canRenderSpecDiff, specRichResult, specResult?.error, specResultView])
-
-  useEffect(() => {
-    setSpecActiveSearchIndex(0)
-  }, [normalizedSpecSearchQuery, specRichResult?.result.output])
-
-  useEffect(() => {
-    const targetLength =
-      specResultView === 'semantic' ? specSearchMatches.length : specDiffSearchMatches.length
-    if (targetLength === 0) {
-      if (specActiveSearchIndex !== 0) {
-        setSpecActiveSearchIndex(0)
-      }
-      return
-    }
-
-    if (specActiveSearchIndex >= targetLength) {
-      setSpecActiveSearchIndex(0)
-    }
-  }, [specSearchMatches.length, specDiffSearchMatches.length, specActiveSearchIndex, specResultView])
-
-  useEffect(() => {
-    if (specResultView !== 'diff' || !canRenderSpecDiff || !activeSpecDiffSearchMatch) {
-      return
-    }
-    const node = specDiffSearchRowRefs.current[activeSpecDiffSearchMatch.id]
-    if (node) {
-      node.scrollIntoView({ block: 'center' })
-    }
-  }, [activeSpecDiffSearchMatch?.id, canRenderSpecDiff, specResultView, textDiffLayout])
 
   const api = useMemo(
     () => ({
@@ -1252,8 +1156,7 @@ export function App() {
         setSpecOldSourcePath(oldLoaded.path)
         setSpecNewSourcePath(newLoaded.path)
         setSpecRichResult(richRes)
-        setSpecSearchQuery('')
-        setSpecActiveSearchIndex(0)
+        resetSpecSearch()
         setSpecResultView(
           chooseDefaultDisplayModeForMode({
             mode: 'spec',
@@ -1529,8 +1432,7 @@ export function App() {
       common: safeSpecCommon,
     } satisfies CompareSpecValuesRequest)
     setSpecRichResult(richRes)
-    setSpecSearchQuery('')
-    setSpecActiveSearchIndex(0)
+    resetSpecSearch()
     setSpecResultView(
       chooseDefaultDisplayModeForMode({
         mode: 'spec',
@@ -1665,8 +1567,7 @@ export function App() {
         canRenderSemantic: !richRes.result.error,
       }),
     )
-    setSpecSearchQuery('')
-    setSpecActiveSearchIndex(0)
+    resetSpecSearch()
     setResult(richRes.result)
     setSpecRecentPairs((prev) =>
       upsertRecentPair(prev, {
@@ -2707,26 +2608,6 @@ export function App() {
     />
   )
 
-  const moveSpecSearch = (direction: 1 | -1) => {
-    const targetMatches =
-      specResultView === 'semantic' ? specSearchMatches : specDiffSearchMatches
-    const canSearch =
-      specResultView === 'semantic'
-        ? !!specRichResult && !specResult?.error
-        : specResultView === 'diff'
-          ? canRenderSpecDiff
-          : false
-    if (!canSearch || targetMatches.length === 0) {
-      return
-    }
-
-    setSpecActiveSearchIndex((prev) =>
-      direction === 1
-        ? (prev + 1) % targetMatches.length
-        : (prev - 1 + targetMatches.length) % targetMatches.length,
-    )
-  }
-
   const renderSpecResultPanel = () => (
     <SpecCompareResultPanel
       specResult={specResult}
@@ -2742,7 +2623,7 @@ export function App() {
       specSearchMatches={specSearchMatches}
       specDiffSearchMatches={specDiffSearchMatches}
       specDiffSearchMatchIds={specDiffSearchMatchIds}
-      activeSpecDiffSearchMatchId={activeSpecDiffSearchMatch?.id ?? null}
+      activeSpecDiffSearchMatchId={activeSpecDiffSearchMatchId}
       canRenderSpecDiff={canRenderSpecDiff}
       specCopyBusy={specCopyBusy}
       copySpecResultRawOutput={copySpecResultRawOutput}
