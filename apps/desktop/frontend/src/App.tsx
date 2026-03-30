@@ -75,6 +75,7 @@ import { useJSONCompareViewState } from './features/json/useJSONCompareViewState
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
+import { ScenarioControlPanel } from './features/scenario/ScenarioControlPanel'
 import { ScenarioResultPanel } from './features/scenario/ScenarioResultPanel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
@@ -2475,113 +2476,27 @@ export function App() {
 
   const sidebarContent =
     mode === 'scenario' ? (
-      <section className="mode-panel">
-        <div className="field-block">
-          <label className="field-label">Scenario path</label>
-          <div className="path-row">
-            <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={() => browseAndSet(api.pickScenarioFile, setScenarioPath)}
-            >
-              Browse...
-            </button>
-          </div>
-          <div className="button-row">
-            <Menu position="bottom-start" withinPortal>
-              <Menu.Target>
-                <button
-                  type="button"
-                  className="button-secondary button-compact"
-                  disabled={scenarioRecentPaths.length === 0}
-                >
-                  Recent scenarios
-                </button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                {scenarioRecentPaths.map((entry) => (
-                  <Menu.Item
-                    key={`${entry.path}::${entry.reportFormat}`}
-                    onClick={() =>
-                      void runRecentAction('Recent scenario load', () =>
-                        loadScenarioRecent(entry),
-                      )
-                    }
-                  >
-                    {entry.path} ({entry.reportFormat})
-                  </Menu.Item>
-                ))}
-                <Menu.Divider />
-                <Menu.Item color="red" onClick={() => setScenarioRecentPaths([])}>
-                  Clear recent
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </div>
-        </div>
-
-        <div className="field-block">
-          <label className="field-label">Report format</label>
-          <select
-            value={reportFormat}
-            onChange={(e) => setReportFormat(e.target.value as 'text' | 'json')}
-          >
-            <option value="text">text</option>
-            <option value="json">json</option>
-          </select>
-        </div>
-
-        <div className="button-row">
-          <button className="button-secondary" onClick={handleLoadScenarioChecks} disabled={loading}>
-            {loading ? 'Loading...' : 'Load checks'}
-          </button>
-          <button className="button-primary" onClick={onRun} disabled={loading}>
-            {loading ? 'Running...' : 'Run selected'}
-          </button>
-        </div>
-
-        {scenarioListStatus ? <div className="muted">{scenarioListStatus}</div> : null}
-
-        <div className="button-row">
-          <button
-            className="button-secondary button-compact"
-            onClick={selectAllScenarioChecks}
-            disabled={scenarioChecks.length === 0}
-          >
-            Select all
-          </button>
-          <button
-            className="button-secondary button-compact"
-            onClick={clearScenarioSelection}
-            disabled={selectedChecks.length === 0}
-          >
-            Clear
-          </button>
-        </div>
-
-        <div className="scenario-check-list">
-          {scenarioChecks.length === 0 ? (
-            <div className="muted">No checks loaded yet.</div>
-          ) : (
-            scenarioChecks.map((check) => (
-              <label key={check.name} className="scenario-check-item">
-                <input
-                  type="checkbox"
-                  checked={selectedChecks.includes(check.name)}
-                  onChange={(e) => toggleScenarioCheck(check.name, e.target.checked)}
-                />
-                <div>
-                  <div className="scenario-check-title">
-                    {check.name} <span className="muted">({check.kind})</span>
-                  </div>
-                  <div className="scenario-check-summary">{check.summary}</div>
-                </div>
-              </label>
-            ))
-          )}
-        </div>
-      </section>
+      <ScenarioControlPanel
+        scenarioPath={scenarioPath}
+        onScenarioPathChange={setScenarioPath}
+        onBrowseScenario={() => void browseAndSet(api.pickScenarioFile, setScenarioPath)}
+        scenarioRecentPaths={scenarioRecentPaths}
+        onLoadRecentScenario={(entry) =>
+          void runRecentAction('Recent scenario load', () => loadScenarioRecent(entry))
+        }
+        onClearRecentScenarios={() => setScenarioRecentPaths([])}
+        reportFormat={reportFormat}
+        onReportFormatChange={setReportFormat}
+        loading={loading}
+        onLoadChecks={handleLoadScenarioChecks}
+        onRun={onRun}
+        scenarioListStatus={scenarioListStatus}
+        scenarioChecks={scenarioChecks}
+        selectedChecks={selectedChecks}
+        onToggleCheck={toggleScenarioCheck}
+        onSelectAllChecks={selectAllScenarioChecks}
+        onClearCheckSelection={clearScenarioSelection}
+      />
     ) : null
 
   const folderReturnPathBanner =
