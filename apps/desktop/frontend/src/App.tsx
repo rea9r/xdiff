@@ -10,11 +10,7 @@ import YAML from 'yaml'
 import {
   IconArrowLeft,
   IconArrowsDiff,
-  IconBackspace,
   IconChevronDown,
-  IconClipboardText,
-  IconCopy,
-  IconFolderOpen,
   IconHistory,
 } from '@tabler/icons-react'
 import type {
@@ -37,16 +33,9 @@ import type {
 import './style.css'
 import { AppChrome } from './ui/AppChrome'
 import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
-import { CompareSourceGrid } from './ui/CompareSourceGrid'
-import { CompareSourcePane } from './ui/CompareSourcePane'
-import {
-  ComparePaneAction,
-  ComparePaneActions,
-} from './ui/CompareSourceActions'
 import { CompareStatusState } from './ui/CompareStatusState'
 import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
 import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
-import { CompareTextInputBody } from './ui/CompareTextInputBody'
 import {
   upsertRecentFolderPair,
   upsertRecentPair,
@@ -70,6 +59,8 @@ import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompa
 import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
+import { TextCompareSourceWorkspace } from './features/text/TextCompareSourceWorkspace'
+import { TextCompareOptionsPanel } from './features/text/TextCompareOptionsPanel'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { JSONCompareSourceWorkspace } from './features/json/JSONCompareSourceWorkspace'
@@ -2315,34 +2306,12 @@ export function App() {
         onOnlyBreakingChange={(checked) => updateSpecCommon('onlyBreaking', checked)}
       />
     ) : (
-      <section className="mode-panel">
-        <section className="options-panel">
-          <h3>Options</h3>
-
-          <div className="field-block">
-            <label className="field-label">Output format</label>
-            <select
-              value={textCommon.outputFormat}
-              onChange={(e) => updateTextCommon('outputFormat', e.target.value)}
-            >
-              <option value="text">text</option>
-              <option value="json">json</option>
-            </select>
-          </div>
-
-          <div className="field-block">
-            <label className="field-label">Fail on</label>
-            <select
-              value={textCommon.failOn}
-              onChange={(e) => updateTextCommon('failOn', e.target.value)}
-            >
-              <option value="none">none</option>
-              <option value="breaking">breaking</option>
-              <option value="any">any</option>
-            </select>
-          </div>
-        </section>
-      </section>
+      <TextCompareOptionsPanel
+        outputFormat={textCommon.outputFormat}
+        onOutputFormatChange={(value) => updateTextCommon('outputFormat', value)}
+        failOn={textCommon.failOn}
+        onFailOnChange={(value) => updateTextCommon('failOn', value)}
+      />
     )
 
   const sidebarContent =
@@ -2390,107 +2359,27 @@ export function App() {
         {folderReturnPathBanner}
         <CompareWorkspaceShell
           source={
-            <CompareSourceGrid
-              left={
-                <CompareSourcePane
-                  title="Old text"
-                  sourcePath={textOldSourcePath}
-                  actions={
-                    <ComparePaneActions>
-                      <ComparePaneAction
-                        label="Open file into Old text"
-                        onClick={() => void loadTextFromFile('old')}
-                        disabled={textEditorBusy}
-                        loading={textFileBusyTarget === 'old'}
-                      >
-                        <IconFolderOpen size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Paste clipboard into Old text"
-                        onClick={() => void pasteTextFromClipboard('old')}
-                        disabled={textEditorBusy}
-                        loading={textClipboardBusyTarget === 'old'}
-                      >
-                        <IconClipboardText size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Copy Old text"
-                        onClick={() => void copyTextInput('old')}
-                        disabled={textEditorBusy || !textOld}
-                        loading={textPaneCopyBusyTarget === 'old'}
-                      >
-                        <IconCopy size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Clear Old text"
-                        onClick={() => clearTextInput('old')}
-                        disabled={textEditorBusy || !textOld}
-                        danger
-                      >
-                        <IconBackspace size={14} />
-                      </ComparePaneAction>
-                    </ComparePaneActions>
-                  }
-                >
-                  <CompareTextInputBody
-                    value={textOld}
-                    onChange={(value) => {
-                      setTextOld(value)
-                      if (textOldSourcePath) setTextOldSourcePath('')
-                    }}
-                  />
-                </CompareSourcePane>
-              }
-              right={
-                <CompareSourcePane
-                  title="New text"
-                  sourcePath={textNewSourcePath}
-                  actions={
-                    <ComparePaneActions>
-                      <ComparePaneAction
-                        label="Open file into New text"
-                        onClick={() => void loadTextFromFile('new')}
-                        disabled={textEditorBusy}
-                        loading={textFileBusyTarget === 'new'}
-                      >
-                        <IconFolderOpen size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Paste clipboard into New text"
-                        onClick={() => void pasteTextFromClipboard('new')}
-                        disabled={textEditorBusy}
-                        loading={textClipboardBusyTarget === 'new'}
-                      >
-                        <IconClipboardText size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Copy New text"
-                        onClick={() => void copyTextInput('new')}
-                        disabled={textEditorBusy || !textNew}
-                        loading={textPaneCopyBusyTarget === 'new'}
-                      >
-                        <IconCopy size={14} />
-                      </ComparePaneAction>
-                      <ComparePaneAction
-                        label="Clear New text"
-                        onClick={() => clearTextInput('new')}
-                        disabled={textEditorBusy || !textNew}
-                        danger
-                      >
-                        <IconBackspace size={14} />
-                      </ComparePaneAction>
-                    </ComparePaneActions>
-                  }
-                >
-                  <CompareTextInputBody
-                    value={textNew}
-                    onChange={(value) => {
-                      setTextNew(value)
-                      if (textNewSourcePath) setTextNewSourcePath('')
-                    }}
-                  />
-                </CompareSourcePane>
-              }
+            <TextCompareSourceWorkspace
+              oldSourcePath={textOldSourcePath}
+              newSourcePath={textNewSourcePath}
+              oldValue={textOld}
+              newValue={textNew}
+              busy={textEditorBusy}
+              fileBusyTarget={textFileBusyTarget}
+              clipboardBusyTarget={textClipboardBusyTarget}
+              copyBusyTarget={textPaneCopyBusyTarget}
+              onOpenFile={(target) => void loadTextFromFile(target)}
+              onPasteClipboard={(target) => void pasteTextFromClipboard(target)}
+              onCopyInput={(target) => void copyTextInput(target)}
+              onClearInput={clearTextInput}
+              onOldChange={(value) => {
+                setTextOld(value)
+                if (textOldSourcePath) setTextOldSourcePath('')
+              }}
+              onNewChange={(value) => {
+                setTextNew(value)
+                if (textNewSourcePath) setTextNewSourcePath('')
+              }}
             />
           }
           result={renderTextResultPanel()}
