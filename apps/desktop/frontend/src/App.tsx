@@ -6,7 +6,6 @@ import {
 } from 'react'
 import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import YAML from 'yaml'
 import {
   IconArrowLeft,
   IconArrowsDiff,
@@ -17,11 +16,6 @@ import type {
   CompareCommon,
   CompareFoldersRequest,
   CompareFoldersResponse,
-  CompareJSONRichResponse,
-  CompareJSONValuesRequest,
-  CompareSpecRichResponse,
-  CompareSpecValuesRequest,
-  CompareResponse,
   DesktopRecentFolderPair,
   DesktopRecentPair,
   DesktopState,
@@ -41,8 +35,6 @@ import {
   upsertRecentPair,
 } from './persistence'
 import {
-  getRuntimeClipboardRead,
-  getRuntimeClipboardWrite,
   formatUnknownError,
   ignorePathsToText,
   parseIgnorePaths,
@@ -66,10 +58,12 @@ import { useJSONCompareViewState } from './features/json/useJSONCompareViewState
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { JSONCompareSourceWorkspace } from './features/json/JSONCompareSourceWorkspace'
 import { JSONCompareOptionsPanel } from './features/json/JSONCompareOptionsPanel'
+import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
 import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
 import { SpecCompareSourceWorkspace } from './features/spec/SpecCompareSourceWorkspace'
 import { SpecCompareOptionsPanel } from './features/spec/SpecCompareOptionsPanel'
+import { useSpecCompareWorkflow } from './features/spec/useSpecCompareWorkflow'
 import { ScenarioControlPanel } from './features/scenario/ScenarioControlPanel'
 import { ScenarioResultPanel } from './features/scenario/ScenarioResultPanel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
@@ -105,8 +99,6 @@ const defaultTextCommon: CompareCommon = {
 }
 
 type StructuredResultView = 'diff' | 'semantic' | 'raw'
-type TextInputTarget = 'old' | 'new'
-
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
 const APP_MODES: Mode[] = ['text', 'json', 'spec', 'folder', 'scenario']
 
@@ -126,53 +118,6 @@ function getInitialMode(): Mode {
     return isMode(raw) ? raw : fallback
   } catch {
     return fallback
-  }
-}
-
-function getJSONParseError(input: string): string | null {
-  if (!input.trim()) {
-    return null
-  }
-
-  try {
-    JSON.parse(input)
-    return null
-  } catch (error) {
-    return error instanceof Error ? error.message : String(error)
-  }
-}
-
-function detectSpecInputLanguage(sourcePath: string, value: string): 'json' | 'yaml' {
-  const lowerPath = sourcePath.toLowerCase()
-  if (lowerPath.endsWith('.json')) {
-    return 'json'
-  }
-  if (lowerPath.endsWith('.yaml') || lowerPath.endsWith('.yml')) {
-    return 'yaml'
-  }
-
-  const trimmed = value.trimStart()
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    return 'json'
-  }
-  return 'yaml'
-}
-
-function getSpecParseError(input: string, language: 'json' | 'yaml'): string | null {
-  const trimmed = input.trim()
-  if (!trimmed) {
-    return null
-  }
-
-  try {
-    if (language === 'json') {
-      JSON.parse(trimmed)
-    } else {
-      YAML.parse(trimmed)
-    }
-    return null
-  } catch (error) {
-    return error instanceof Error ? error.message : String(error)
   }
 }
 
@@ -203,36 +148,100 @@ function chooseDefaultDisplayModeForMode(options: {
 export function App() {
   const [mode, setMode] = useState<Mode>(() => getInitialMode())
 
-  const [jsonOldText, setJSONOldText] = useState('')
-  const [jsonNewText, setJSONNewText] = useState('')
-  const [jsonOldSourcePath, setJSONOldSourcePath] = useState('')
-  const [jsonNewSourcePath, setJSONNewSourcePath] = useState('')
-  const [ignoreOrder, setIgnoreOrder] = useState(false)
-  const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
-  const [jsonRichResult, setJSONRichResult] = useState<CompareJSONRichResponse | null>(null)
-  const [jsonCopyBusy, setJSONCopyBusy] = useState(false)
-  const [jsonClipboardBusyTarget, setJSONClipboardBusyTarget] =
-    useState<TextInputTarget | null>(null)
-  const [jsonFileBusyTarget, setJSONFileBusyTarget] = useState<TextInputTarget | null>(null)
-  const [jsonCopyBusyTarget, setJSONCopyBusyTarget] = useState<TextInputTarget | null>(null)
-  const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
-    ignorePathsToText(defaultJSONCommon.ignorePaths),
-  )
+  const {
+    jsonOldText,
+    setJSONOldText,
+    setJSONOldInput,
+    jsonNewText,
+    setJSONNewText,
+    setJSONNewInput,
+    jsonOldSourcePath,
+    setJSONOldSourcePath,
+    jsonNewSourcePath,
+    setJSONNewSourcePath,
+    ignoreOrder,
+    setIgnoreOrder,
+    jsonCommon,
+    setJSONCommon,
+    updateJSONCommon,
+    jsonRichResult,
+    setJSONRichResult,
+    jsonCopyBusy,
+    jsonClipboardBusyTarget,
+    jsonFileBusyTarget,
+    jsonCopyBusyTarget,
+    jsonIgnorePathsDraft,
+    setJSONIgnorePathsDraft,
+    jsonRecentPairs,
+    setJSONRecentPairs,
+    jsonPatchBlockedByFilters,
+    jsonOldParseError,
+    jsonNewParseError,
+    jsonInputInvalid,
+    jsonInputEmpty,
+    jsonEditorBusy,
+    runJSON,
+    runJSONFromRecent,
+    runJSONCompareFromPaths,
+    pasteJSONFromClipboard,
+    loadJSONFromFile,
+    copyJSONInput,
+    clearJSONInput,
+    copyJSONResultRawOutput,
+  } = useJSONCompareWorkflow({
+    initialCommon: defaultJSONCommon,
+    getCompareJSONValuesRich: () => api.compareJSONValuesRich,
+    getPickJSONFile: () => api.pickJSONFile,
+    getLoadTextFile: () => api.loadTextFile,
+    onJSONCompareCompleted: (res) => setResult(res),
+  })
 
-  const [specOldText, setSpecOldText] = useState('')
-  const [specNewText, setSpecNewText] = useState('')
-  const [specOldSourcePath, setSpecOldSourcePath] = useState('')
-  const [specNewSourcePath, setSpecNewSourcePath] = useState('')
-  const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
-  const [specRichResult, setSpecRichResult] = useState<CompareSpecRichResponse | null>(null)
-  const [specClipboardBusyTarget, setSpecClipboardBusyTarget] =
-    useState<TextInputTarget | null>(null)
-  const [specFileBusyTarget, setSpecFileBusyTarget] = useState<TextInputTarget | null>(null)
-  const [specCopyBusyTarget, setSpecCopyBusyTarget] = useState<TextInputTarget | null>(null)
-  const [specCopyBusy, setSpecCopyBusy] = useState(false)
-  const [specIgnorePathsDraft, setSpecIgnorePathsDraft] = useState(() =>
-    ignorePathsToText(defaultSpecCommon.ignorePaths),
-  )
+  const {
+    specOldText,
+    setSpecOldText,
+    setSpecOldInput,
+    specNewText,
+    setSpecNewText,
+    setSpecNewInput,
+    specOldSourcePath,
+    setSpecOldSourcePath,
+    specNewSourcePath,
+    setSpecNewSourcePath,
+    specCommon,
+    setSpecCommon,
+    updateSpecCommon,
+    specRichResult,
+    setSpecRichResult,
+    specClipboardBusyTarget,
+    specFileBusyTarget,
+    specCopyBusyTarget,
+    specCopyBusy,
+    specIgnorePathsDraft,
+    setSpecIgnorePathsDraft,
+    specRecentPairs,
+    setSpecRecentPairs,
+    specOldLanguage,
+    specNewLanguage,
+    specOldParseError,
+    specNewParseError,
+    specInputInvalid,
+    specInputEmpty,
+    specEditorBusy,
+    runSpec,
+    runSpecFromRecent,
+    runSpecCompareFromPaths,
+    pasteSpecFromClipboard,
+    loadSpecFromFile,
+    copySpecInput,
+    clearSpecInput,
+    copySpecResultRawOutput,
+  } = useSpecCompareWorkflow({
+    initialCommon: defaultSpecCommon,
+    getCompareSpecValuesRich: () => api.compareSpecValuesRich,
+    getPickSpecFile: () => api.pickSpecFile,
+    getLoadTextFile: () => api.loadTextFile,
+    onSpecCompareCompleted: (res) => setResult(res),
+  })
 
   const {
     textOld,
@@ -373,8 +382,6 @@ export function App() {
   const [folderStatus, setFolderStatus] = useState('')
   const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
 
-  const [jsonRecentPairs, setJSONRecentPairs] = useState<DesktopRecentPair[]>([])
-  const [specRecentPairs, setSpecRecentPairs] = useState<DesktopRecentPair[]>([])
   const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
 
   const [summaryLine, setSummaryLine] = useState('')
@@ -382,35 +389,6 @@ export function App() {
   const [loading, setLoading] = useState(false)
   const [compareOptionsOpened, setCompareOptionsOpened] = useState(false)
 
-  const effectiveJSONIgnorePaths = parseIgnorePaths(jsonIgnorePathsDraft)
-  const effectiveSpecIgnorePaths = parseIgnorePaths(specIgnorePathsDraft)
-
-  const jsonPatchBlockedByFilters =
-    ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
-  const jsonOldParseError = useMemo(() => getJSONParseError(jsonOldText), [jsonOldText])
-  const jsonNewParseError = useMemo(() => getJSONParseError(jsonNewText), [jsonNewText])
-  const jsonInputInvalid = !!jsonOldParseError || !!jsonNewParseError
-  const jsonInputEmpty = !jsonOldText.trim() || !jsonNewText.trim()
-  const jsonEditorBusy = jsonClipboardBusyTarget !== null || jsonFileBusyTarget !== null
-  const specOldLanguage = useMemo(
-    () => detectSpecInputLanguage(specOldSourcePath, specOldText),
-    [specOldSourcePath, specOldText],
-  )
-  const specNewLanguage = useMemo(
-    () => detectSpecInputLanguage(specNewSourcePath, specNewText),
-    [specNewSourcePath, specNewText],
-  )
-  const specOldParseError = useMemo(
-    () => getSpecParseError(specOldText, specOldLanguage),
-    [specOldText, specOldLanguage],
-  )
-  const specNewParseError = useMemo(
-    () => getSpecParseError(specNewText, specNewLanguage),
-    [specNewText, specNewLanguage],
-  )
-  const specInputInvalid = !!specOldParseError || !!specNewParseError
-  const specInputEmpty = !specOldText.trim() || !specNewText.trim()
-  const specEditorBusy = specClipboardBusyTarget !== null || specFileBusyTarget !== null
   useEffect(() => {
     try {
       window.localStorage.setItem(LAST_USED_MODE_STORAGE_KEY, mode)
@@ -418,16 +396,6 @@ export function App() {
       // ignore storage errors
     }
   }, [mode])
-
-  useEffect(() => {
-    if (jsonCommon.textStyle !== 'patch') {
-      return
-    }
-    if (!jsonPatchBlockedByFilters) {
-      return
-    }
-    setJSONCommon((prev) => ({ ...prev, textStyle: 'semantic' }))
-  }, [jsonCommon.textStyle, jsonPatchBlockedByFilters])
 
   const api = useMemo(
     () => ({
@@ -750,15 +718,6 @@ export function App() {
   }
 
   const nowISO = () => new Date().toISOString()
-
-  const updateJSONCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
-    setJSONCommon((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const updateSpecCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
-    setSpecCommon((prev) => ({ ...prev, [key]: value }))
-  }
-
   const browseAndSet = async (
     picker: (() => Promise<string>) | undefined,
     setter: (value: string) => void,
@@ -790,108 +749,44 @@ export function App() {
     }
   }
 
-  const openFolderJSONDiff = async (entry: FolderCompareItem) => {
-    const richFn = api.compareJSONValuesRich
-    const loader = api.loadTextFile
-    if (!richFn || !loader) {
-      throw new Error('Wails bridge not available (CompareJSONValuesRich/LoadTextFile)')
-    }
-
-    const safeJSONCommon = {
-      ...jsonCommon,
-      ignorePaths: effectiveJSONIgnorePaths,
-      textStyle:
-        jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
-          ? 'semantic'
-          : jsonCommon.textStyle,
-    }
-
-    const oldLoaded: LoadTextFileResponse = await loader({
-      path: entry.leftPath,
-    } satisfies LoadTextFileRequest)
-    const newLoaded: LoadTextFileResponse = await loader({
-      path: entry.rightPath,
-    } satisfies LoadTextFileRequest)
-
-    const richRes: CompareJSONRichResponse = await richFn({
-      oldValue: oldLoaded.content,
-      newValue: newLoaded.content,
-      common: safeJSONCommon,
-      ignoreOrder,
-    } satisfies CompareJSONValuesRequest)
-
-    setJSONOldText(oldLoaded.content)
-    setJSONNewText(newLoaded.content)
-    setJSONOldSourcePath(oldLoaded.path)
-    setJSONNewSourcePath(newLoaded.path)
-    setJSONRichResult(richRes)
+  const applyJSONResultView = (richResult: { diffText: string; result: { error?: string } }) => {
     resetJSONSearch()
     setJSONResultView(
       chooseDefaultDisplayModeForMode({
         mode: 'json',
-        hasDiffText: richRes.diffText.trim().length > 0,
-        canRenderSemantic: !richRes.result.error,
+        hasDiffText: richResult.diffText.trim().length > 0,
+        canRenderSemantic: !richResult.result.error,
       }),
     )
-    setJSONRecentPairs((prev) =>
-      upsertRecentPair(prev, {
-        oldPath: oldLoaded.path,
-        newPath: newLoaded.path,
-        usedAt: nowISO(),
-      }),
-    )
-    setMode('json')
-    setResult(richRes.result)
   }
 
-  const openFolderSpecDiff = async (entry: FolderCompareItem) => {
-    const richFn = api.compareSpecValuesRich
-    const loader = api.loadTextFile
-    if (!richFn || !loader) {
-      throw new Error('Wails bridge not available (CompareSpecValuesRich/LoadTextFile)')
-    }
-
-    const safeSpecCommon = {
-      ...specCommon,
-      ignorePaths: effectiveSpecIgnorePaths,
-      textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
-    }
-
-    const oldLoaded: LoadTextFileResponse = await loader({
-      path: entry.leftPath,
-    } satisfies LoadTextFileRequest)
-    const newLoaded: LoadTextFileResponse = await loader({
-      path: entry.rightPath,
-    } satisfies LoadTextFileRequest)
-
-    const richRes: CompareSpecRichResponse = await richFn({
-      oldValue: oldLoaded.content,
-      newValue: newLoaded.content,
-      common: safeSpecCommon,
-    } satisfies CompareSpecValuesRequest)
-
-    setSpecOldText(oldLoaded.content)
-    setSpecNewText(newLoaded.content)
-    setSpecOldSourcePath(oldLoaded.path)
-    setSpecNewSourcePath(newLoaded.path)
-    setSpecRichResult(richRes)
+  const applySpecResultView = (richResult: { diffText: string; result: { error?: string } }) => {
     resetSpecSearch()
     setSpecResultView(
       chooseDefaultDisplayModeForMode({
         mode: 'spec',
-        hasDiffText: richRes.diffText.trim().length > 0,
-        canRenderSemantic: !richRes.result.error,
+        hasDiffText: richResult.diffText.trim().length > 0,
+        canRenderSemantic: !richResult.result.error,
       }),
     )
-    setSpecRecentPairs((prev) =>
-      upsertRecentPair(prev, {
-        oldPath: oldLoaded.path,
-        newPath: newLoaded.path,
-        usedAt: nowISO(),
-      }),
-    )
+  }
+
+  const openFolderJSONDiff = async (entry: FolderCompareItem) => {
+    const richResult = await runJSONCompareFromPaths({
+      oldPath: entry.leftPath,
+      newPath: entry.rightPath,
+    })
+    applyJSONResultView(richResult)
+    setMode('json')
+  }
+
+  const openFolderSpecDiff = async (entry: FolderCompareItem) => {
+    const richResult = await runSpecCompareFromPaths({
+      oldPath: entry.leftPath,
+      newPath: entry.rightPath,
+    })
+    applySpecResultView(richResult)
     setMode('spec')
-    setResult(richRes.result)
   }
 
   const openFolderTextDiff = async (entry: FolderCompareItem) => {
@@ -1021,182 +916,6 @@ export function App() {
     }
   }
 
-  const runJSON = async () => {
-    const richFn = api.compareJSONValuesRich
-    if (!richFn) throw new Error('Wails bridge not available (CompareJSONValuesRich)')
-
-    const safeJSONCommon = {
-      ...jsonCommon,
-      ignorePaths: effectiveJSONIgnorePaths,
-      textStyle:
-        jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
-          ? 'semantic'
-          : jsonCommon.textStyle,
-    }
-
-    const richRes: CompareJSONRichResponse = await richFn({
-      oldValue: jsonOldText,
-      newValue: jsonNewText,
-      common: safeJSONCommon,
-      ignoreOrder,
-    } satisfies CompareJSONValuesRequest)
-    setJSONRichResult(richRes)
-    setJSONResultView(
-      chooseDefaultDisplayModeForMode({
-        mode: 'json',
-        hasDiffText: richRes.diffText.trim().length > 0,
-        canRenderSemantic: !richRes.result.error,
-      }),
-    )
-    resetJSONSearch()
-    setResult(richRes.result)
-    if (jsonOldSourcePath.trim() && jsonNewSourcePath.trim()) {
-      setJSONRecentPairs((prev) =>
-        upsertRecentPair(prev, {
-          oldPath: jsonOldSourcePath,
-          newPath: jsonNewSourcePath,
-          usedAt: nowISO(),
-        }),
-      )
-    }
-  }
-
-  const runSpec = async () => {
-    const richFn = api.compareSpecValuesRich
-    if (!richFn) throw new Error('Wails bridge not available (CompareSpecValuesRich)')
-
-    const safeSpecCommon = {
-      ...specCommon,
-      ignorePaths: effectiveSpecIgnorePaths,
-      textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
-    }
-
-    const richRes: CompareSpecRichResponse = await richFn({
-      oldValue: specOldText,
-      newValue: specNewText,
-      common: safeSpecCommon,
-    } satisfies CompareSpecValuesRequest)
-    setSpecRichResult(richRes)
-    resetSpecSearch()
-    setSpecResultView(
-      chooseDefaultDisplayModeForMode({
-        mode: 'spec',
-        hasDiffText: richRes.diffText.trim().length > 0,
-        canRenderSemantic: !richRes.result.error,
-      }),
-    )
-    setResult(richRes.result)
-    if (specOldSourcePath.trim() && specNewSourcePath.trim()) {
-      setSpecRecentPairs((prev) =>
-        upsertRecentPair(prev, {
-          oldPath: specOldSourcePath,
-          newPath: specNewSourcePath,
-          usedAt: nowISO(),
-        }),
-      )
-    }
-  }
-
-  const runJSONFromRecent = async (pair: DesktopRecentPair) => {
-    const loader = api.loadTextFile
-    const richFn = api.compareJSONValuesRich
-    if (!loader || !richFn) {
-      throw new Error('Wails bridge not available (LoadTextFile/CompareJSONValuesRich)')
-    }
-
-    const [oldLoaded, newLoaded] = await Promise.all([
-      loader({ path: pair.oldPath } satisfies LoadTextFileRequest),
-      loader({ path: pair.newPath } satisfies LoadTextFileRequest),
-    ])
-
-    const safeJSONCommon = {
-      ...jsonCommon,
-      ignorePaths: effectiveJSONIgnorePaths,
-      textStyle:
-        jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
-          ? 'semantic'
-          : jsonCommon.textStyle,
-    }
-
-    const richRes: CompareJSONRichResponse = await richFn({
-      oldValue: oldLoaded.content,
-      newValue: newLoaded.content,
-      common: safeJSONCommon,
-      ignoreOrder,
-    } satisfies CompareJSONValuesRequest)
-
-    setMode('json')
-    setJSONOldSourcePath(oldLoaded.path)
-    setJSONNewSourcePath(newLoaded.path)
-    setJSONOldText(oldLoaded.content)
-    setJSONNewText(newLoaded.content)
-    setJSONRichResult(richRes)
-    setJSONResultView(
-      chooseDefaultDisplayModeForMode({
-        mode: 'json',
-        hasDiffText: richRes.diffText.trim().length > 0,
-        canRenderSemantic: !richRes.result.error,
-      }),
-    )
-    resetJSONSearch()
-    setResult(richRes.result)
-    setJSONRecentPairs((prev) =>
-      upsertRecentPair(prev, {
-        oldPath: oldLoaded.path,
-        newPath: newLoaded.path,
-        usedAt: nowISO(),
-      }),
-    )
-  }
-
-  const runSpecFromRecent = async (pair: DesktopRecentPair) => {
-    const loader = api.loadTextFile
-    const richFn = api.compareSpecValuesRich
-    if (!loader || !richFn) {
-      throw new Error('Wails bridge not available (LoadTextFile/CompareSpecValuesRich)')
-    }
-
-    const [oldLoaded, newLoaded] = await Promise.all([
-      loader({ path: pair.oldPath } satisfies LoadTextFileRequest),
-      loader({ path: pair.newPath } satisfies LoadTextFileRequest),
-    ])
-
-    const safeSpecCommon = {
-      ...specCommon,
-      ignorePaths: effectiveSpecIgnorePaths,
-      textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
-    }
-
-    const richRes: CompareSpecRichResponse = await richFn({
-      oldValue: oldLoaded.content,
-      newValue: newLoaded.content,
-      common: safeSpecCommon,
-    } satisfies CompareSpecValuesRequest)
-
-    setMode('spec')
-    setSpecOldSourcePath(oldLoaded.path)
-    setSpecNewSourcePath(newLoaded.path)
-    setSpecOldText(oldLoaded.content)
-    setSpecNewText(newLoaded.content)
-    setSpecRichResult(richRes)
-    setSpecResultView(
-      chooseDefaultDisplayModeForMode({
-        mode: 'spec',
-        hasDiffText: richRes.diffText.trim().length > 0,
-        canRenderSemantic: !richRes.result.error,
-      }),
-    )
-    resetSpecSearch()
-    setResult(richRes.result)
-    setSpecRecentPairs((prev) =>
-      upsertRecentPair(prev, {
-        oldPath: oldLoaded.path,
-        newPath: newLoaded.path,
-        usedAt: nowISO(),
-      }),
-    )
-  }
-
   const runFolderFromRecent = async (entry: DesktopRecentFolderPair) => {
     const fn = api.compareFolders
     if (!fn) {
@@ -1259,379 +978,35 @@ export function App() {
     resetTextSearch()
   }
 
-  const pasteJSONFromClipboard = async (target: TextInputTarget) => {
-    const readClipboard = getRuntimeClipboardRead()
-    if (!readClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    setJSONClipboardBusyTarget(target)
-
-    try {
-      const pasted = await readClipboard()
-      if (!pasted) {
-        notifications.show({
-          title: 'Clipboard is empty',
-          message: 'Nothing to paste.',
-          color: 'yellow',
-        })
-        return
-      }
-
-      if (target === 'old') {
-        setJSONOldText(pasted)
-        setJSONOldSourcePath('')
-      } else {
-        setJSONNewText(pasted)
-        setJSONNewSourcePath('')
-      }
-    } catch (error) {
-      notifications.show({
-        title: 'Failed to paste from clipboard',
-        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setJSONClipboardBusyTarget(null)
-    }
+  const runJSONWithViewReset = async () => {
+    const richResult = await runJSON()
+    applyJSONResultView(richResult)
   }
 
-  const loadJSONFromFile = async (target: TextInputTarget) => {
-    const picker = api.pickJSONFile
-    const loader = api.loadTextFile
-    if (!picker || !loader) {
-      notifications.show({
-        title: 'JSON loader unavailable',
-        message: 'JSON file loader is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    setJSONFileBusyTarget(target)
-
-    try {
-      const selected = await picker()
-      if (!selected) {
-        return
-      }
-
-      const loaded: LoadTextFileResponse = await loader({
-        path: selected,
-      } satisfies LoadTextFileRequest)
-
-      if (target === 'old') {
-        setJSONOldText(loaded.content)
-        setJSONOldSourcePath(loaded.path)
-      } else {
-        setJSONNewText(loaded.content)
-        setJSONNewSourcePath(loaded.path)
-      }
-    } catch (error) {
-      notifications.show({
-        title: 'Failed to load JSON file',
-        message: `Failed to load JSON file: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setJSONFileBusyTarget(null)
-    }
+  const runSpecWithViewReset = async () => {
+    const richResult = await runSpec()
+    applySpecResultView(richResult)
   }
 
-  const copyJSONInput = async (target: TextInputTarget) => {
-    const writeClipboard = getRuntimeClipboardWrite()
-    if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    const value = target === 'old' ? jsonOldText : jsonNewText
-    if (!value) {
-      return
-    }
-
-    setJSONCopyBusyTarget(target)
-    try {
-      const ok = await writeClipboard(value)
-      if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} JSON.`,
-          color: 'red',
-        })
-        return
-      }
-
-      notifications.show({
-        title: 'Copied',
-        message: `${target === 'old' ? 'Old' : 'New'} JSON copied to clipboard.`,
-        color: 'green',
-      })
-    } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy JSON: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setJSONCopyBusyTarget(null)
-    }
+  const runJSONFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
+    const richResult = await runJSONFromRecent(pair)
+    applyJSONResultView(richResult)
+    setMode('json')
   }
 
-  const clearJSONInput = (target: TextInputTarget) => {
-    if (target === 'old') {
-      setJSONOldText('')
-      setJSONOldSourcePath('')
-      return
-    }
-
-    setJSONNewText('')
-    setJSONNewSourcePath('')
-  }
-
-  const pasteSpecFromClipboard = async (target: TextInputTarget) => {
-    const readClipboard = getRuntimeClipboardRead()
-    if (!readClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    setSpecClipboardBusyTarget(target)
-    try {
-      const pasted = await readClipboard()
-      if (!pasted) {
-        notifications.show({
-          title: 'Clipboard is empty',
-          message: 'Nothing to paste.',
-          color: 'yellow',
-        })
-        return
-      }
-
-      if (target === 'old') {
-        setSpecOldText(pasted)
-        setSpecOldSourcePath('')
-      } else {
-        setSpecNewText(pasted)
-        setSpecNewSourcePath('')
-      }
-    } catch (error) {
-      notifications.show({
-        title: 'Failed to paste from clipboard',
-        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setSpecClipboardBusyTarget(null)
-    }
-  }
-
-  const loadSpecFromFile = async (target: TextInputTarget) => {
-    const picker = api.pickSpecFile
-    const loader = api.loadTextFile
-    if (!picker || !loader) {
-      notifications.show({
-        title: 'Spec loader unavailable',
-        message: 'Spec file loader is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    setSpecFileBusyTarget(target)
-    try {
-      const selected = await picker()
-      if (!selected) {
-        return
-      }
-
-      const loaded: LoadTextFileResponse = await loader({
-        path: selected,
-      } satisfies LoadTextFileRequest)
-
-      if (target === 'old') {
-        setSpecOldText(loaded.content)
-        setSpecOldSourcePath(loaded.path)
-      } else {
-        setSpecNewText(loaded.content)
-        setSpecNewSourcePath(loaded.path)
-      }
-    } catch (error) {
-      notifications.show({
-        title: 'Failed to load spec file',
-        message: `Failed to load spec file: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setSpecFileBusyTarget(null)
-    }
-  }
-
-  const copySpecInput = async (target: TextInputTarget) => {
-    const writeClipboard = getRuntimeClipboardWrite()
-    if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    const value = target === 'old' ? specOldText : specNewText
-    if (!value) {
-      return
-    }
-
-    setSpecCopyBusyTarget(target)
-    try {
-      const ok = await writeClipboard(value)
-      if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} spec.`,
-          color: 'red',
-        })
-        return
-      }
-
-      notifications.show({
-        title: 'Copied',
-        message: `${target === 'old' ? 'Old' : 'New'} spec copied to clipboard.`,
-        color: 'green',
-      })
-    } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy spec: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setSpecCopyBusyTarget(null)
-    }
-  }
-
-  const clearSpecInput = (target: TextInputTarget) => {
-    if (target === 'old') {
-      setSpecOldText('')
-      setSpecOldSourcePath('')
-      return
-    }
-
-    setSpecNewText('')
-    setSpecNewSourcePath('')
-  }
-
-  const copyJSONResultRawOutput = async () => {
-    const writeClipboard = getRuntimeClipboardWrite()
-    if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    const raw = jsonResult ? renderResult(jsonResult) : ''
-    if (!raw) {
-      return
-    }
-
-    setJSONCopyBusy(true)
-
-    try {
-      const ok = await writeClipboard(raw)
-      if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: 'Failed to copy raw output.',
-          color: 'red',
-        })
-        return
-      }
-
-      notifications.show({
-        title: 'Copied',
-        message: 'Raw output copied to clipboard.',
-        color: 'green',
-      })
-    } catch (error) {
-      const message = `Failed to copy raw output: ${formatUnknownError(error)}`
-      notifications.show({
-        title: 'Copy failed',
-        message,
-        color: 'red',
-      })
-    } finally {
-      setJSONCopyBusy(false)
-    }
-  }
-
-  const copySpecResultRawOutput = async () => {
-    const writeClipboard = getRuntimeClipboardWrite()
-    if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    const raw = specResult ? renderResult(specResult) : ''
-    if (!raw) {
-      return
-    }
-
-    setSpecCopyBusy(true)
-    try {
-      const ok = await writeClipboard(raw)
-      if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: 'Failed to copy raw output.',
-          color: 'red',
-        })
-        return
-      }
-
-      notifications.show({
-        title: 'Copied',
-        message: 'Raw output copied to clipboard.',
-        color: 'green',
-      })
-    } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy raw output: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setSpecCopyBusy(false)
-    }
+  const runSpecFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
+    const richResult = await runSpecFromRecent(pair)
+    applySpecResultView(richResult)
+    setMode('spec')
   }
 
   const runByMode = async () => {
     if (mode === 'json') {
-      await runJSON()
+      await runJSONWithViewReset()
       return
     }
     if (mode === 'spec') {
-      await runSpec()
+      await runSpecWithViewReset()
       return
     }
     if (mode === 'text') {
@@ -1889,7 +1264,7 @@ export function App() {
             <Menu.Item
               key={`${pair.oldPath}::${pair.newPath}`}
               onClick={() =>
-                void runRecentAction('Recent JSON compare', () => runJSONFromRecent(pair))
+                void runRecentAction('Recent JSON compare', () => runJSONFromRecentWithViewReset(pair))
               }
             >
               {`${pair.oldPath} -> ${pair.newPath}`}
@@ -1917,7 +1292,7 @@ export function App() {
             <Menu.Item
               key={`${pair.oldPath}::${pair.newPath}`}
               onClick={() =>
-                void runRecentAction('Recent Spec compare', () => runSpecFromRecent(pair))
+                void runRecentAction('Recent Spec compare', () => runSpecFromRecentWithViewReset(pair))
               }
             >
               {`${pair.oldPath} -> ${pair.newPath}`}
@@ -2148,14 +1523,8 @@ export function App() {
               onPasteClipboard={(target) => void pasteJSONFromClipboard(target)}
               onCopyInput={(target) => void copyJSONInput(target)}
               onClearInput={clearJSONInput}
-              onOldChange={(value) => {
-                setJSONOldText(value)
-                if (jsonOldSourcePath) setJSONOldSourcePath('')
-              }}
-              onNewChange={(value) => {
-                setJSONNewText(value)
-                if (jsonNewSourcePath) setJSONNewSourcePath('')
-              }}
+              onOldChange={setJSONOldInput}
+              onNewChange={setJSONNewInput}
             />
           }
           result={renderJSONResultPanel()}
@@ -2183,14 +1552,8 @@ export function App() {
               onPasteClipboard={(target) => void pasteSpecFromClipboard(target)}
               onCopyInput={(target) => void copySpecInput(target)}
               onClearInput={clearSpecInput}
-              onOldChange={(value) => {
-                setSpecOldText(value)
-                if (specOldSourcePath) setSpecOldSourcePath('')
-              }}
-              onNewChange={(value) => {
-                setSpecNewText(value)
-                if (specNewSourcePath) setSpecNewSourcePath('')
-              }}
+              onOldChange={setSpecOldInput}
+              onNewChange={setSpecNewInput}
             />
           }
           result={renderSpecResultPanel()}
