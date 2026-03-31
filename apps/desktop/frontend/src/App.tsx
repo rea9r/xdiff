@@ -61,6 +61,7 @@ import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { TextCompareSourceWorkspace } from './features/text/TextCompareSourceWorkspace'
 import { TextCompareOptionsPanel } from './features/text/TextCompareOptionsPanel'
+import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { JSONCompareSourceWorkspace } from './features/json/JSONCompareSourceWorkspace'
@@ -233,28 +234,50 @@ export function App() {
     ignorePathsToText(defaultSpecCommon.ignorePaths),
   )
 
-  const [textOld, setTextOld] = useState('')
-  const [textNew, setTextNew] = useState('')
-  const [textOldSourcePath, setTextOldSourcePath] = useState('')
-  const [textNewSourcePath, setTextNewSourcePath] = useState('')
-  const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
-  const [textResult, setTextResult] = useState<CompareResponse | null>(null)
-  const [textLastRunOld, setTextLastRunOld] = useState('')
-  const [textLastRunNew, setTextLastRunNew] = useState('')
-  const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
-    'text' | 'json' | null
-  >(null)
-  const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
-    useState<TextInputTarget | null>(null)
-  const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(
-    null,
-  )
-  const [textCopyBusy, setTextCopyBusy] = useState(false)
-  const [textPaneCopyBusyTarget, setTextPaneCopyBusyTarget] = useState<TextInputTarget | null>(
-    null,
-  )
-
-  const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
+  const {
+    textOld,
+    setTextOld,
+    setTextOldInput,
+    textNew,
+    setTextNew,
+    setTextNewInput,
+    textOldSourcePath,
+    setTextOldSourcePath,
+    textNewSourcePath,
+    setTextNewSourcePath,
+    textCommon,
+    setTextCommon,
+    updateTextCommon,
+    textResult,
+    setTextResult,
+    textLastRunOld,
+    setTextLastRunOld,
+    textLastRunNew,
+    setTextLastRunNew,
+    textLastRunOutputFormat,
+    setTextLastRunOutputFormat,
+    textClipboardBusyTarget,
+    textFileBusyTarget,
+    textCopyBusy,
+    textPaneCopyBusyTarget,
+    textEditorBusy,
+    textRecentPairs,
+    setTextRecentPairs,
+    runText,
+    runTextFromRecent,
+    runTextCompareWithValues,
+    pasteTextFromClipboard,
+    loadTextFromFile,
+    copyTextInput,
+    clearTextInput,
+    copyTextResultRawOutput,
+  } = useTextCompareWorkflow({
+    initialCommon: defaultTextCommon,
+    getCompareText: () => api.compareText,
+    getPickTextFile: () => api.pickTextFile,
+    getLoadTextFile: () => api.loadTextFile,
+    onTextCompareCompleted: (res) => setResult(res),
+  })
 
   const {
     textResultView,
@@ -352,7 +375,6 @@ export function App() {
 
   const [jsonRecentPairs, setJSONRecentPairs] = useState<DesktopRecentPair[]>([])
   const [specRecentPairs, setSpecRecentPairs] = useState<DesktopRecentPair[]>([])
-  const [textRecentPairs, setTextRecentPairs] = useState<DesktopRecentPair[]>([])
   const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
 
   const [summaryLine, setSummaryLine] = useState('')
@@ -737,10 +759,6 @@ export function App() {
     setSpecCommon((prev) => ({ ...prev, [key]: value }))
   }
 
-  const updateTextCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
-    setTextCommon((prev) => ({ ...prev, [key]: value }))
-  }
-
   const browseAndSet = async (
     picker: (() => Promise<string>) | undefined,
     setter: (value: string) => void,
@@ -878,9 +896,8 @@ export function App() {
 
   const openFolderTextDiff = async (entry: FolderCompareItem) => {
     const loadText = api.loadTextFile
-    const compareText = api.compareText
-    if (!loadText || !compareText) {
-      throw new Error('Wails bridge not available (LoadTextFile/CompareText)')
+    if (!loadText) {
+      throw new Error('Wails bridge not available (LoadTextFile)')
     }
 
     const [leftLoaded, rightLoaded] = await Promise.all([
@@ -888,34 +905,15 @@ export function App() {
       loadText({ path: entry.rightPath } satisfies LoadTextFileRequest),
     ])
 
-    const oldText = leftLoaded.content
-    const newText = rightLoaded.content
-
-    const res: CompareResponse = await compareText({
-      oldText,
-      newText,
-      common: textCommon,
+    await runTextCompareWithValues({
+      oldText: leftLoaded.content,
+      newText: rightLoaded.content,
+      oldSourcePath: leftLoaded.path,
+      newSourcePath: rightLoaded.path,
     })
-
-    setTextOld(oldText)
-    setTextNew(newText)
-    setTextOldSourcePath(leftLoaded.path)
-    setTextNewSourcePath(rightLoaded.path)
-    setTextResult(res)
-    setTextLastRunOld(oldText)
-    setTextLastRunNew(newText)
-    setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
     clearTextExpandedSections()
     resetTextSearch()
-    setTextRecentPairs((prev) =>
-      upsertRecentPair(prev, {
-        oldPath: leftLoaded.path,
-        newPath: rightLoaded.path,
-        usedAt: nowISO(),
-      }),
-    )
     setMode('text')
-    setResult(res)
   }
 
   const {
@@ -1099,32 +1097,6 @@ export function App() {
     }
   }
 
-  const runText = async () => {
-    const fn = api.compareText
-    if (!fn) throw new Error('Wails bridge not available (CompareText)')
-    clearTextExpandedSections()
-
-    const res: CompareResponse = await fn({
-      oldText: textOld,
-      newText: textNew,
-      common: textCommon,
-    })
-    setTextResult(res)
-    setTextLastRunOld(textOld)
-    setTextLastRunNew(textNew)
-    setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
-    setResult(res)
-    if (textOldSourcePath.trim() && textNewSourcePath.trim()) {
-      setTextRecentPairs((prev) =>
-        upsertRecentPair(prev, {
-          oldPath: textOldSourcePath,
-          newPath: textNewSourcePath,
-          usedAt: nowISO(),
-        }),
-      )
-    }
-  }
-
   const runJSONFromRecent = async (pair: DesktopRecentPair) => {
     const loader = api.loadTextFile
     const richFn = api.compareJSONValuesRich
@@ -1225,45 +1197,6 @@ export function App() {
     )
   }
 
-  const runTextFromRecent = async (pair: DesktopRecentPair) => {
-    const loader = api.loadTextFile
-    const compareText = api.compareText
-    if (!loader || !compareText) {
-      throw new Error('Wails bridge not available (LoadTextFile/CompareText)')
-    }
-
-    const [oldLoaded, newLoaded] = await Promise.all([
-      loader({ path: pair.oldPath } satisfies LoadTextFileRequest),
-      loader({ path: pair.newPath } satisfies LoadTextFileRequest),
-    ])
-
-    const res: CompareResponse = await compareText({
-      oldText: oldLoaded.content,
-      newText: newLoaded.content,
-      common: textCommon,
-    })
-
-    setMode('text')
-    setTextOldSourcePath(oldLoaded.path)
-    setTextNewSourcePath(newLoaded.path)
-    setTextOld(oldLoaded.content)
-    setTextNew(newLoaded.content)
-    setTextResult(res)
-    setTextLastRunOld(oldLoaded.content)
-    setTextLastRunNew(newLoaded.content)
-    setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
-    clearTextExpandedSections()
-    resetTextSearch()
-    setResult(res)
-    setTextRecentPairs((prev) =>
-      upsertRecentPair(prev, {
-        oldPath: oldLoaded.path,
-        newPath: newLoaded.path,
-        usedAt: nowISO(),
-      }),
-    )
-  }
-
   const runFolderFromRecent = async (entry: DesktopRecentFolderPair) => {
     const fn = api.compareFolders
     if (!fn) {
@@ -1320,103 +1253,10 @@ export function App() {
     }
   }
 
-  const pasteTextFromClipboard = async (target: TextInputTarget) => {
-    const readClipboard = getRuntimeClipboardRead()
-    if (!readClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    setTextClipboardBusyTarget(target)
-
-    try {
-      const pasted = await readClipboard()
-
-      if (!pasted) {
-        notifications.show({
-          title: 'Clipboard is empty',
-          message: 'Nothing to paste.',
-          color: 'yellow',
-        })
-        return
-      }
-
-      if (target === 'old') {
-        setTextOld(pasted)
-        setTextOldSourcePath('')
-      } else {
-        setTextNew(pasted)
-        setTextNewSourcePath('')
-      }
-    } catch (error) {
-      const message = `Failed to read clipboard: ${formatUnknownError(error)}`
-      notifications.show({
-        title: 'Failed to paste from clipboard',
-        message,
-        color: 'red',
-      })
-    } finally {
-      setTextClipboardBusyTarget(null)
-    }
-  }
-
-  const loadTextFromFile = async (target: TextInputTarget) => {
-    const picker = api.pickTextFile
-    const loader = api.loadTextFile
-
-    if (!picker || !loader) {
-      notifications.show({
-        title: 'Text loader unavailable',
-        message: 'Text file loader is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    setTextFileBusyTarget(target)
-
-    try {
-      const selected = await picker()
-      if (!selected) {
-        return
-      }
-
-      const loaded: LoadTextFileResponse = await loader({
-        path: selected,
-      } satisfies LoadTextFileRequest)
-
-      if (target === 'old') {
-        setTextOld(loaded.content)
-        setTextOldSourcePath(loaded.path)
-      } else {
-        setTextNew(loaded.content)
-        setTextNewSourcePath(loaded.path)
-      }
-    } catch (error) {
-      const message = `Failed to load text file: ${formatUnknownError(error)}`
-      notifications.show({
-        title: 'Failed to load text file',
-        message,
-        color: 'red',
-      })
-    } finally {
-      setTextFileBusyTarget(null)
-    }
-  }
-
-  const clearTextInput = (target: TextInputTarget) => {
-    if (target === 'old') {
-      setTextOld('')
-      setTextOldSourcePath('')
-      return
-    }
-
-    setTextNew('')
-    setTextNewSourcePath('')
+  const runTextFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
+    await runTextFromRecent(pair)
+    clearTextExpandedSections()
+    resetTextSearch()
   }
 
   const pasteJSONFromClipboard = async (target: TextInputTarget) => {
@@ -1695,52 +1535,6 @@ export function App() {
     setSpecNewSourcePath('')
   }
 
-  const copyTextResultRawOutput = async () => {
-    const writeClipboard = getRuntimeClipboardWrite()
-    if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    const raw = textResult ? renderResult(textResult) : ''
-    if (!raw) {
-      return
-    }
-
-    setTextCopyBusy(true)
-
-    try {
-      const ok = await writeClipboard(raw)
-      if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: 'Failed to copy raw output.',
-          color: 'red',
-        })
-        return
-      }
-
-      notifications.show({
-        title: 'Copied',
-        message: 'Raw output copied to clipboard.',
-        color: 'green',
-      })
-    } catch (error) {
-      const message = `Failed to copy raw output: ${formatUnknownError(error)}`
-      notifications.show({
-        title: 'Copy failed',
-        message,
-        color: 'red',
-      })
-    } finally {
-      setTextCopyBusy(false)
-    }
-  }
-
   const copyJSONResultRawOutput = async () => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
@@ -1828,51 +1622,6 @@ export function App() {
       })
     } finally {
       setSpecCopyBusy(false)
-    }
-  }
-
-  const copyTextInput = async (target: TextInputTarget) => {
-    const writeClipboard = getRuntimeClipboardWrite()
-    if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    const value = target === 'old' ? textOld : textNew
-    if (!value) {
-      return
-    }
-
-    setTextPaneCopyBusyTarget(target)
-
-    try {
-      const ok = await writeClipboard(value)
-      if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} text.`,
-          color: 'red',
-        })
-        return
-      }
-
-      notifications.show({
-        title: 'Copied',
-        message: `${target === 'old' ? 'Old' : 'New'} text copied to clipboard.`,
-        color: 'green',
-      })
-    } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy text: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
-    } finally {
-      setTextPaneCopyBusyTarget(null)
     }
   }
 
@@ -2196,7 +1945,7 @@ export function App() {
             <Menu.Item
               key={`${pair.oldPath}::${pair.newPath}`}
               onClick={() =>
-                void runRecentAction('Recent Text compare', () => runTextFromRecent(pair))
+                void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair))
               }
             >
               {`${pair.oldPath} -> ${pair.newPath}`}
@@ -2372,14 +2121,8 @@ export function App() {
               onPasteClipboard={(target) => void pasteTextFromClipboard(target)}
               onCopyInput={(target) => void copyTextInput(target)}
               onClearInput={clearTextInput}
-              onOldChange={(value) => {
-                setTextOld(value)
-                if (textOldSourcePath) setTextOldSourcePath('')
-              }}
-              onNewChange={(value) => {
-                setTextNew(value)
-                if (textNewSourcePath) setTextNewSourcePath('')
-              }}
+              onOldChange={setTextOldInput}
+              onNewChange={setTextNewInput}
             />
           }
           result={renderTextResultPanel()}
