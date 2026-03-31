@@ -3,13 +3,11 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { ActionIcon, Menu, Tooltip } from '@mantine/core'
+import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   IconArrowLeft,
-  IconArrowsDiff,
   IconChevronDown,
-  IconHistory,
 } from '@tabler/icons-react'
 import type {
   CompareCommon,
@@ -24,8 +22,8 @@ import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { AppChrome } from './ui/AppChrome'
 import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
 import { CompareStatusState } from './ui/CompareStatusState'
-import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
-import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
+import { DesktopModeHeaderActions } from './ui/DesktopModeHeaderActions'
+import type { RecentTargetsMenuItem } from './ui/RecentTargetsMenu'
 import { upsertRecentPair } from './persistence'
 import {
   formatUnknownError,
@@ -862,95 +860,33 @@ export function App() {
   const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
   const specCompareDisabled = specEditorBusy || specInputEmpty || specInputInvalid
 
-  const compareRecentMenu =
-    isCompareCentricMode && mode === 'json' ? (
-      <Menu position="bottom-end" withinPortal>
-        <Menu.Target>
-          <HeaderRailPrimaryButton
-            variant="default"
-            leftSection={<IconHistory size={14} />}
-            disabled={jsonRecentPairs.length === 0}
-          >
-            Recent
-          </HeaderRailPrimaryButton>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {jsonRecentPairs.map((pair) => (
-            <Menu.Item
-              key={`${pair.oldPath}::${pair.newPath}`}
-              onClick={() =>
-                void runRecentAction('Recent JSON compare', () => runJSONFromRecentWithViewReset(pair))
-              }
-            >
-              {`${pair.oldPath} -> ${pair.newPath}`}
-            </Menu.Item>
-          ))}
-          <Menu.Divider />
-          <Menu.Item color="red" onClick={() => setJSONRecentPairs([])}>
-            Clear recent
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
-    ) : isCompareCentricMode && mode === 'spec' ? (
-      <Menu position="bottom-end" withinPortal>
-        <Menu.Target>
-          <HeaderRailPrimaryButton
-            variant="default"
-            leftSection={<IconHistory size={14} />}
-            disabled={specRecentPairs.length === 0}
-          >
-            Recent
-          </HeaderRailPrimaryButton>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {specRecentPairs.map((pair) => (
-            <Menu.Item
-              key={`${pair.oldPath}::${pair.newPath}`}
-              onClick={() =>
-                void runRecentAction('Recent Spec compare', () => runSpecFromRecentWithViewReset(pair))
-              }
-            >
-              {`${pair.oldPath} -> ${pair.newPath}`}
-            </Menu.Item>
-          ))}
-          <Menu.Divider />
-          <Menu.Item color="red" onClick={() => setSpecRecentPairs([])}>
-            Clear recent
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
-    ) : isCompareCentricMode && mode === 'text' ? (
-      <Menu position="bottom-end" withinPortal>
-        <Menu.Target>
-          <HeaderRailPrimaryButton
-            variant="default"
-            leftSection={<IconHistory size={14} />}
-            disabled={textRecentPairs.length === 0}
-          >
-            Recent
-          </HeaderRailPrimaryButton>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {textRecentPairs.map((pair) => (
-            <Menu.Item
-              key={`${pair.oldPath}::${pair.newPath}`}
-              onClick={() =>
-                void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair))
-              }
-            >
-              {`${pair.oldPath} -> ${pair.newPath}`}
-            </Menu.Item>
-          ))}
-          <Menu.Divider />
-          <Menu.Item color="red" onClick={() => setTextRecentPairs([])}>
-            Clear recent
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
-    ) : null
+  const compareRecentItems: RecentTargetsMenuItem[] =
+    mode === 'json'
+      ? jsonRecentPairs.map((pair) => ({
+          key: `${pair.oldPath}::${pair.newPath}`,
+          label: `${pair.oldPath} -> ${pair.newPath}`,
+          onClick: () =>
+            void runRecentAction('Recent JSON compare', () => runJSONFromRecentWithViewReset(pair)),
+        }))
+      : mode === 'spec'
+        ? specRecentPairs.map((pair) => ({
+            key: `${pair.oldPath}::${pair.newPath}`,
+            label: `${pair.oldPath} -> ${pair.newPath}`,
+            onClick: () =>
+              void runRecentAction('Recent Spec compare', () => runSpecFromRecentWithViewReset(pair)),
+          }))
+        : mode === 'text'
+          ? textRecentPairs.map((pair) => ({
+              key: `${pair.oldPath}::${pair.newPath}`,
+              label: `${pair.oldPath} -> ${pair.newPath}`,
+              onClick: () =>
+                void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair)),
+            }))
+          : []
 
   const compareModeHeaderActions = isCompareCentricMode ? (
-    <CompareModeHeaderActions
+    <DesktopModeHeaderActions
+      kind="compare"
       loading={loading}
       compareDisabled={
         mode === 'json' ? jsonCompareDisabled : mode === 'spec' ? specCompareDisabled : false
@@ -958,50 +894,34 @@ export function App() {
       onCompare={() => void onRun()}
       optionsOpen={compareOptionsOpened}
       onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
-      extraActions={compareRecentMenu}
+      recentItems={compareRecentItems}
+      onClearRecent={
+        mode === 'json'
+          ? () => setJSONRecentPairs([])
+          : mode === 'spec'
+            ? () => setSpecRecentPairs([])
+            : () => setTextRecentPairs([])
+      }
     />
   ) : undefined
+
+  const folderRecentItems: RecentTargetsMenuItem[] = folderRecentPairs.map((entry) => ({
+    key: `${entry.leftRoot}::${entry.rightRoot}::${entry.currentPath}::${entry.viewMode}`,
+    label: `${entry.leftRoot} <> ${entry.rightRoot}`,
+    onClick: () =>
+      void runRecentAction('Recent directory compare', () => runFolderFromRecent(entry)),
+  }))
+
   const folderHeaderActions =
     mode === 'folder' ? (
-      <HeaderRailGroup className="compare-mode-header-actions">
-        <HeaderRailPrimaryButton
-          onClick={() => void onRun()}
-          loading={loading}
-          disabled={!folderLeftRoot || !folderRightRoot}
-          leftSection={<IconArrowsDiff size={14} />}
-        >
-          Compare
-        </HeaderRailPrimaryButton>
-        <Menu position="bottom-end" withinPortal>
-          <Menu.Target>
-            <HeaderRailPrimaryButton
-              variant="default"
-              leftSection={<IconHistory size={14} />}
-              disabled={folderRecentPairs.length === 0}
-            >
-              Recent roots
-            </HeaderRailPrimaryButton>
-          </Menu.Target>
-          <Menu.Dropdown>
-            {folderRecentPairs.map((entry) => (
-              <Menu.Item
-                key={`${entry.leftRoot}::${entry.rightRoot}::${entry.currentPath}::${entry.viewMode}`}
-                onClick={() =>
-                  void runRecentAction('Recent directory compare', () =>
-                    runFolderFromRecent(entry),
-                  )
-                }
-              >
-                {`${entry.leftRoot} <> ${entry.rightRoot}`}
-              </Menu.Item>
-            ))}
-            <Menu.Divider />
-            <Menu.Item color="red" onClick={() => setFolderRecentPairs([])}>
-              Clear recent
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </HeaderRailGroup>
+      <DesktopModeHeaderActions
+        kind="folder"
+        loading={loading}
+        compareDisabled={!folderLeftRoot || !folderRightRoot}
+        onCompare={() => void onRun()}
+        recentItems={folderRecentItems}
+        onClearRecent={() => setFolderRecentPairs([])}
+      />
     ) : undefined
 
   const compareOptionsContent =
