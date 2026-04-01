@@ -10,19 +10,17 @@ import type {
   CompareCommon,
   CompareFoldersResponse,
   DesktopRecentFolderPair,
-  DesktopRecentPair,
   Mode,
 } from './types'
 import './style.css'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
+import { useRecentActionRunner } from './useRecentActionRunner'
+import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { AppChrome } from './ui/AppChrome'
-import { DesktopModeHeaderActions } from './ui/DesktopModeHeaderActions'
 import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
 import { DesktopSidebarContent } from './ui/DesktopSidebarContent'
 import { DesktopMainContent } from './ui/DesktopMainContent'
-import type { RecentTargetsMenuItem } from './ui/RecentTargetsMenu'
-import { upsertRecentPair } from './persistence'
 import {
   formatUnknownError,
   parseIgnorePaths,
@@ -672,38 +670,9 @@ export function App() {
     setScenarioRunError,
   })
 
-  const runRecentAction = async (label: string, action: () => Promise<void>) => {
-    setLoading(true)
-    try {
-      await action()
-    } catch (error) {
-      notifications.show({
-        title: `${label} failed`,
-        message: formatUnknownError(error),
-        color: 'red',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const runTextFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
-    await runTextFromRecent(pair)
-    clearTextExpandedSections()
-    resetTextSearch()
-  }
-
-  const runJSONFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
-    const richResult = await runJSONFromRecent(pair)
-    applyJSONResultView(richResult)
-    setMode('json')
-  }
-
-  const runSpecFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
-    const richResult = await runSpecFromRecent(pair)
-    applySpecResultView(richResult)
-    setMode('spec')
-  }
+  const { runRecentAction } = useRecentActionRunner({
+    setLoading,
+  })
 
   const isCompareCentricMode = mode === 'text' || mode === 'json' || mode === 'spec'
 
@@ -716,69 +685,34 @@ export function App() {
   const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
   const specCompareDisabled = specEditorBusy || specInputEmpty || specInputInvalid
 
-  const compareRecentItems: RecentTargetsMenuItem[] =
-    mode === 'json'
-      ? jsonRecentPairs.map((pair) => ({
-          key: `${pair.oldPath}::${pair.newPath}`,
-          label: `${pair.oldPath} -> ${pair.newPath}`,
-          onClick: () =>
-            void runRecentAction('Recent JSON compare', () => runJSONFromRecentWithViewReset(pair)),
-        }))
-      : mode === 'spec'
-        ? specRecentPairs.map((pair) => ({
-            key: `${pair.oldPath}::${pair.newPath}`,
-            label: `${pair.oldPath} -> ${pair.newPath}`,
-            onClick: () =>
-              void runRecentAction('Recent Spec compare', () => runSpecFromRecentWithViewReset(pair)),
-          }))
-        : mode === 'text'
-          ? textRecentPairs.map((pair) => ({
-              key: `${pair.oldPath}::${pair.newPath}`,
-              label: `${pair.oldPath} -> ${pair.newPath}`,
-              onClick: () =>
-                void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair)),
-            }))
-          : []
-
-  const compareModeHeaderActions = isCompareCentricMode ? (
-    <DesktopModeHeaderActions
-      kind="compare"
-      loading={loading}
-      compareDisabled={
-        mode === 'json' ? jsonCompareDisabled : mode === 'spec' ? specCompareDisabled : false
-      }
-      onCompare={() => void onRun()}
-      optionsOpen={compareOptionsOpened}
-      onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
-      recentItems={compareRecentItems}
-      onClearRecent={
-        mode === 'json'
-          ? () => setJSONRecentPairs([])
-          : mode === 'spec'
-            ? () => setSpecRecentPairs([])
-            : () => setTextRecentPairs([])
-      }
-    />
-  ) : undefined
-
-  const folderRecentItems: RecentTargetsMenuItem[] = folderRecentPairs.map((entry) => ({
-    key: `${entry.leftRoot}::${entry.rightRoot}::${entry.currentPath}::${entry.viewMode}`,
-    label: `${entry.leftRoot} <> ${entry.rightRoot}`,
-    onClick: () =>
-      void runRecentAction('Recent directory compare', () => runFolderFromRecent(entry)),
-  }))
-
-  const folderHeaderActions =
-    mode === 'folder' ? (
-      <DesktopModeHeaderActions
-        kind="folder"
-        loading={loading}
-        compareDisabled={!folderLeftRoot || !folderRightRoot}
-        onCompare={() => void onRun()}
-        recentItems={folderRecentItems}
-        onClearRecent={() => setFolderRecentPairs([])}
-      />
-    ) : undefined
+  const { headerActions } = useDesktopHeaderActions({
+    mode,
+    loading,
+    compareOptionsOpened,
+    onToggleCompareOptions: () => setCompareOptionsOpened((prev) => !prev),
+    jsonCompareDisabled,
+    specCompareDisabled,
+    folderCompareDisabled: !folderLeftRoot || !folderRightRoot,
+    onRun,
+    jsonRecentPairs,
+    onClearJSONRecent: () => setJSONRecentPairs([]),
+    specRecentPairs,
+    onClearSpecRecent: () => setSpecRecentPairs([]),
+    textRecentPairs,
+    onClearTextRecent: () => setTextRecentPairs([]),
+    folderRecentPairs,
+    onClearFolderRecent: () => setFolderRecentPairs([]),
+    runRecentAction,
+    runTextFromRecent,
+    clearTextExpandedSections,
+    resetTextSearch,
+    runJSONFromRecent,
+    applyJSONResultView,
+    runSpecFromRecent,
+    applySpecResultView,
+    runFolderFromRecent,
+    setMode,
+  })
 
   const compareOptionsContent = (
     <DesktopCompareOptionsContent
@@ -1059,13 +993,7 @@ export function App() {
       }}
       layoutMode={isMainFirstMode ? 'workspace' : 'sidebar'}
       sidebar={isMainFirstMode ? undefined : sidebarContent}
-      headerActions={
-        isCompareCentricMode
-          ? compareModeHeaderActions
-          : mode === 'folder'
-            ? folderHeaderActions
-            : undefined
-      }
+      headerActions={headerActions}
       main={mainContent}
       inspector={isCompareCentricMode ? compareOptionsInspector : undefined}
       inspectorOpen={isCompareCentricMode && compareOptionsOpened}
