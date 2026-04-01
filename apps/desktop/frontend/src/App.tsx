@@ -23,6 +23,8 @@ import { AppChrome } from './ui/AppChrome'
 import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
 import { CompareStatusState } from './ui/CompareStatusState'
 import { DesktopModeHeaderActions } from './ui/DesktopModeHeaderActions'
+import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
+import { DesktopSidebarContent } from './ui/DesktopSidebarContent'
 import type { RecentTargetsMenuItem } from './ui/RecentTargetsMenu'
 import { upsertRecentPair } from './persistence'
 import {
@@ -38,19 +40,15 @@ import { useDirectoryCompareInteractions } from './features/folder/useDirectoryC
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { TextCompareSourceWorkspace } from './features/text/TextCompareSourceWorkspace'
-import { TextCompareOptionsPanel } from './features/text/TextCompareOptionsPanel'
 import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { JSONCompareSourceWorkspace } from './features/json/JSONCompareSourceWorkspace'
-import { JSONCompareOptionsPanel } from './features/json/JSONCompareOptionsPanel'
 import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
 import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
 import { SpecCompareSourceWorkspace } from './features/spec/SpecCompareSourceWorkspace'
-import { SpecCompareOptionsPanel } from './features/spec/SpecCompareOptionsPanel'
 import { useSpecCompareWorkflow } from './features/spec/useSpecCompareWorkflow'
-import { ScenarioControlPanel } from './features/scenario/ScenarioControlPanel'
 import { ScenarioResultPanel } from './features/scenario/ScenarioResultPanel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
@@ -924,79 +922,76 @@ export function App() {
       />
     ) : undefined
 
-  const compareOptionsContent =
-    mode === 'json' ? (
-      <JSONCompareOptionsPanel
-        ignoreOrder={ignoreOrder}
-        onIgnoreOrderChange={setIgnoreOrder}
-        outputFormat={jsonCommon.outputFormat}
-        onOutputFormatChange={(value) => updateJSONCommon('outputFormat', value)}
-        textStyle={jsonCommon.textStyle}
-        onTextStyleChange={(value) => updateJSONCommon('textStyle', value)}
-        patchTextStyleDisabled={jsonPatchBlockedByFilters}
-        failOn={jsonCommon.failOn}
-        onFailOnChange={(value) => updateJSONCommon('failOn', value)}
-        ignorePathsDraft={jsonIgnorePathsDraft}
-        onIgnorePathsDraftChange={setJSONIgnorePathsDraft}
-        onIgnorePathsCommit={(value) =>
-          updateJSONCommon('ignorePaths', parseIgnorePaths(value))
-        }
-        showPaths={jsonCommon.showPaths}
-        onShowPathsChange={(checked) => updateJSONCommon('showPaths', checked)}
-        onlyBreaking={jsonCommon.onlyBreaking}
-        onOnlyBreakingChange={(checked) => updateJSONCommon('onlyBreaking', checked)}
-      />
-    ) : mode === 'spec' ? (
-      <SpecCompareOptionsPanel
-        outputFormat={specCommon.outputFormat}
-        onOutputFormatChange={(value) => updateSpecCommon('outputFormat', value)}
-        textStyle={specCommon.textStyle}
-        onTextStyleChange={(value) => updateSpecCommon('textStyle', value)}
-        failOn={specCommon.failOn}
-        onFailOnChange={(value) => updateSpecCommon('failOn', value)}
-        ignorePathsDraft={specIgnorePathsDraft}
-        onIgnorePathsDraftChange={setSpecIgnorePathsDraft}
-        onIgnorePathsCommit={(value) =>
-          updateSpecCommon('ignorePaths', parseIgnorePaths(value))
-        }
-        showPaths={specCommon.showPaths}
-        onShowPathsChange={(checked) => updateSpecCommon('showPaths', checked)}
-        onlyBreaking={specCommon.onlyBreaking}
-        onOnlyBreakingChange={(checked) => updateSpecCommon('onlyBreaking', checked)}
-      />
-    ) : (
-      <TextCompareOptionsPanel
-        outputFormat={textCommon.outputFormat}
-        onOutputFormatChange={(value) => updateTextCommon('outputFormat', value)}
-        failOn={textCommon.failOn}
-        onFailOnChange={(value) => updateTextCommon('failOn', value)}
-      />
-    )
+  const compareOptionsContent = (
+    <DesktopCompareOptionsContent
+      mode={mode}
+      jsonProps={{
+        ignoreOrder,
+        onIgnoreOrderChange: setIgnoreOrder,
+        outputFormat: jsonCommon.outputFormat,
+        onOutputFormatChange: (value) => updateJSONCommon('outputFormat', value),
+        textStyle: jsonCommon.textStyle,
+        onTextStyleChange: (value) => updateJSONCommon('textStyle', value),
+        patchTextStyleDisabled: jsonPatchBlockedByFilters,
+        failOn: jsonCommon.failOn,
+        onFailOnChange: (value) => updateJSONCommon('failOn', value),
+        ignorePathsDraft: jsonIgnorePathsDraft,
+        onIgnorePathsDraftChange: setJSONIgnorePathsDraft,
+        onIgnorePathsCommit: (value) => updateJSONCommon('ignorePaths', parseIgnorePaths(value)),
+        showPaths: jsonCommon.showPaths,
+        onShowPathsChange: (checked) => updateJSONCommon('showPaths', checked),
+        onlyBreaking: jsonCommon.onlyBreaking,
+        onOnlyBreakingChange: (checked) => updateJSONCommon('onlyBreaking', checked),
+      }}
+      specProps={{
+        outputFormat: specCommon.outputFormat,
+        onOutputFormatChange: (value) => updateSpecCommon('outputFormat', value),
+        textStyle: specCommon.textStyle,
+        onTextStyleChange: (value) => updateSpecCommon('textStyle', value),
+        failOn: specCommon.failOn,
+        onFailOnChange: (value) => updateSpecCommon('failOn', value),
+        ignorePathsDraft: specIgnorePathsDraft,
+        onIgnorePathsDraftChange: setSpecIgnorePathsDraft,
+        onIgnorePathsCommit: (value) => updateSpecCommon('ignorePaths', parseIgnorePaths(value)),
+        showPaths: specCommon.showPaths,
+        onShowPathsChange: (checked) => updateSpecCommon('showPaths', checked),
+        onlyBreaking: specCommon.onlyBreaking,
+        onOnlyBreakingChange: (checked) => updateSpecCommon('onlyBreaking', checked),
+      }}
+      textProps={{
+        outputFormat: textCommon.outputFormat,
+        onOutputFormatChange: (value) => updateTextCommon('outputFormat', value),
+        failOn: textCommon.failOn,
+        onFailOnChange: (value) => updateTextCommon('failOn', value),
+      }}
+    />
+  )
 
-  const sidebarContent =
-    mode === 'scenario' ? (
-      <ScenarioControlPanel
-        scenarioPath={scenarioPath}
-        onScenarioPathChange={setScenarioPath}
-        onBrowseScenario={() => void browseAndSet(api.pickScenarioFile, setScenarioPath)}
-        scenarioRecentPaths={scenarioRecentPaths}
-        onLoadRecentScenario={(entry) =>
-          void runRecentAction('Recent scenario load', () => loadScenarioRecent(entry))
-        }
-        onClearRecentScenarios={() => setScenarioRecentPaths([])}
-        reportFormat={reportFormat}
-        onReportFormatChange={setReportFormat}
-        loading={loading}
-        onLoadChecks={handleLoadScenarioChecks}
-        onRun={onRun}
-        scenarioListStatus={scenarioListStatus}
-        scenarioChecks={scenarioChecks}
-        selectedChecks={selectedChecks}
-        onToggleCheck={toggleScenarioCheck}
-        onSelectAllChecks={selectAllScenarioChecks}
-        onClearCheckSelection={clearScenarioSelection}
-      />
-    ) : null
+  const sidebarContent = (
+    <DesktopSidebarContent
+      mode={mode}
+      scenarioProps={{
+        scenarioPath,
+        onScenarioPathChange: setScenarioPath,
+        onBrowseScenario: () => void browseAndSet(api.pickScenarioFile, setScenarioPath),
+        scenarioRecentPaths,
+        onLoadRecentScenario: (entry) =>
+          void runRecentAction('Recent scenario load', () => loadScenarioRecent(entry)),
+        onClearRecentScenarios: () => setScenarioRecentPaths([]),
+        reportFormat,
+        onReportFormatChange: setReportFormat,
+        loading,
+        onLoadChecks: handleLoadScenarioChecks,
+        onRun,
+        scenarioListStatus,
+        scenarioChecks,
+        selectedChecks,
+        onToggleCheck: toggleScenarioCheck,
+        onSelectAllChecks: selectAllScenarioChecks,
+        onClearCheckSelection: clearScenarioSelection,
+      }}
+    />
+  )
 
   const folderReturnPathBanner =
     isCompareCentricMode && folderReturnContext ? (
