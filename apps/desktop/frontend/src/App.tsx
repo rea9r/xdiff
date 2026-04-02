@@ -1,9 +1,5 @@
 import { useState } from 'react'
 import { notifications } from '@mantine/notifications'
-import type {
-  CompareFoldersResponse,
-  DesktopRecentFolderPair,
-} from './types'
 import './style.css'
 import { useDesktopBridge } from './useDesktopBridge'
 import { useBrowseAndSet } from './useBrowseAndSet'
@@ -13,6 +9,8 @@ import {
   defaultTextCommon,
   useDesktopModeState,
 } from './useDesktopModeState'
+import { useFolderCompareState } from './useFolderCompareState'
+import { useDesktopRunUiState } from './useDesktopRunUiState'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { useRecentActionRunner } from './useRecentActionRunner'
@@ -280,18 +278,31 @@ export function App() {
     resetSpecSearch,
   } = specCompareViewState
 
-  const [folderLeftRoot, setFolderLeftRoot] = useState('')
-  const [folderRightRoot, setFolderRightRoot] = useState('')
-  const [folderNameFilter, setFolderNameFilter] = useState('')
-  const [folderCurrentPath, setFolderCurrentPath] = useState('')
-  const [folderResult, setFolderResult] = useState<CompareFoldersResponse | null>(null)
-  const [folderStatus, setFolderStatus] = useState('')
-  const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
+  const {
+    folderLeftRoot,
+    setFolderLeftRoot,
+    folderRightRoot,
+    setFolderRightRoot,
+    folderNameFilter,
+    setFolderNameFilter,
+    folderCurrentPath,
+    setFolderCurrentPath,
+    folderResult,
+    setFolderResult,
+    folderStatus,
+    setFolderStatus,
+    folderRecentPairs,
+    setFolderRecentPairs,
+  } = useFolderCompareState()
 
-
-  const [summaryLine, setSummaryLine] = useState('')
-  const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const {
+    summaryLine,
+    setSummaryLine,
+    output,
+    setOutput,
+    loading,
+    setLoading,
+  } = useDesktopRunUiState()
 
   const api = useDesktopBridge()
 
