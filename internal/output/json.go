@@ -2,6 +2,7 @@ package output
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/rea9r/xdiff/internal/delta"
 )
@@ -9,8 +10,8 @@ import (
 type jsonDiff struct {
 	Type     delta.DiffType `json:"type"`
 	Path     string         `json:"path"`
-	OldValue any            `json:"old_value,omitempty"`
-	NewValue any            `json:"new_value,omitempty"`
+	OldValue *any           `json:"old_value,omitempty"`
+	NewValue *any           `json:"new_value,omitempty"`
 	OldType  string         `json:"old_type,omitempty"`
 	NewType  string         `json:"new_type,omitempty"`
 }
@@ -41,8 +42,8 @@ func RenderJSON(diffs []delta.Diff) (string, error) {
 		jd := jsonDiff{
 			Type:     d.Type,
 			Path:     d.Path,
-			OldValue: d.OldValue,
-			NewValue: d.NewValue,
+			OldValue: toOptionalJSONValue(d.OldValue),
+			NewValue: toOptionalJSONValue(d.NewValue),
 		}
 		if d.Type == delta.TypeChanged {
 			jd.OldType = delta.ValueType(d.OldValue)
@@ -64,5 +65,27 @@ func toJSONSummaryPtr(summary delta.Summary) *jsonSummary {
 		Removed:     summary.Removed,
 		Changed:     summary.Changed,
 		TypeChanged: summary.TypeChanged,
+	}
+}
+
+func toOptionalJSONValue(value any) *any {
+	if isNilJSONValue(value) {
+		return nil
+	}
+	copied := value
+	return &copied
+}
+
+func isNilJSONValue(value any) bool {
+	if value == nil {
+		return true
+	}
+
+	rv := reflect.ValueOf(value)
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
 	}
 }
