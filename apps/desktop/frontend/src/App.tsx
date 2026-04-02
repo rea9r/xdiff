@@ -1,17 +1,18 @@
-import {
-  useEffect,
-  useState,
-} from 'react'
+import { useState } from 'react'
 import { notifications } from '@mantine/notifications'
 import type {
-  CompareCommon,
   CompareFoldersResponse,
   DesktopRecentFolderPair,
-  Mode,
 } from './types'
 import './style.css'
 import { useDesktopBridge } from './useDesktopBridge'
 import { useBrowseAndSet } from './useBrowseAndSet'
+import {
+  defaultJSONCommon,
+  defaultSpecCommon,
+  defaultTextCommon,
+  useDesktopModeState,
+} from './useDesktopModeState'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { useRecentActionRunner } from './useRecentActionRunner'
@@ -32,60 +33,14 @@ import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState
 import { useSpecCompareWorkflow } from './features/spec/useSpecCompareWorkflow'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
-const defaultJSONCommon: CompareCommon = {
-  failOn: 'any',
-  outputFormat: 'text',
-  textStyle: 'auto',
-  ignorePaths: [],
-  showPaths: false,
-  onlyBreaking: false,
-  noColor: true,
-}
-
-const defaultSpecCommon: CompareCommon = {
-  failOn: 'any',
-  outputFormat: 'text',
-  textStyle: 'semantic',
-  ignorePaths: [],
-  showPaths: false,
-  onlyBreaking: false,
-  noColor: true,
-}
-
-const defaultTextCommon: CompareCommon = {
-  failOn: 'any',
-  outputFormat: 'text',
-  textStyle: 'auto',
-  ignorePaths: [],
-  showPaths: false,
-  onlyBreaking: false,
-  noColor: true,
-}
-
-const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
-const APP_MODES: Mode[] = ['text', 'json', 'spec', 'folder', 'scenario']
-
-function isMode(value: string): value is Mode {
-  return APP_MODES.includes(value as Mode)
-}
-
-function getInitialMode(): Mode {
-  const fallback: Mode = 'json'
-
-  try {
-    const raw = window.localStorage.getItem(LAST_USED_MODE_STORAGE_KEY)
-    if (!raw) {
-      return fallback
-    }
-
-    return isMode(raw) ? raw : fallback
-  } catch {
-    return fallback
-  }
-}
-
 export function App() {
-  const [mode, setMode] = useState<Mode>(() => getInitialMode())
+  const {
+    mode,
+    setMode,
+    compareOptionsOpened,
+    setCompareOptionsOpened,
+    onModeChange,
+  } = useDesktopModeState()
 
   const jsonWorkflow = useJSONCompareWorkflow({
     initialCommon: defaultJSONCommon,
@@ -337,15 +292,6 @@ export function App() {
   const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [compareOptionsOpened, setCompareOptionsOpened] = useState(false)
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(LAST_USED_MODE_STORAGE_KEY, mode)
-    } catch {
-      // ignore storage errors
-    }
-  }, [mode])
 
   const api = useDesktopBridge()
 
@@ -721,12 +667,7 @@ export function App() {
   return (
     <AppChrome
       mode={mode}
-      onModeChange={(nextMode) => {
-        setMode(nextMode)
-        if (nextMode === 'folder' || nextMode === 'scenario') {
-          setCompareOptionsOpened(false)
-        }
-      }}
+      onModeChange={onModeChange}
       layoutMode={layoutMode}
       sidebar={sidebar}
       headerActions={headerActions}
