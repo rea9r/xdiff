@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -125,5 +126,26 @@ func TestLoadJSONURL_UsesRequestContextCancellation(t *testing.T) {
 	case <-observedCancel:
 	case <-time.After(500 * time.Millisecond):
 		t.Fatal("server did not observe request context cancellation")
+	}
+}
+
+func TestLoadJSONURL_ResponseTooLarge(t *testing.T) {
+	prev := maxJSONURLResponseBytes
+	maxJSONURLResponseBytes = 1024
+	t.Cleanup(func() {
+		maxJSONURLResponseBytes = prev
+	})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"payload":"` + strings.Repeat("x", 1100) + `"}`))
+	}))
+	defer server.Close()
+
+	_, err := LoadJSONURL(context.Background(), server.URL, HTTPOptions{})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "exceeds size limit") {
+		t.Fatalf("expected size limit error, got: %v", err)
 	}
 }

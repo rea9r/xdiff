@@ -1,8 +1,10 @@
 package source
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +14,8 @@ type HTTPOptions struct {
 	Headers []string
 	Timeout time.Duration
 }
+
+var maxJSONURLResponseBytes int64 = 100 * 1024 * 1024
 
 func LoadJSONURL(ctx context.Context, rawURL string, opts HTTPOptions) (any, error) {
 	timeout := opts.Timeout
@@ -44,7 +48,19 @@ func LoadJSONURL(ctx context.Context, rawURL string, opts HTTPOptions) (any, err
 		return nil, fmt.Errorf("request %q failed: status %d", rawURL, resp.StatusCode)
 	}
 
-	return decodeJSON(resp.Body, rawURL)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxJSONURLResponseBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body from %q: %w", rawURL, err)
+	}
+	if int64(len(body)) > maxJSONURLResponseBytes {
+		return nil, fmt.Errorf(
+			"response body from %q exceeds size limit (%d bytes)",
+			rawURL,
+			maxJSONURLResponseBytes,
+		)
+	}
+
+	return decodeJSON(bytes.NewReader(body), rawURL)
 }
 
 func applyHeaders(req *http.Request, rawHeaders []string) error {
