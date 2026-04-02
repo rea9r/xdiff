@@ -1,27 +1,40 @@
 package jsondiff
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func Compare(oldValue, newValue any) []delta.Diff {
+const maxCompareDepth = 1000
+
+func Compare(oldValue, newValue any) ([]delta.Diff, error) {
 	return CompareWithOptions(oldValue, newValue, Options{})
 }
 
-func CompareWithOptions(oldValue, newValue any, opts Options) []delta.Diff {
+func CompareWithOptions(oldValue, newValue any, opts Options) ([]delta.Diff, error) {
 	if opts.IgnoreOrder {
 		oldValue = normalizeUnorderedValue(oldValue)
 		newValue = normalizeUnorderedValue(newValue)
 	}
 
 	var diffs []delta.Diff
-	compare("", oldValue, newValue, &diffs)
-	return diffs
+	if err := compare("", oldValue, newValue, 0, &diffs); err != nil {
+		return nil, err
+	}
+	return diffs, nil
 }
 
-func compare(path string, oldValue, newValue any, diffs *[]delta.Diff) {
+func compare(path string, oldValue, newValue any, depth int, diffs *[]delta.Diff) error {
+	if depth > maxCompareDepth {
+		return fmt.Errorf(
+			"maximum JSON compare depth exceeded (%d) at path %q",
+			maxCompareDepth,
+			path,
+		)
+	}
+
 	oldObj, oldIsObj := oldValue.(map[string]any)
 	newObj, newIsObj := newValue.(map[string]any)
 	if oldIsObj || newIsObj {
@@ -32,10 +45,9 @@ func compare(path string, oldValue, newValue any, diffs *[]delta.Diff) {
 				OldValue: oldValue,
 				NewValue: newValue,
 			})
-			return
+			return nil
 		}
-		compareObjects(path, oldObj, newObj, diffs)
-		return
+		return compareObjects(path, oldObj, newObj, depth, diffs)
 	}
 
 	oldArr, oldIsArr := oldValue.([]any)
@@ -48,15 +60,14 @@ func compare(path string, oldValue, newValue any, diffs *[]delta.Diff) {
 				OldValue: oldValue,
 				NewValue: newValue,
 			})
-			return
+			return nil
 		}
-		compareArrays(path, oldArr, newArr, diffs)
-		return
+		return compareArrays(path, oldArr, newArr, depth, diffs)
 	}
 
 	if reflect.TypeOf(oldValue) != reflect.TypeOf(newValue) {
 		appendTypeChanged(diffs, path, oldValue, newValue)
-		return
+		return nil
 	}
 
 	if !reflect.DeepEqual(oldValue, newValue) {
@@ -67,6 +78,7 @@ func compare(path string, oldValue, newValue any, diffs *[]delta.Diff) {
 			NewValue: newValue,
 		})
 	}
+	return nil
 }
 
 func appendTypeChanged(diffs *[]delta.Diff, path string, oldValue, newValue any) {

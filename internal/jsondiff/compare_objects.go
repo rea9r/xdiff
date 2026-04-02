@@ -6,7 +6,7 @@ import (
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func compareObjects(path string, oldObj, newObj map[string]any, diffs *[]delta.Diff) {
+func compareObjects(path string, oldObj, newObj map[string]any, depth int, diffs *[]delta.Diff) error {
 	oldKeys := sortedKeys(oldObj)
 	newKeys := sortedKeys(newObj)
 
@@ -41,8 +41,12 @@ func compareObjects(path string, oldObj, newObj map[string]any, diffs *[]delta.D
 			})
 			continue
 		}
-		compare(joinPath(path, key), oldObj[key], newObj[key], diffs)
+		if err := compare(joinPath(path, key), oldObj[key], newObj[key], depth+1, diffs); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func sortedKeys(m map[string]any) []string {

@@ -6,14 +6,16 @@ import (
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func compareArrays(path string, oldArr, newArr []any, diffs *[]delta.Diff) {
+func compareArrays(path string, oldArr, newArr []any, depth int, diffs *[]delta.Diff) error {
 	minLen := len(oldArr)
 	if len(newArr) < minLen {
 		minLen = len(newArr)
 	}
 
 	for i := 0; i < minLen; i++ {
-		compare(indexPath(path, i), oldArr[i], newArr[i], diffs)
+		if err := compare(indexPath(path, i), oldArr[i], newArr[i], depth+1, diffs); err != nil {
+			return err
+		}
 	}
 
 	for i := minLen; i < len(oldArr); i++ {
@@ -33,6 +35,8 @@ func compareArrays(path string, oldArr, newArr []any, diffs *[]delta.Diff) {
 			NewValue: newArr[i],
 		})
 	}
+
+	return nil
 }
 
 func indexPath(base string, idx int) string {

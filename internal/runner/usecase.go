@@ -105,9 +105,12 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 		return finalizeRun(nil, "", err, opts.FailOn)
 	}
 
-	diffs := jsondiff.CompareWithOptions(oldValue, newValue, jsondiff.Options{
+	diffs, err := jsondiff.CompareWithOptions(oldValue, newValue, jsondiff.Options{
 		IgnoreOrder: opts.IgnoreOrder,
 	})
+	if err != nil {
+		return finalizeRun(nil, "", err, opts.FailOn)
+	}
 	diffs = delta.ApplyOptions(diffs, delta.Options{
 		IgnorePaths:  opts.IgnorePaths,
 		OnlyBreaking: opts.OnlyBreaking,
