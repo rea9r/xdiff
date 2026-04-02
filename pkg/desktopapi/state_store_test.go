@@ -1,8 +1,10 @@
 package desktopapi
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -149,4 +151,49 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 		normalized.FolderRecentPairs[0].CurrentPath != "/api" {
 		t.Fatalf("folderRecentPairs[0] trim mismatch: %+v", normalized.FolderRecentPairs[0])
 	}
+}
+
+func TestServiceStateConcurrentAccess(t *testing.T) {
+	dir := t.TempDir()
+	store := &desktopStateStore{
+		path: filepath.Join(dir, "desktop-state.json"),
+	}
+	svc := &Service{stateStore: store}
+
+	// Seed initial state so Load reads real data.
+	initial := defaultDesktopState()
+	initial.LastUsedMode = "json"
+	if err := svc.SaveDesktopState(initial); err != nil {
+		t.Fatalf("initial Save() error = %v", err)
+	}
+
+	const goroutines = 20
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		go func(n int) {
+			defer wg.Done()
+			if n%2 == 0 {
+				// Writer
+				state := defaultDesktopState()
+				state.LastUsedMode = "spec"
+				state.Folder.LeftRoot = fmt.Sprintf("/tmp/left-%d", n)
+				if err := svc.SaveDesktopState(state); err != nil {
+					t.Errorf("goroutine %d: Save() error = %v", n, err)
+				}
+			} else {
+				// Reader
+				loaded, err := svc.LoadDesktopState()
+				if err != nil {
+					t.Errorf("goroutine %d: Load() error = %v", n, err)
+				}
+				if loaded == nil {
+					t.Errorf("goroutine %d: Load() returned nil", n)
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait()
 }

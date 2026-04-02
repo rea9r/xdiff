@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/rea9r/xdiff/internal/openapi"
@@ -22,6 +23,7 @@ import (
 )
 
 type Service struct {
+	stateMu    sync.RWMutex
 	stateStore *desktopStateStore
 }
 
@@ -41,6 +43,9 @@ func NewService() *Service {
 }
 
 func (s *Service) LoadDesktopState() (*DesktopState, error) {
+	s.stateMu.RLock()
+	defer s.stateMu.RUnlock()
+
 	state := defaultDesktopState()
 	if s.stateStore == nil {
 		return &state, nil
@@ -54,6 +59,9 @@ func (s *Service) LoadDesktopState() (*DesktopState, error) {
 }
 
 func (s *Service) SaveDesktopState(req DesktopState) error {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+
 	if s.stateStore == nil {
 		return nil
 	}
