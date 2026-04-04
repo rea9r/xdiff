@@ -1,4 +1,4 @@
-type SpecCompareOptionsPanelProps = {
+export type SpecCompareOptionsPanelProps = {
   outputFormat: string
   onOutputFormatChange: (value: string) => void
   textStyle: string

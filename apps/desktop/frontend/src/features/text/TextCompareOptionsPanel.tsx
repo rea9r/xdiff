@@ -1,4 +1,4 @@
-type TextCompareOptionsPanelProps = {
+export type TextCompareOptionsPanelProps = {
   outputFormat: string
   onOutputFormatChange: (value: string) => void
   failOn: string

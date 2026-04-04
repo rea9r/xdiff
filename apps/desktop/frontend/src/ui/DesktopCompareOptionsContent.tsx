@@ -1,12 +1,24 @@
-import type { ComponentProps } from 'react'
+import { lazy, Suspense } from 'react'
 import type { Mode } from '../types'
-import { JSONCompareOptionsPanel } from '../features/json/JSONCompareOptionsPanel'
-import { SpecCompareOptionsPanel } from '../features/spec/SpecCompareOptionsPanel'
-import { TextCompareOptionsPanel } from '../features/text/TextCompareOptionsPanel'
+import type { JSONCompareOptionsPanelProps } from '../features/json/JSONCompareOptionsPanel'
+import type { SpecCompareOptionsPanelProps } from '../features/spec/SpecCompareOptionsPanel'
+import type { TextCompareOptionsPanelProps } from '../features/text/TextCompareOptionsPanel'
 
-type JSONCompareOptionsPanelProps = ComponentProps<typeof JSONCompareOptionsPanel>
-type SpecCompareOptionsPanelProps = ComponentProps<typeof SpecCompareOptionsPanel>
-type TextCompareOptionsPanelProps = ComponentProps<typeof TextCompareOptionsPanel>
+const JSONCompareOptionsPanel = lazy(() =>
+  import('../features/json/JSONCompareOptionsPanel').then((module) => ({
+    default: module.JSONCompareOptionsPanel,
+  })),
+)
+const SpecCompareOptionsPanel = lazy(() =>
+  import('../features/spec/SpecCompareOptionsPanel').then((module) => ({
+    default: module.SpecCompareOptionsPanel,
+  })),
+)
+const TextCompareOptionsPanel = lazy(() =>
+  import('../features/text/TextCompareOptionsPanel').then((module) => ({
+    default: module.TextCompareOptionsPanel,
+  })),
+)
 
 type DesktopCompareOptionsContentProps = {
   mode: Mode
@@ -21,16 +33,30 @@ export function DesktopCompareOptionsContent({
   specProps,
   textProps,
 }: DesktopCompareOptionsContentProps) {
+  const fallback = <div className="muted">Loading options...</div>
+
   if (mode === 'json') {
-    return <JSONCompareOptionsPanel {...jsonProps} />
+    return (
+      <Suspense fallback={fallback}>
+        <JSONCompareOptionsPanel {...jsonProps} />
+      </Suspense>
+    )
   }
 
   if (mode === 'spec') {
-    return <SpecCompareOptionsPanel {...specProps} />
+    return (
+      <Suspense fallback={fallback}>
+        <SpecCompareOptionsPanel {...specProps} />
+      </Suspense>
+    )
   }
 
   if (mode === 'text') {
-    return <TextCompareOptionsPanel {...textProps} />
+    return (
+      <Suspense fallback={fallback}>
+        <TextCompareOptionsPanel {...textProps} />
+      </Suspense>
+    )
   }
 
   return null

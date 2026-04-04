@@ -1,4 +1,4 @@
-type JSONCompareOptionsPanelProps = {
+export type JSONCompareOptionsPanelProps = {
   ignoreOrder: boolean
   onIgnoreOrderChange: (checked: boolean) => void
   outputFormat: string
