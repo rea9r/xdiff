@@ -46,7 +46,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 20
-          cache: false
+          package-manager-cache: false
 
       - name: Pin npm version
         run: npm i -g npm@10.8.2
