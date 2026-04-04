@@ -14,7 +14,7 @@ import {
 
 type TextInputTarget = 'old' | 'new'
 
-type JSONCompareSourceWorkspaceProps = {
+export type JSONCompareSourceWorkspaceProps = {
   oldSourcePath: string
   newSourcePath: string
   oldValue: string

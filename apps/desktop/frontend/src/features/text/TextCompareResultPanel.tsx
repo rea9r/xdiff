@@ -19,7 +19,7 @@ import {
 } from './textDiff'
 import type { TextDiffLayout, TextResultView } from './useTextDiffViewState'
 
-type TextCompareResultPanelProps = {
+export type TextCompareResultPanelProps = {
   textResult: CompareResponse | null
   textResultView: TextResultView
   setTextResultView: (value: TextResultView) => void

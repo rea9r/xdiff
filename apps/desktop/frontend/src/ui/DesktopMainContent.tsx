@@ -1,36 +1,72 @@
-import type { ComponentProps } from 'react'
+import { lazy, Suspense } from 'react'
 import { IconArrowLeft } from '@tabler/icons-react'
 import type { Mode } from '../types'
 import { CompareWorkspaceShell } from './CompareWorkspaceShell'
-import { DirectoryCompareResultPanel } from '../features/folder/DirectoryCompareResultPanel'
-import { TextCompareResultPanel } from '../features/text/TextCompareResultPanel'
-import { TextCompareSourceWorkspace } from '../features/text/TextCompareSourceWorkspace'
-import { JSONCompareResultPanel } from '../features/json/JSONCompareResultPanel'
-import { JSONCompareSourceWorkspace } from '../features/json/JSONCompareSourceWorkspace'
-import { SpecCompareResultPanel } from '../features/spec/SpecCompareResultPanel'
-import { SpecCompareSourceWorkspace } from '../features/spec/SpecCompareSourceWorkspace'
-import { ScenarioResultPanel } from '../features/scenario/ScenarioResultPanel'
+import type { DirectoryCompareResultPanelProps } from '../features/folder/DirectoryCompareResultPanel'
+import type { TextCompareResultPanelProps } from '../features/text/TextCompareResultPanel'
+import type { TextCompareSourceWorkspaceProps } from '../features/text/TextCompareSourceWorkspace'
+import type { JSONCompareResultPanelProps } from '../features/json/JSONCompareResultPanel'
+import type { JSONCompareSourceWorkspaceProps } from '../features/json/JSONCompareSourceWorkspace'
+import type { SpecCompareResultPanelProps } from '../features/spec/SpecCompareResultPanel'
+import type { SpecCompareSourceWorkspaceProps } from '../features/spec/SpecCompareSourceWorkspace'
+import type { ScenarioResultPanelProps } from '../features/scenario/ScenarioResultPanel'
 
-type TextSourceWorkspaceProps = ComponentProps<typeof TextCompareSourceWorkspace>
-type TextResultPanelProps = ComponentProps<typeof TextCompareResultPanel>
-type JSONSourceWorkspaceProps = ComponentProps<typeof JSONCompareSourceWorkspace>
-type JSONResultPanelProps = ComponentProps<typeof JSONCompareResultPanel>
-type SpecSourceWorkspaceProps = ComponentProps<typeof SpecCompareSourceWorkspace>
-type SpecResultPanelProps = ComponentProps<typeof SpecCompareResultPanel>
-type DirectoryResultPanelProps = ComponentProps<typeof DirectoryCompareResultPanel>
-type ScenarioResultPanelProps = ComponentProps<typeof ScenarioResultPanel>
+const DirectoryCompareResultPanel = lazy(() =>
+  import('../features/folder/DirectoryCompareResultPanel').then((module) => ({
+    default: module.DirectoryCompareResultPanel,
+  })),
+)
+const TextCompareResultPanel = lazy(() =>
+  import('../features/text/TextCompareResultPanel').then((module) => ({
+    default: module.TextCompareResultPanel,
+  })),
+)
+const TextCompareSourceWorkspace = lazy(() =>
+  import('../features/text/TextCompareSourceWorkspace').then((module) => ({
+    default: module.TextCompareSourceWorkspace,
+  })),
+)
+const JSONCompareResultPanel = lazy(() =>
+  import('../features/json/JSONCompareResultPanel').then((module) => ({
+    default: module.JSONCompareResultPanel,
+  })),
+)
+const JSONCompareSourceWorkspace = lazy(() =>
+  import('../features/json/JSONCompareSourceWorkspace').then((module) => ({
+    default: module.JSONCompareSourceWorkspace,
+  })),
+)
+const SpecCompareResultPanel = lazy(() =>
+  import('../features/spec/SpecCompareResultPanel').then((module) => ({
+    default: module.SpecCompareResultPanel,
+  })),
+)
+const SpecCompareSourceWorkspace = lazy(() =>
+  import('../features/spec/SpecCompareSourceWorkspace').then((module) => ({
+    default: module.SpecCompareSourceWorkspace,
+  })),
+)
+const ScenarioResultPanel = lazy(() =>
+  import('../features/scenario/ScenarioResultPanel').then((module) => ({
+    default: module.ScenarioResultPanel,
+  })),
+)
+
+function MainContentLoadingFallback() {
+  return <div className="muted">Loading view...</div>
+}
 
 type DesktopMainContentProps = {
   mode: Mode
   showFolderReturnBanner: boolean
   onReturnToFolderCompare: () => void
-  textSourceProps: TextSourceWorkspaceProps
-  textResultProps: TextResultPanelProps
-  jsonSourceProps: JSONSourceWorkspaceProps
-  jsonResultProps: JSONResultPanelProps
-  specSourceProps: SpecSourceWorkspaceProps
-  specResultProps: SpecResultPanelProps
-  folderResultProps: DirectoryResultPanelProps
+  textSourceProps: TextCompareSourceWorkspaceProps
+  textResultProps: TextCompareResultPanelProps
+  jsonSourceProps: JSONCompareSourceWorkspaceProps
+  jsonResultProps: JSONCompareResultPanelProps
+  specSourceProps: SpecCompareSourceWorkspaceProps
+  specResultProps: SpecCompareResultPanelProps
+  folderResultProps: DirectoryCompareResultPanelProps
   scenarioResultProps: ScenarioResultPanelProps
 }
 
@@ -64,10 +100,12 @@ export function DesktopMainContent({
     return (
       <div className="compare-main-shell">
         {folderReturnPathBanner}
-        <CompareWorkspaceShell
-          source={<TextCompareSourceWorkspace {...textSourceProps} />}
-          result={<TextCompareResultPanel {...textResultProps} />}
-        />
+        <Suspense fallback={<MainContentLoadingFallback />}>
+          <CompareWorkspaceShell
+            source={<TextCompareSourceWorkspace {...textSourceProps} />}
+            result={<TextCompareResultPanel {...textResultProps} />}
+          />
+        </Suspense>
       </div>
     )
   }
@@ -76,10 +114,12 @@ export function DesktopMainContent({
     return (
       <div className="compare-main-shell">
         {folderReturnPathBanner}
-        <CompareWorkspaceShell
-          source={<JSONCompareSourceWorkspace {...jsonSourceProps} />}
-          result={<JSONCompareResultPanel {...jsonResultProps} />}
-        />
+        <Suspense fallback={<MainContentLoadingFallback />}>
+          <CompareWorkspaceShell
+            source={<JSONCompareSourceWorkspace {...jsonSourceProps} />}
+            result={<JSONCompareResultPanel {...jsonResultProps} />}
+          />
+        </Suspense>
       </div>
     )
   }
@@ -88,10 +128,12 @@ export function DesktopMainContent({
     return (
       <div className="compare-main-shell">
         {folderReturnPathBanner}
-        <CompareWorkspaceShell
-          source={<SpecCompareSourceWorkspace {...specSourceProps} />}
-          result={<SpecCompareResultPanel {...specResultProps} />}
-        />
+        <Suspense fallback={<MainContentLoadingFallback />}>
+          <CompareWorkspaceShell
+            source={<SpecCompareSourceWorkspace {...specSourceProps} />}
+            result={<SpecCompareResultPanel {...specResultProps} />}
+          />
+        </Suspense>
       </div>
     )
   }
@@ -99,7 +141,9 @@ export function DesktopMainContent({
   if (mode === 'folder') {
     return (
       <div className="result-panel">
-        <DirectoryCompareResultPanel {...folderResultProps} />
+        <Suspense fallback={<MainContentLoadingFallback />}>
+          <DirectoryCompareResultPanel {...folderResultProps} />
+        </Suspense>
       </div>
     )
   }
@@ -107,7 +151,9 @@ export function DesktopMainContent({
   return (
     <div className="result-panel">
       <h2>Result</h2>
-      <ScenarioResultPanel {...scenarioResultProps} />
+      <Suspense fallback={<MainContentLoadingFallback />}>
+        <ScenarioResultPanel {...scenarioResultProps} />
+      </Suspense>
     </div>
   )
 }

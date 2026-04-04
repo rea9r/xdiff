@@ -17,7 +17,7 @@ import { CompareStatusState } from '../../ui/CompareStatusState'
 import { RichDiffViewer } from '../../ui/RichDiffViewer'
 import type { RichDiffItem, TextSearchMatch } from '../text/textDiff'
 
-type JSONCompareResultPanelProps = {
+export type JSONCompareResultPanelProps = {
   jsonResult: CompareResponse | null
   jsonResultView: 'diff' | 'semantic' | 'raw'
   setJSONResultView: (value: 'diff' | 'semantic' | 'raw') => void

@@ -14,7 +14,7 @@ import { SpecRichDiffViewer } from '../../ui/SpecRichDiffViewer'
 import { RichDiffViewer } from '../../ui/RichDiffViewer'
 import type { RichDiffItem, TextSearchMatch } from '../text/textDiff'
 
-type SpecCompareResultPanelProps = {
+export type SpecCompareResultPanelProps = {
   specResult: CompareResponse | null
   specRichResult: CompareSpecRichResponse | null
   specResultView: 'diff' | 'semantic' | 'raw'

@@ -1,7 +1,7 @@
 import type { ScenarioResult, ScenarioRunResponse } from '../../types'
 import { StatusBadge } from '../../ui/StatusBadge'
 
-type ScenarioResultPanelProps = {
+export type ScenarioResultPanelProps = {
   scenarioRunResult: ScenarioRunResponse | null
   selectedScenarioResultName: string
   setSelectedScenarioResultName: (value: string) => void

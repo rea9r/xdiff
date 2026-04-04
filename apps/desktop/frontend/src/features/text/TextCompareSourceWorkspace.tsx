@@ -14,7 +14,7 @@ import {
 
 type TextInputTarget = 'old' | 'new'
 
-type TextCompareSourceWorkspaceProps = {
+export type TextCompareSourceWorkspaceProps = {
   oldSourcePath: string
   newSourcePath: string
   oldValue: string

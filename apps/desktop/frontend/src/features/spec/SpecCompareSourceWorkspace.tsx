@@ -14,7 +14,7 @@ import {
 
 type TextInputTarget = 'old' | 'new'
 
-type SpecCompareSourceWorkspaceProps = {
+export type SpecCompareSourceWorkspaceProps = {
   oldSourcePath: string
   newSourcePath: string
   oldValue: string

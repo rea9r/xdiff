@@ -38,7 +38,7 @@ const QUICK_FILTERS: FolderQuickFilter[] = [
 ]
 const DEFAULT_FOLDER_VISIBLE_ROWS = 300
 
-type DirectoryCompareResultPanelProps = {
+export type DirectoryCompareResultPanelProps = {
   folderResult: CompareFoldersResponse | null
   folderStatus: string
   folderLeftRoot: string
