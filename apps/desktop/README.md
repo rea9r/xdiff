@@ -84,7 +84,10 @@ For directory compare sample data, use `examples/folder/basic` and `examples/fol
 
 ## Build frontend only
 
+In a clean environment, generate Wails bindings once before the frontend build.
+
 ```bash
 cd apps/desktop
+wails generate module
 npm --prefix frontend run build
 ```
