@@ -481,6 +481,21 @@ button {
   word-break: break-word;
 }
 
+.scenario-check-search-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.scenario-check-match-active {
+  outline: 1px solid var(--xdiff-search-hit-border);
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  background: color-mix(in srgb, var(--xdiff-search-hit-border) 10%, transparent);
+}
+
 .result-summary {
   font-size: 0.95rem;
   font-weight: 600;

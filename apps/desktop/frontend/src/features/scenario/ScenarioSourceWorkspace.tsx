@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconFileSearch,
   IconFolderOpen,
@@ -6,6 +7,7 @@ import {
 import type { ScenarioControlPanelProps } from './ScenarioControlPanel'
 import { ComparePaneAction, ComparePaneActions } from '../../ui/CompareSourceActions'
 import { CompareSourcePane } from '../../ui/CompareSourcePane'
+import { CompareSearchControls } from '../../ui/CompareSearchControls'
 import { RecentTargetsMenu } from '../../ui/RecentTargetsMenu'
 
 export type ScenarioSourceWorkspaceProps = ScenarioControlPanelProps
@@ -29,6 +31,53 @@ export function ScenarioSourceWorkspace({
   onSelectAllChecks,
   onClearCheckSelection,
 }: ScenarioSourceWorkspaceProps) {
+  const [checkSearchQuery, setCheckSearchQuery] = useState('')
+  const [activeCheckSearchIndex, setActiveCheckSearchIndex] = useState(0)
+  const checkInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const normalizedCheckSearchQuery = checkSearchQuery.trim().toLowerCase()
+  const filteredScenarioChecks = useMemo(
+    () =>
+      scenarioChecks.filter((check) => {
+        if (!normalizedCheckSearchQuery) return true
+        return [check.name, check.kind, check.summary].some((value) =>
+          value.toLowerCase().includes(normalizedCheckSearchQuery),
+        )
+      }),
+    [normalizedCheckSearchQuery, scenarioChecks],
+  )
+
+  useEffect(() => {
+    setActiveCheckSearchIndex(0)
+  }, [normalizedCheckSearchQuery, scenarioChecks])
+
+  useEffect(() => {
+    if (!normalizedCheckSearchQuery || filteredScenarioChecks.length === 0) {
+      return
+    }
+    const active = filteredScenarioChecks[activeCheckSearchIndex]
+    if (!active) {
+      return
+    }
+    checkInputRefs.current[active.name]?.focus()
+  }, [activeCheckSearchIndex, filteredScenarioChecks, normalizedCheckSearchQuery])
+
+  const moveCheckSearch = (direction: 1 | -1) => {
+    if (!normalizedCheckSearchQuery || filteredScenarioChecks.length === 0) {
+      return
+    }
+    setActiveCheckSearchIndex((current) => {
+      const next = current + direction
+      if (next < 0) {
+        return filteredScenarioChecks.length - 1
+      }
+      if (next >= filteredScenarioChecks.length) {
+        return 0
+      }
+      return next
+    })
+  }
+
   return (
     <CompareSourcePane
       title="Scenario source"
@@ -95,6 +144,28 @@ export function ScenarioSourceWorkspace({
 
         {scenarioListStatus ? <div className="muted">{scenarioListStatus}</div> : null}
 
+        <div className="field-block">
+          <label className="field-label">Search checks</label>
+          <div className="compare-search-controls scenario-check-search-controls">
+            <CompareSearchControls
+              value={checkSearchQuery}
+              placeholder="Search checks"
+              statusText={
+                normalizedCheckSearchQuery
+                  ? filteredScenarioChecks.length > 0
+                    ? `${activeCheckSearchIndex + 1} / ${filteredScenarioChecks.length}`
+                    : '0 matches'
+                  : `${selectedChecks.length} selected / ${scenarioChecks.length}`
+              }
+              onChange={setCheckSearchQuery}
+              onPrev={() => moveCheckSearch(-1)}
+              onNext={() => moveCheckSearch(1)}
+              prevDisabled={!normalizedCheckSearchQuery || filteredScenarioChecks.length === 0}
+              nextDisabled={!normalizedCheckSearchQuery || filteredScenarioChecks.length === 0}
+            />
+          </div>
+        </div>
+
         <div className="button-row">
           <button
             className="button-secondary button-compact"
@@ -117,15 +188,26 @@ export function ScenarioSourceWorkspace({
         <div className="scenario-check-list">
           {scenarioChecks.length === 0 ? (
             <div className="muted">No checks loaded yet.</div>
+          ) : filteredScenarioChecks.length === 0 ? (
+            <div className="muted">No checks match current search.</div>
           ) : (
-            scenarioChecks.map((check) => (
+            filteredScenarioChecks.map((check, index) => (
               <label key={check.name} className="scenario-check-item">
                 <input
                   type="checkbox"
                   checked={selectedChecks.includes(check.name)}
                   onChange={(event) => onToggleCheck(check.name, event.target.checked)}
+                  ref={(node) => {
+                    checkInputRefs.current[check.name] = node
+                  }}
                 />
-                <div>
+                <div
+                  className={
+                    normalizedCheckSearchQuery && index === activeCheckSearchIndex
+                      ? 'scenario-check-match-active'
+                      : undefined
+                  }
+                >
                   <div className="scenario-check-title">
                     {check.name} <span className="muted">({check.kind})</span>
                   </div>
