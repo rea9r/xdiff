@@ -1,6 +1,6 @@
-import { Menu, Tooltip } from '@mantine/core'
+import { forwardRef, type ComponentPropsWithoutRef } from 'react'
+import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { IconHistory } from '@tabler/icons-react'
-import { HeaderRailAction } from './HeaderRail'
 
 export type RecentTargetsMenuItem = {
   key: string
@@ -16,6 +16,22 @@ type RecentTargetsMenuProps = {
   onClear: () => void
 }
 
+type RecentMenuIconButtonProps = ComponentPropsWithoutRef<'button'> & {
+  label: string
+}
+
+const RecentMenuIconButton = forwardRef<HTMLButtonElement, RecentMenuIconButtonProps>(
+  ({ label, ...props }, ref) => (
+    <Tooltip label={label}>
+      <ActionIcon ref={ref} {...props} variant="default" size={28} radius="md" aria-label={props['aria-label'] ?? label}>
+        <IconHistory size={14} />
+      </ActionIcon>
+    </Tooltip>
+  ),
+)
+
+RecentMenuIconButton.displayName = 'RecentMenuIconButton'
+
 export function RecentTargetsMenu({
   buttonLabel,
   disabled = false,
@@ -24,13 +40,9 @@ export function RecentTargetsMenu({
   onClear,
 }: RecentTargetsMenuProps) {
   return (
-    <Menu position="bottom-end" withinPortal>
+    <Menu position="bottom-end" withinPortal closeOnClickOutside closeOnEscape>
       <Menu.Target>
-        <Tooltip label={buttonLabel}>
-          <HeaderRailAction aria-label={buttonLabel} disabled={disabled}>
-            <IconHistory size={14} />
-          </HeaderRailAction>
-        </Tooltip>
+        <RecentMenuIconButton label={buttonLabel} disabled={disabled} />
       </Menu.Target>
       <Menu.Dropdown>
         {items.map((item) => (
