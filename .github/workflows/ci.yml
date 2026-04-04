@@ -43,6 +43,8 @@ jobs:
   frontend-test:
     name: Frontend
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
     defaults:
       run:
         working-directory: apps/desktop/frontend
