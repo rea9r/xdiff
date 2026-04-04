@@ -88,6 +88,6 @@ In a clean environment, generate Wails bindings once before the frontend build.
 
 ```bash
 cd apps/desktop
-wails generate module
+wails generate module -tags wailsbindings
 npm --prefix frontend run build
 ```

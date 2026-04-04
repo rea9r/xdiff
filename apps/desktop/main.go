@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"embed"
 
 	"github.com/rea9r/xdiff/pkg/desktopapi"
 	"github.com/wailsapp/wails/v2"
@@ -10,9 +9,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
-
-//go:embed all:frontend/dist
-var assets embed.FS
 
 type App struct {
 	ctx context.Context
