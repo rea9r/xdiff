@@ -449,6 +449,12 @@ button {
   overflow: auto;
 }
 
+.scenario-source-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .scenario-check-item {
   display: grid;
   grid-template-columns: 20px 1fr;
