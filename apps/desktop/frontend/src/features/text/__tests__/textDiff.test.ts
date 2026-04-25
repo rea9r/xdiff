@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   buildRichDiffItems,
   buildTextDiffBlocks,
-  buildTextRulerMarks,
   buildTextSearchRowIDForItem,
   parseUnifiedDiff,
   summarizeTextDiffCounts,
@@ -100,83 +99,5 @@ describe('buildTextDiffBlocks', () => {
     const rows = parseUnifiedDiff(raw)!
     const items = buildRichDiffItems(rows, oldText, newText)
     expect(buildTextDiffBlocks(items)).toHaveLength(2)
-  })
-})
-
-describe('buildTextRulerMarks', () => {
-  it('returns an empty list when no rows changed', () => {
-    const oldText = 'a\nb\nc\n'
-    const raw = [
-      '--- a.txt',
-      '+++ b.txt',
-      '@@ -1,3 +1,3 @@',
-      ' a',
-      ' b',
-      ' c',
-    ].join('\n')
-
-    const rows = parseUnifiedDiff(raw)!
-    const items = buildRichDiffItems(rows, oldText, oldText)
-    expect(buildTextRulerMarks(items)).toEqual([])
-  })
-
-  it('classifies marks as add, remove, and change', () => {
-    const oldText = 'a\nb\nc\nd\ne\n'
-    const newText = 'a\nB\nc\nd\nE\nf\n'
-    const raw = [
-      '--- a.txt',
-      '+++ b.txt',
-      '@@ -1,5 +1,6 @@',
-      ' a',
-      '-b',
-      '+B',
-      ' c',
-      ' d',
-      '-e',
-      '+E',
-      '+f',
-    ].join('\n')
-
-    const rows = parseUnifiedDiff(raw)!
-    const items = buildRichDiffItems(rows, oldText, newText)
-    const marks = buildTextRulerMarks(items)
-    const kinds = marks.map((mark) => mark.kind)
-    expect(kinds).toEqual(['change', 'change'])
-    const ids = marks.map((mark) => mark.id)
-    expect(ids[0]).toMatch(/^search-row-/)
-    expect(new Set(ids).size).toBe(ids.length)
-  })
-
-  it('marks pure-add and pure-remove blocks separately', () => {
-    const oldText = 'a\nb\n'
-    const newText = 'a\nb\nC\n'
-    const raw = [
-      '--- a.txt',
-      '+++ b.txt',
-      '@@ -1,2 +1,3 @@',
-      ' a',
-      ' b',
-      '+C',
-    ].join('\n')
-
-    const rows = parseUnifiedDiff(raw)!
-    const items = buildRichDiffItems(rows, oldText, newText)
-    const marks = buildTextRulerMarks(items)
-    expect(marks.map((m) => m.kind)).toEqual(['add'])
-
-    const removalRaw = [
-      '--- a.txt',
-      '+++ b.txt',
-      '@@ -1,3 +1,2 @@',
-      ' a',
-      ' b',
-      '-C',
-    ].join('\n')
-    const removalRows = parseUnifiedDiff(removalRaw)!
-    const removalItems = buildRichDiffItems(removalRows, 'a\nb\nC\n', 'a\nb\n')
-    const removalMarks = buildTextRulerMarks(removalItems)
-    expect(removalMarks.map((m) => m.kind)).toEqual(['remove'])
-
-    expect(buildTextSearchRowIDForItem).toBeDefined()
   })
 })

@@ -55,9 +55,6 @@ const textResultProps = {
   textActiveDiffIndex: 0,
   activeTextDiffBlock: null,
   moveTextDiff: noop,
-  textRulerMarks: [],
-  getTextRowNode: () => null,
-  jumpToTextDiffBlock: noop,
 }
 
 const jsonSourceProps = {

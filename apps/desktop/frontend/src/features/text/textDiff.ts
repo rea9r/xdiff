@@ -38,13 +38,6 @@ export type TextDiffBlock = {
   id: string
 }
 
-export type TextRulerMarkKind = 'add' | 'remove' | 'change'
-
-export type TextRulerMark = {
-  id: string
-  kind: TextRulerMarkKind
-}
-
 export function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
   return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
 }
@@ -477,49 +470,6 @@ export function buildTextDiffBlocks(items: RichDiffItem[]): TextDiffBlock[] {
   })
 
   return blocks
-}
-
-export function buildTextRulerMarks(items: RichDiffItem[]): TextRulerMark[] {
-  const marks: TextRulerMark[] = []
-  let blockId: string | null = null
-  let hasAdd = false
-  let hasRemove = false
-
-  const flush = () => {
-    if (blockId === null) {
-      return
-    }
-    marks.push({
-      id: blockId,
-      kind: hasAdd && hasRemove ? 'change' : hasAdd ? 'add' : 'remove',
-    })
-    blockId = null
-    hasAdd = false
-    hasRemove = false
-  }
-
-  items.forEach((item, itemIndex) => {
-    const isAdd = item.kind === 'row' && item.row.kind === 'add'
-    const isRemove = item.kind === 'row' && item.row.kind === 'remove'
-
-    if (isAdd || isRemove) {
-      if (blockId === null) {
-        blockId = buildTextSearchRowIDForItem(itemIndex)
-      }
-      if (isAdd) {
-        hasAdd = true
-      }
-      if (isRemove) {
-        hasRemove = true
-      }
-      return
-    }
-
-    flush()
-  })
-
-  flush()
-  return marks
 }
 
 export function buildTextSearchRowIDForOmitted(sectionId: string, lineIndex: number): string {

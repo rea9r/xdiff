@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react'
+import type { ReactNode } from 'react'
 import { CompareStatusState } from './CompareStatusState'
 
 type CompareResultShellProps = {
@@ -8,8 +8,6 @@ type CompareResultShellProps = {
   emptyState?: ReactNode
   children: ReactNode
   className?: string
-  aside?: ReactNode
-  bodyRef?: RefObject<HTMLDivElement>
 }
 
 export function CompareResultShell({
@@ -19,28 +17,16 @@ export function CompareResultShell({
   emptyState,
   children,
   className,
-  aside,
-  bodyRef,
 }: CompareResultShellProps) {
   const shellClassName = ['compare-result-shell', className].filter(Boolean).join(' ')
-  const body = (
-    <div className="compare-result-body" ref={bodyRef}>
-      {hasResult ? children : emptyState ?? <CompareStatusState kind="empty" />}
-    </div>
-  )
 
   return (
     <div className={shellClassName}>
       {toolbar}
       {summary}
-      {aside ? (
-        <div className="compare-result-frame">
-          {body}
-          {aside}
-        </div>
-      ) : (
-        body
-      )}
+      <div className="compare-result-body">
+        {hasResult ? children : emptyState ?? <CompareStatusState kind="empty" />}
+      </div>
     </div>
   )
 }

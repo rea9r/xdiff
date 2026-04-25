@@ -4,7 +4,6 @@ import { IconCopy } from '@tabler/icons-react'
 import type { CompareResponse } from '../../types'
 import { renderResult } from '../../utils/appHelpers'
 import { CompareDiffNavControls } from '../../ui/CompareDiffNavControls'
-import { CompareOverviewRuler } from '../../ui/CompareOverviewRuler'
 import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
 import { CompareSearchControls } from '../../ui/CompareSearchControls'
 import {
@@ -19,7 +18,6 @@ import {
   summarizeTextDiffCounts,
   type RichDiffItem,
   type TextDiffBlock,
-  type TextRulerMark,
   type TextSearchMatch,
   type UnifiedDiffRow,
 } from './textDiff'
@@ -52,9 +50,6 @@ export type TextCompareResultPanelProps = {
   textActiveDiffIndex: number
   activeTextDiffBlock: TextDiffBlock | null
   moveTextDiff: (direction: 1 | -1) => void
-  textRulerMarks: TextRulerMark[]
-  getTextRowNode: (id: string) => HTMLDivElement | null
-  jumpToTextDiffBlock: (id: string) => void
 }
 
 function buildTextSummaryBadgeItems(params: {
@@ -113,9 +108,6 @@ export function TextCompareResultPanel({
   textActiveDiffIndex,
   activeTextDiffBlock,
   moveTextDiff,
-  textRulerMarks,
-  getTextRowNode,
-  jumpToTextDiffBlock,
 }: TextCompareResultPanelProps) {
   const raw = textResult ? renderResult(textResult) : ''
   const hasTextResult = !!textResult
@@ -139,8 +131,6 @@ export function TextCompareResultPanel({
   const textDiffBlockIds = new Set(textDiffBlocks.map((block) => block.id))
   const activeTextDiffBlockId = activeTextDiffBlock?.id ?? null
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-  const bodyRef = useRef<HTMLDivElement | null>(null)
-  const showOverviewRuler = showRich && textRulerMarks.length > 0
 
   useCompareKeyboardShortcuts({
     enabled: hasTextResult,
@@ -154,18 +144,6 @@ export function TextCompareResultPanel({
   return (
     <CompareResultShell
       hasResult={hasTextResult}
-      bodyRef={bodyRef}
-      aside={
-        showOverviewRuler ? (
-          <CompareOverviewRuler
-            containerRef={bodyRef}
-            resolveNode={getTextRowNode}
-            marks={textRulerMarks}
-            activeMarkId={activeTextDiffBlockId}
-            onJumpToMark={jumpToTextDiffBlock}
-          />
-        ) : null
-      }
       toolbar={
         <CompareResultToolbar
           primary={
