@@ -1,1 +1,10 @@
 app status: old
+
+# config
+host: localhost
+port: 8080
+debug: true
+
+# features
+- legacy_api
+- basic_search

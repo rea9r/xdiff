@@ -1,0 +1,28 @@
+{
+  "orders": [
+    {
+      "id": "o-1001",
+      "status": "delivered",
+      "total": 4200,
+      "items": 3
+    },
+    {
+      "id": "o-1002",
+      "status": "shipped",
+      "total": 1800,
+      "items": 2,
+      "express": true
+    },
+    {
+      "id": "o-1004",
+      "status": "pending",
+      "total": 9800,
+      "items": 4
+    }
+  ],
+  "summary": {
+    "count": 3,
+    "revenue": 15800,
+    "currency": "JPY"
+  }
+}

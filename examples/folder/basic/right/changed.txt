@@ -1,2 +1,27 @@
 Folder compare fixture: right side content.
-Line: new value
+
+This file exists to validate that opening child compare from a
+folder row produces a meaningful diff. The content below is
+deliberately verbose so the overview ruler has marks to render.
+Revision 2 reorganizes sections and adds release notes.
+
+Section A — overview
+- the project ships a small CLI and a desktop GUI
+- written in Go and TypeScript, packaged as a single binary
+- target platforms: macOS, Linux, Windows
+
+Section B — release notes
+- 1.0.0: initial release
+- 1.1.0: add JSON mode
+- 1.2.0: add folder compare
+- 1.3.0: bugfix release
+- 1.4.0: desktop GUI preview
+- 1.5.0: overview ruler, compact density
+
+Section C — known issues
+- symlinks are followed by default
+- very deep trees may be slow to render
+
+Section D — credits
+- maintained by the platform team
+- with contributions from the desktop team

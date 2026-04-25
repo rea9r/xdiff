@@ -1,0 +1,6 @@
+{
+  "cases": [
+    { "id": "r-1", "expect": "ok" },
+    { "id": "r-2", "expect": "ok" }
+  ]
+}

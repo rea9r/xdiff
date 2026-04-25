@@ -1,0 +1,3 @@
+smoke test: returns 200 OK
+expected latency: 80ms
+extra check: response payload non-empty

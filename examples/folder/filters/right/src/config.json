@@ -1,4 +1,10 @@
 {
   "feature": true,
-  "name": "right"
+  "name": "right",
+  "limits": {
+    "rpm": 1200,
+    "burst": 200,
+    "concurrency": 16
+  },
+  "tags": ["modern", "default", "preview"]
 }

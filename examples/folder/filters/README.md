@@ -1,6 +1,7 @@
 # Folder Fixture: filters
 
-This fixture is for validating filter workflow in Folder Compare.
+This fixture validates the filter workflow in Folder Compare with
+a wider mix of files across `src/`, `docs/`, and `tests/`.
 
 ## Left root
 
@@ -12,14 +13,36 @@ This fixture is for validating filter workflow in Folder Compare.
 
 ## Dataset intent
 
-- `src/app.txt`: `changed`
-- `src/config.json`: `changed`
-- `docs/overview.md`: `same`
-- `tests/sample.txt`: `same`
+### `same`
+
+- `README.md`
+- `docs/overview.md`, `docs/guide.md`
+- `src/helper.txt`
+- `tests/sample.txt`
+
+### `changed`
+
+- `src/app.txt`, `src/config.json`, `src/service.json`
+- `docs/changelog.md`
+- `tests/smoke.txt`, `tests/regression.json`
+
+### `left-only`
+
+- `src/old-handler.txt`
+- `docs/draft.md`
+- `tests/old-fixture.txt`
+
+### `right-only`
+
+- `src/new-handler.txt`
+- `docs/release.md`
+- `tests/new-fixture.txt`
 
 ## Suggested checks
 
 - With `show same` enabled, verify scanned and visible totals match.
 - With `show same` disabled, verify visible summary removes `same` entries.
 - Set `name filter` to `src` and verify visible entries are only `src/*`.
-- Use quick filters to switch between `Changed` and `Same` rows.
+- Set `name filter` to `*.json` (or `json`) and verify only JSON rows show.
+- Use quick filters to switch between `Changed`, `Same`, `Left-only`,
+  `Right-only` rows and verify counts.

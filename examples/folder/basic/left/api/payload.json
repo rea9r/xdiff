@@ -2,9 +2,25 @@
   "user": {
     "id": 10,
     "name": "Old User",
-    "role": "member"
+    "role": "member",
+    "email": "old@example.com",
+    "verified": false,
+    "preferences": {
+      "language": "en",
+      "theme": "light",
+      "notifications": {
+        "email": true,
+        "push": false
+      }
+    }
   },
   "flags": {
-    "beta": false
+    "beta": false,
+    "experimental": false,
+    "compact_ui": false
+  },
+  "limits": {
+    "rpm": 600,
+    "storage_mb": 1024
   }
 }

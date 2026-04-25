@@ -2,9 +2,28 @@
   "user": {
     "id": 10,
     "name": "New User",
-    "tier": "gold"
+    "tier": "gold",
+    "email": "new@example.com",
+    "verified": true,
+    "preferences": {
+      "language": "ja",
+      "theme": "dark",
+      "notifications": {
+        "email": true,
+        "push": true,
+        "digest": "daily"
+      }
+    }
   },
   "flags": {
-    "beta": true
+    "beta": true,
+    "experimental": true,
+    "compact_ui": true,
+    "overview_ruler": true
+  },
+  "limits": {
+    "rpm": 1200,
+    "storage_mb": 4096,
+    "team_members": 10
   }
 }

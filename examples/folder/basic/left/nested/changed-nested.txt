@@ -1,1 +1,15 @@
 Nested old text payload.
+
+This nested file is intentionally larger than the top-level
+`changed.txt` so child compare from a nested row can also be
+tested with a non-trivial diff.
+
+Topics:
+- nested status propagation
+- recursive scan ordering
+- name filter against deep paths
+
+Old payload values:
+- timeout: 5s
+- retries: 3
+- backoff: linear

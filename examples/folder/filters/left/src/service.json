@@ -1,0 +1,5 @@
+{
+  "service": "auth",
+  "version": "v1",
+  "endpoints": ["/login", "/logout"]
+}

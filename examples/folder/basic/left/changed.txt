@@ -1,2 +1,23 @@
 Folder compare fixture: left side content.
-Line: old value
+
+This file exists to validate that opening child compare from a
+folder row produces a meaningful diff. The content below is
+deliberately verbose so the overview ruler has marks to render.
+
+Section A — overview
+- the project ships a small CLI
+- written in Go, packaged as a single binary
+- target platforms: macOS, Linux
+
+Section B — release notes
+- 1.0.0: initial release
+- 1.1.0: add JSON mode
+- 1.2.0: add folder compare
+- 1.3.0: bugfix release
+
+Section C — known issues
+- large folders may take time to scan
+- symlinks are followed by default
+
+Section D — credits
+- maintained by the platform team

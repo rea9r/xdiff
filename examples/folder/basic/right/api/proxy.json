@@ -1,0 +1,6 @@
+{
+  "proxy": {
+    "host": "edge.example.internal",
+    "timeout_ms": 1500
+  }
+}

@@ -1,1 +1,12 @@
 app status: new
+
+# config
+host: 0.0.0.0
+port: 8443
+tls: true
+debug: false
+
+# features
+- modern_api
+- semantic_search
+- overview_ruler

@@ -1,4 +1,9 @@
 {
   "feature": false,
-  "name": "left"
+  "name": "left",
+  "limits": {
+    "rpm": 600,
+    "burst": 100
+  },
+  "tags": ["legacy", "default"]
 }

@@ -1,0 +1,26 @@
+{
+  "orders": [
+    {
+      "id": "o-1001",
+      "status": "shipped",
+      "total": 4200,
+      "items": 3
+    },
+    {
+      "id": "o-1002",
+      "status": "pending",
+      "total": 1500,
+      "items": 1
+    },
+    {
+      "id": "o-1003",
+      "status": "cancelled",
+      "total": 0,
+      "items": 0
+    }
+  ],
+  "summary": {
+    "count": 3,
+    "revenue": 5700
+  }
+}

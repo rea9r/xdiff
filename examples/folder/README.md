@@ -1,12 +1,18 @@
 # Folder Compare Fixtures (Desktop-only)
 
 These fixtures are intended for the desktop Folder Compare workflow.
-They are not CLI runnable examples because folder compare is desktop-only in the current phase.
+They are not CLI runnable examples because folder compare is
+desktop-only in the current phase.
 
 ## Sets
 
-- `basic`: status coverage and child compare launch (`text` / `json`)
-- `filters`: `show same`, `name filter`, quick filters, and scanned/visible summary checks
+- `basic`: status coverage (`same`, `changed`, `left-only`,
+  `right-only`, `type-mismatch`), nested folders, and child compare
+  launch (`text` / `json`). Several `changed` entries have
+  substantial content so the diff viewer renders many marks.
+- `filters`: `show same`, `name filter`, and quick filters.
+  Multiple `src/`, `docs/`, `tests/` entries per status to make the
+  scanned/visible summary numbers meaningful.
 
 ## How to use in desktop app
 
@@ -19,20 +25,12 @@ They are not CLI runnable examples because folder compare is desktop-only in the
 - Left: `examples/folder/basic/left`
 - Right: `examples/folder/basic/right`
 
-Expected highlights:
-
-- `same`, `changed`, `left-only`, `right-only`, `type-mismatch`
-- `api/payload.json` can open JSON compare
-- `.txt` changed rows can open text compare
+See [`basic/README.md`](basic/README.md) for the full status table.
 
 ### Filters fixture roots
 
 - Left: `examples/folder/filters/left`
 - Right: `examples/folder/filters/right`
 
-Try:
-
-- `show same = off`
-- `name filter = src`
-- quick filters (`Changed`, `Same`, etc.)
-- check scanned vs visible summary counts
+See [`filters/README.md`](filters/README.md) for filter check
+suggestions.

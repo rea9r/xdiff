@@ -1,0 +1,2 @@
+smoke test: returns 200 OK
+expected latency: 200ms

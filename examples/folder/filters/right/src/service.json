@@ -1,0 +1,6 @@
+{
+  "service": "auth",
+  "version": "v2",
+  "endpoints": ["/login", "/logout", "/refresh"],
+  "deprecated": []
+}
