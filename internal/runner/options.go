@@ -13,13 +13,12 @@ type Options struct {
 }
 
 type CompareOptions struct {
-	Format        string
-	FailOn        string
-	IgnorePaths   []string
-	OnlyBreaking  bool
-	IgnoreOrder   bool
-	TextStyle     string
-	ShowPaths     bool
-	UseColor      bool
-	PathFormatter func(string) string
+	Format       string
+	FailOn       string
+	IgnorePaths  []string
+	OnlyBreaking bool
+	IgnoreOrder  bool
+	TextStyle    string
+	ShowPaths    bool
+	UseColor     bool
 }

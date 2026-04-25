@@ -1,4 +1,4 @@
-export type Mode = 'json' | 'spec' | 'text' | 'scenario' | 'folder'
+export type Mode = 'json' | 'text' | 'scenario' | 'folder'
 
 export type CompareCommon = {
   failOn: string
@@ -48,38 +48,6 @@ export type CompareJSONValuesRequest = {
   ignoreOrder: boolean
 }
 
-export type CompareSpecValuesRequest = {
-  oldValue: string
-  newValue: string
-  common: CompareCommon
-}
-
-export type SpecRichDiffItem = {
-  type: 'added' | 'removed' | 'changed' | 'type_changed'
-  path: string
-  label: string
-  groupKey: string
-  groupKind: 'operation' | 'component' | 'path' | 'other'
-  breaking: boolean
-  oldValue?: unknown
-  newValue?: unknown
-}
-
-export type SpecRichSummary = {
-  added: number
-  removed: number
-  changed: number
-  typeChanged: number
-  breaking: number
-}
-
-export type CompareSpecRichResponse = {
-  result: CompareResponse
-  diffText: string
-  summary: SpecRichSummary
-  diffs: SpecRichDiffItem[]
-}
-
 export type LoadTextFileRequest = {
   path: string
 }
@@ -121,7 +89,7 @@ export type FolderCompareItem = {
   rightKind: 'file' | 'dir' | 'missing' | 'unknown'
   leftSize: number
   rightSize: number
-  compareModeHint: 'text' | 'json' | 'spec' | 'none'
+  compareModeHint: 'text' | 'json' | 'none'
   message?: string
 }
 
@@ -182,12 +150,6 @@ export type DesktopJSONSession = {
   common: CompareCommon
 }
 
-export type DesktopSpecSession = {
-  oldSourcePath: string
-  newSourcePath: string
-  common: CompareCommon
-}
-
 export type DesktopTextSession = {
   oldSourcePath: string
   newSourcePath: string
@@ -231,12 +193,10 @@ export type DesktopState = {
   version: number
   lastUsedMode: Mode
   json: DesktopJSONSession
-  spec: DesktopSpecSession
   text: DesktopTextSession
   folder: DesktopFolderSession
   scenario: DesktopScenarioSession
   jsonRecentPairs: DesktopRecentPair[]
-  specRecentPairs: DesktopRecentPair[]
   textRecentPairs: DesktopRecentPair[]
   folderRecentPairs: DesktopRecentFolderPair[]
   scenarioRecentPaths: DesktopRecentScenarioPath[]

@@ -3,9 +3,7 @@ package scenario
 import (
 	"fmt"
 
-	"github.com/rea9r/xdiff/internal/openapi"
 	"github.com/rea9r/xdiff/internal/runner"
-	"github.com/rea9r/xdiff/internal/source"
 )
 
 func Run(cfg Config, scenarioPath string) (Summary, []Result, error) {
@@ -62,25 +60,6 @@ func runCheck(check ResolvedCheck) Result {
 			NewPath:        check.New,
 		}))
 
-	case KindSpec:
-		oldSpec, err := source.LoadOpenAPISpecFile(check.Old)
-		if err != nil {
-			return resultFromRun(check, runner.RunResult{
-				ExitCode: 2,
-				Err:      err,
-			})
-		}
-		newSpec, err := source.LoadOpenAPISpecFile(check.New)
-		if err != nil {
-			return resultFromRun(check, runner.RunResult{
-				ExitCode: 2,
-				Err:      err,
-			})
-		}
-		diffs := openapi.ComparePathsMethods(oldSpec, newSpec)
-		opts := check.Compare
-		opts.PathFormatter = openapi.HumanizePath
-		return resultFromRun(check, runner.RunDeltaDiffsDetailed(diffs, opts))
 	default:
 		return resultFromRun(check, runner.RunResult{
 			ExitCode: 2,

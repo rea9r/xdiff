@@ -39,7 +39,6 @@ describe('useDirectoryCompareChildDiffActions', () => {
         setFolderStatus: vi.fn(),
         setMode: vi.fn(),
         onOpenJSONDiff,
-        onOpenSpecDiff: vi.fn(async () => undefined),
         onOpenTextDiff: vi.fn(async () => undefined),
       }),
     )
@@ -83,7 +82,6 @@ describe('useDirectoryCompareChildDiffActions', () => {
         setFolderStatus: vi.fn(),
         setMode,
         onOpenJSONDiff: vi.fn(async () => undefined),
-        onOpenSpecDiff: vi.fn(async () => undefined),
         onOpenTextDiff: vi.fn(async () => undefined),
       }),
     )
@@ -124,7 +122,6 @@ describe('useDirectoryCompareChildDiffActions', () => {
         onOpenJSONDiff: vi.fn(async () => {
           throw new Error('boom')
         }),
-        onOpenSpecDiff: vi.fn(async () => undefined),
         onOpenTextDiff: vi.fn(async () => undefined),
         onOpenChildDiffError,
       }),

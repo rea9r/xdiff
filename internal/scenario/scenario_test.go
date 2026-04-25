@@ -141,40 +141,12 @@ func TestRun_AllKinds(t *testing.T) {
 	textOld := writeFile(t, tmp, "text_old.txt", "hello\n")
 	textNew := writeFile(t, tmp, "text_new.txt", "hello\n")
 
-	specOld := writeFile(t, tmp, "spec_old.yaml", `openapi: 3.0.0
-info:
-  title: API
-  version: "1.0"
-paths:
-  /users:
-    get:
-      responses:
-        "200":
-          description: ok
-`)
-	specNew := writeFile(t, tmp, "spec_new.yaml", `openapi: 3.0.0
-info:
-  title: API
-  version: "1.0"
-paths:
-  /users:
-    get:
-      responses:
-        "200":
-          description: ok
-    post:
-      responses:
-        "201":
-          description: created
-`)
-
 	scenarioPath := filepath.Join(tmp, "xdiff.yaml")
 	cfg := Config{
 		Version: 1,
 		Checks: []Check{
 			{Name: "json-check", Kind: KindJSON, Old: filepath.Base(jsonOld), New: filepath.Base(jsonNew)},
 			{Name: "text-check", Kind: KindText, Old: filepath.Base(textOld), New: filepath.Base(textNew)},
-			{Name: "spec-check", Kind: KindSpec, Old: filepath.Base(specOld), New: filepath.Base(specNew)},
 		},
 	}
 
@@ -182,10 +154,10 @@ paths:
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
-	if len(results) != 3 {
+	if len(results) != 2 {
 		t.Fatalf("unexpected results length: %d", len(results))
 	}
-	if summary.Total != 3 {
+	if summary.Total != 2 {
 		t.Fatalf("unexpected total: %d", summary.Total)
 	}
 	if summary.ExitCode != 1 {
@@ -201,9 +173,6 @@ paths:
 	}
 	if byName["json-check"].Status != StatusDiff {
 		t.Fatalf("expected json-check diff, got %s", byName["json-check"].Status)
-	}
-	if byName["spec-check"].Status != StatusDiff {
-		t.Fatalf("expected spec-check diff, got %s", byName["spec-check"].Status)
 	}
 }
 
@@ -338,7 +307,7 @@ func TestRenderJSON_Structure(t *testing.T) {
 	summary := Summary{Total: 2, OK: 1, Diff: 1, Error: 0, ExitCode: 1}
 	results := []Result{
 		{Name: "a", Kind: KindJSON, Status: StatusOK, ExitCode: 0, DiffFound: false},
-		{Name: "b", Kind: KindSpec, Status: StatusDiff, ExitCode: 1, DiffFound: true, Output: "diff"},
+		{Name: "b", Kind: KindText, Status: StatusDiff, ExitCode: 1, DiffFound: true, Output: "diff"},
 	}
 
 	raw, err := RenderJSON(summary, results)
@@ -368,7 +337,7 @@ func TestRenderJSON_Structure(t *testing.T) {
 }
 
 func TestFilterResolvedChecks_PreservesScenarioOrder(t *testing.T) {
-	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindText}, {Name: "c", Kind: KindSpec}}
+	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindText}, {Name: "c", Kind: KindJSON}}
 
 	filtered, err := FilterResolvedChecks(checks, []string{"c", "a"})
 	if err != nil {
@@ -413,7 +382,7 @@ func TestRenderCheckListJSON_StableStructure(t *testing.T) {
 	scenarioPath := "/tmp/project/scenarios/xdiff.yaml"
 	checks := []ResolvedCheck{
 		{Name: "a", Kind: KindJSON, Old: "/tmp/project/scenarios/data/a-old.json", New: "/tmp/project/scenarios/data/a-new.json"},
-		{Name: "b", Kind: KindSpec, Old: "/tmp/project/scenarios/specs/b-old.yaml", New: "/tmp/project/scenarios/specs/b-new.yaml"},
+		{Name: "b", Kind: KindText, Old: "/tmp/project/scenarios/data/b-old.txt", New: "/tmp/project/scenarios/data/b-new.txt"},
 	}
 
 	raw, err := RenderCheckListJSON(checks, scenarioPath)

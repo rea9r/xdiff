@@ -99,9 +99,6 @@ func defaultDesktopState() DesktopState {
 		JSON: DesktopJSONSession{
 			Common: defaultJSONCompareCommon(),
 		},
-		Spec: DesktopSpecSession{
-			Common: defaultSpecCompareCommon(),
-		},
 		Text: DesktopTextSession{
 			Common:     defaultTextCompareCommon(),
 			DiffLayout: "split",
@@ -120,7 +117,7 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 
 	state.Version = desktopStateVersion
 	switch state.LastUsedMode {
-	case "json", "spec", "text", "folder", "scenario":
+	case "json", "text", "folder", "scenario":
 	default:
 		state.LastUsedMode = defaults.LastUsedMode
 	}
@@ -128,10 +125,6 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 	state.JSON.OldSourcePath = strings.TrimSpace(state.JSON.OldSourcePath)
 	state.JSON.NewSourcePath = strings.TrimSpace(state.JSON.NewSourcePath)
 	state.JSON.Common = normalizeCompareCommon(state.JSON.Common, defaultJSONCompareCommon())
-
-	state.Spec.OldSourcePath = strings.TrimSpace(state.Spec.OldSourcePath)
-	state.Spec.NewSourcePath = strings.TrimSpace(state.Spec.NewSourcePath)
-	state.Spec.Common = normalizeCompareCommon(state.Spec.Common, defaultSpecCompareCommon())
 
 	state.Text.OldSourcePath = strings.TrimSpace(state.Text.OldSourcePath)
 	state.Text.NewSourcePath = strings.TrimSpace(state.Text.NewSourcePath)
@@ -153,7 +146,6 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 	}
 
 	state.JSONRecentPairs = normalizeRecentPairs(state.JSONRecentPairs)
-	state.SpecRecentPairs = normalizeRecentPairs(state.SpecRecentPairs)
 	state.TextRecentPairs = normalizeRecentPairs(state.TextRecentPairs)
 	state.FolderRecentPairs = normalizeRecentFolderPairs(state.FolderRecentPairs)
 	state.ScenarioRecentPaths = normalizeRecentScenarioPaths(state.ScenarioRecentPaths)
@@ -269,18 +261,6 @@ func defaultJSONCompareCommon() CompareCommon {
 		FailOn:       "any",
 		OutputFormat: "text",
 		TextStyle:    "auto",
-		IgnorePaths:  []string{},
-		ShowPaths:    false,
-		OnlyBreaking: false,
-		NoColor:      true,
-	}
-}
-
-func defaultSpecCompareCommon() CompareCommon {
-	return CompareCommon{
-		FailOn:       "any",
-		OutputFormat: "text",
-		TextStyle:    "semantic",
 		IgnorePaths:  []string{},
 		ShowPaths:    false,
 		OnlyBreaking: false,

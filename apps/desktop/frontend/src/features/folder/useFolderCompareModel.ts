@@ -15,12 +15,9 @@ export type FolderCompareModelDeps = {
   compareFolders: Parameters<typeof useDirectoryCompareViewState>[0]['compareFolders']
   pickFolderRoot: Parameters<typeof useDirectoryCompareWorkflow>[0]['pickFolderRoot']
   runJSONCompareFromPaths: Parameters<typeof useFolderChildDiffOpeners>[0]['runJSONCompareFromPaths']
-  runSpecCompareFromPaths: Parameters<typeof useFolderChildDiffOpeners>[0]['runSpecCompareFromPaths']
   runTextCompareWithValues: Parameters<typeof useFolderChildDiffOpeners>[0]['runTextCompareWithValues']
   resetJSONSearch: () => void
   setJSONResultView: Parameters<typeof useFolderChildDiffOpeners>[0]['setJSONResultView']
-  resetSpecSearch: () => void
-  setSpecResultView: Parameters<typeof useFolderChildDiffOpeners>[0]['setSpecResultView']
   clearTextExpandedSections: () => void
   resetTextSearch: () => void
 }
@@ -97,12 +94,9 @@ export function useFolderCompareModel(deps: FolderCompareModelDeps) {
   const childDiffOpeners = useFolderChildDiffOpeners({
     loadTextFile: deps.loadTextFile,
     runJSONCompareFromPaths: deps.runJSONCompareFromPaths,
-    runSpecCompareFromPaths: deps.runSpecCompareFromPaths,
     runTextCompareWithValues: deps.runTextCompareWithValues,
     resetJSONSearch: deps.resetJSONSearch,
     setJSONResultView: deps.setJSONResultView,
-    resetSpecSearch: deps.resetSpecSearch,
-    setSpecResultView: deps.setSpecResultView,
     clearTextExpandedSections: deps.clearTextExpandedSections,
     resetTextSearch: deps.resetTextSearch,
     setMode: deps.setMode,
@@ -121,7 +115,6 @@ export function useFolderCompareModel(deps: FolderCompareModelDeps) {
     setFolderStatus,
     setMode: deps.setMode,
     onOpenJSONDiff: childDiffOpeners.openFolderJSONDiff,
-    onOpenSpecDiff: childDiffOpeners.openFolderSpecDiff,
     onOpenTextDiff: childDiffOpeners.openFolderTextDiff,
     onOpenChildDiffError: (message) => {
       showErrorNotification('Failed to open child diff', message)

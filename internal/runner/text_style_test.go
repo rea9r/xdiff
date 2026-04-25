@@ -23,23 +23,6 @@ func TestResolveJSONTextStyle_PatchWithSemanticFilters_ReturnsUserHintError(t *t
 	}
 }
 
-func TestResolveDeltaTextStyle_PatchUnsupported_ReturnsUserHintError(t *testing.T) {
-	_, err := resolveDeltaTextStyle(CompareOptions{
-		TextStyle: TextStylePatch,
-	})
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	var hintErr *UserHintError
-	if !errors.As(err, &hintErr) {
-		t.Fatalf("expected UserHintError, got %T", err)
-	}
-	if len(hintErr.Hints) == 0 {
-		t.Fatal("expected non-empty hints")
-	}
-}
-
 func TestValidateCompareOptions_InvalidEnums_ReturnUserHintError(t *testing.T) {
 	tests := []CompareOptions{
 		{Format: "yaml", FailOn: FailOnAny, TextStyle: TextStyleAuto},

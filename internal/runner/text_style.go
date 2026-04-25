@@ -64,22 +64,3 @@ func resolveTextDiffStyle(opts CompareOptions) (string, error) {
 		)
 	}
 }
-
-func resolveDeltaTextStyle(opts CompareOptions) (string, error) {
-	switch opts.TextStyle {
-	case "", TextStyleAuto, TextStyleSemantic:
-		return TextStyleSemantic, nil
-	case TextStylePatch:
-		return "", newUserHintError(
-			fmt.Sprintf("text style %q is not supported for delta-only comparisons", TextStylePatch),
-			"use --text-style semantic",
-			"or use --output-format json",
-		)
-	default:
-		return "", newUserHintError(
-			fmt.Sprintf("invalid text style %q", opts.TextStyle),
-			"allowed values: auto, patch, semantic",
-			"try --text-style semantic",
-		)
-	}
-}

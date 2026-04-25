@@ -34,7 +34,7 @@ func Resolve(cfg Config, scenarioPath string) ([]ResolvedCheck, error) {
 
 func resolveCheck(defaults Defaults, check Check, baseDir string) (ResolvedCheck, error) {
 	if !isSupportedKind(check.Kind) {
-		return ResolvedCheck{}, fmt.Errorf("unsupported kind %q (allowed: json, text, spec)", check.Kind)
+		return ResolvedCheck{}, fmt.Errorf("unsupported kind %q (allowed: json, text)", check.Kind)
 	}
 	if check.Old == "" || check.New == "" {
 		return ResolvedCheck{}, fmt.Errorf("old and new are required")
@@ -62,7 +62,7 @@ func resolveCheck(defaults Defaults, check Check, baseDir string) (ResolvedCheck
 
 func isSupportedKind(kind string) bool {
 	switch kind {
-	case KindJSON, KindText, KindSpec:
+	case KindJSON, KindText:
 		return true
 	default:
 		return false

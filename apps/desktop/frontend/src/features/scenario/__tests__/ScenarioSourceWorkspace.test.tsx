@@ -19,7 +19,6 @@ const baseProps: ScenarioSourceWorkspaceProps = {
   scenarioListStatus: '',
   scenarioChecks: [
     { name: 'check-json-ok', kind: 'json', old: 'a', new: 'b', summary: 'json summary' },
-    { name: 'check-spec-diff', kind: 'spec', old: 'a', new: 'b', summary: 'spec summary' },
     { name: 'check-text-error', kind: 'text', old: 'a', new: 'b', summary: 'error summary' },
   ],
   selectedChecks: ['check-json-ok'],
@@ -40,19 +39,18 @@ describe('ScenarioSourceWorkspace', () => {
   it('shows selected count when search is empty', () => {
     renderWorkspace()
 
-    expect(screen.getByText('1 selected / 3')).toBeInTheDocument()
+    expect(screen.getByText('1 selected / 2')).toBeInTheDocument()
   })
 
   it('filters checks by search query', () => {
     renderWorkspace()
 
     fireEvent.change(screen.getByPlaceholderText('Search checks'), {
-      target: { value: 'spec' },
+      target: { value: 'text' },
     })
 
     expect(screen.queryByText('check-json-ok')).toBeNull()
-    expect(screen.getByText('check-spec-diff')).toBeInTheDocument()
-    expect(screen.queryByText('check-text-error')).toBeNull()
+    expect(screen.getByText('check-text-error')).toBeInTheDocument()
     expect(screen.getByText('1 / 1')).toBeInTheDocument()
   })
 

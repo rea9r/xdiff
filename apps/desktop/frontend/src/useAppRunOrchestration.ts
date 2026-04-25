@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import type {
   CompareJSONRichResponse,
   CompareResponse,
-  CompareSpecRichResponse,
   Mode,
 } from './types'
 import { renderResult, summarizeResponse } from './utils/appHelpers'
@@ -15,9 +14,6 @@ type UseAppRunOrchestrationOptions = {
   runJSON: () => Promise<CompareJSONRichResponse>
   applyJSONResultView: (richResult: CompareJSONRichResponse) => void
   setJSONRichResult: (value: CompareJSONRichResponse | null) => void
-  runSpec: () => Promise<CompareSpecRichResponse>
-  applySpecResultView: (richResult: CompareSpecRichResponse) => void
-  setSpecRichResult: (value: CompareSpecRichResponse | null) => void
   runText: () => Promise<void>
   setTextResult: (value: CompareResponse | null) => void
   setTextLastRunOld: (value: string) => void
@@ -54,21 +50,6 @@ function buildJSONErrorResult(errorText: string): CompareJSONRichResponse {
   }
 }
 
-function buildSpecErrorResult(errorText: string): CompareSpecRichResponse {
-  return {
-    result: buildCompareErrorResult(errorText),
-    diffText: '',
-    summary: {
-      added: 0,
-      removed: 0,
-      changed: 0,
-      typeChanged: 0,
-      breaking: 0,
-    },
-    diffs: [],
-  }
-}
-
 export function useAppRunOrchestration({
   mode,
   setLoading,
@@ -77,9 +58,6 @@ export function useAppRunOrchestration({
   runJSON,
   applyJSONResultView,
   setJSONRichResult,
-  runSpec,
-  applySpecResultView,
-  setSpecRichResult,
   runText,
   setTextResult,
   setTextLastRunOld,
@@ -104,18 +82,9 @@ export function useAppRunOrchestration({
     applyJSONResultView(richResult)
   }, [applyJSONResultView, runJSON])
 
-  const runSpecWithViewReset = useCallback(async () => {
-    const richResult = await runSpec()
-    applySpecResultView(richResult)
-  }, [applySpecResultView, runSpec])
-
   const runByMode = useCallback(async () => {
     if (mode === 'json') {
       await runJSONWithViewReset()
-      return
-    }
-    if (mode === 'spec') {
-      await runSpecWithViewReset()
       return
     }
     if (mode === 'text') {
@@ -127,7 +96,7 @@ export function useAppRunOrchestration({
       return
     }
     await runScenario()
-  }, [mode, runFolderCompare, runJSONWithViewReset, runScenario, runSpecWithViewReset, runText])
+  }, [mode, runFolderCompare, runJSONWithViewReset, runScenario, runText])
 
   const onRun = useCallback(async () => {
     setLoading(true)
@@ -145,10 +114,6 @@ export function useAppRunOrchestration({
       clearTextExpandedSections()
     }
 
-    if (mode === 'spec') {
-      setSpecRichResult(null)
-    }
-
     try {
       await runByMode()
     } catch (error) {
@@ -161,8 +126,6 @@ export function useAppRunOrchestration({
           setTextResult(buildCompareErrorResult(errorText))
         } else if (mode === 'json') {
           setJSONRichResult(buildJSONErrorResult(errorText))
-        } else if (mode === 'spec') {
-          setSpecRichResult(buildSpecErrorResult(errorText))
         }
 
         setSummaryLine('error=yes')
@@ -179,7 +142,6 @@ export function useAppRunOrchestration({
     setLoading,
     setOutput,
     setScenarioRunError,
-    setSpecRichResult,
     setSummaryLine,
     setTextLastRunOld,
     setTextLastRunNew,

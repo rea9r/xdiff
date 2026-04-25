@@ -8,7 +8,6 @@ import { useRecentActionRunner } from './useRecentActionRunner'
 import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { useDesktopShellModel } from './useDesktopShellModel'
 import { useJSONCompareModel } from './features/json/useJSONCompareModel'
-import { useSpecCompareModel } from './features/spec/useSpecCompareModel'
 import { useTextCompareModel } from './features/text/useTextCompareModel'
 import { useFolderCompareModel } from './features/folder/useFolderCompareModel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
@@ -38,14 +37,6 @@ export function useDesktopAppModel() {
     textDiffLayout: textModel.viewState.textDiffLayout,
   })
 
-  const specModel = useSpecCompareModel({
-    getCompareSpecValuesRich: () => api.compareSpecValuesRich,
-    getPickSpecFile: () => api.pickSpecFile,
-    getLoadTextFile: () => api.loadTextFile,
-    onSpecCompareCompleted: (res) => setResult(res),
-    textDiffLayout: textModel.viewState.textDiffLayout,
-  })
-
   const scenarioWorkflow = useScenarioWorkflow({
     listScenarioChecks: api.listScenarioChecks,
     runScenario: api.runScenario,
@@ -63,12 +54,9 @@ export function useDesktopAppModel() {
     compareFolders: api.compareFolders,
     pickFolderRoot: api.pickFolderRoot,
     runJSONCompareFromPaths: jsonModel.workflow.runJSONCompareFromPaths,
-    runSpecCompareFromPaths: specModel.workflow.runSpecCompareFromPaths,
     runTextCompareWithValues: textModel.workflow.runTextCompareWithValues,
     resetJSONSearch: jsonModel.viewState.resetJSONSearch,
     setJSONResultView: jsonModel.viewState.setJSONResultView,
-    resetSpecSearch: specModel.viewState.resetSpecSearch,
-    setSpecResultView: specModel.viewState.setSpecResultView,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
     resetTextSearch: textModel.viewState.resetTextSearch,
   })
@@ -83,9 +71,6 @@ export function useDesktopAppModel() {
     runJSON: jsonModel.workflow.runJSON,
     applyJSONResultView: folderModel.childDiffOpeners.applyJSONResultView,
     setJSONRichResult: jsonModel.workflow.setJSONRichResult,
-    runSpec: specModel.workflow.runSpec,
-    applySpecResultView: folderModel.childDiffOpeners.applySpecResultView,
-    setSpecRichResult: specModel.workflow.setSpecRichResult,
     runText: textModel.workflow.runText,
     setTextResult: textModel.workflow.setTextResult,
     setTextLastRunOld: textModel.workflow.setTextLastRunOld,
@@ -120,19 +105,6 @@ export function useDesktopAppModel() {
       setRecentPairs: jsonModel.workflow.setJSONRecentPairs,
       setOldText: jsonModel.workflow.setJSONOldText,
       setNewText: jsonModel.workflow.setJSONNewText,
-    },
-    spec: {
-      oldSourcePath: specModel.workflow.specOldSourcePath,
-      newSourcePath: specModel.workflow.specNewSourcePath,
-      common: specModel.workflow.specCommon,
-      recentPairs: specModel.workflow.specRecentPairs,
-      setCommon: specModel.workflow.setSpecCommon,
-      setIgnorePathsDraft: specModel.workflow.setSpecIgnorePathsDraft,
-      setOldSourcePath: specModel.workflow.setSpecOldSourcePath,
-      setNewSourcePath: specModel.workflow.setSpecNewSourcePath,
-      setRecentPairs: specModel.workflow.setSpecRecentPairs,
-      setOldText: specModel.workflow.setSpecOldText,
-      setNewText: specModel.workflow.setSpecNewText,
     },
     text: {
       oldSourcePath: textModel.workflow.textOldSourcePath,
@@ -181,13 +153,10 @@ export function useDesktopAppModel() {
     compareOptionsOpened,
     onToggleCompareOptions: () => setCompareOptionsOpened((prev) => !prev),
     jsonCompareDisabled: jsonModel.compareDisabled,
-    specCompareDisabled: specModel.compareDisabled,
     folderCompareDisabled: folderModel.compareDisabled,
     onRun,
     jsonRecentPairs: jsonModel.workflow.jsonRecentPairs,
     onClearJSONRecent: () => jsonModel.workflow.setJSONRecentPairs([]),
-    specRecentPairs: specModel.workflow.specRecentPairs,
-    onClearSpecRecent: () => specModel.workflow.setSpecRecentPairs([]),
     textRecentPairs: textModel.workflow.textRecentPairs,
     onClearTextRecent: () => textModel.workflow.setTextRecentPairs([]),
     folderRecentPairs: folderModel.state.folderRecentPairs,
@@ -198,8 +167,6 @@ export function useDesktopAppModel() {
     resetTextSearch: textModel.viewState.resetTextSearch,
     runJSONFromRecent: jsonModel.workflow.runJSONFromRecent,
     applyJSONResultView: folderModel.childDiffOpeners.applyJSONResultView,
-    runSpecFromRecent: specModel.workflow.runSpecFromRecent,
-    applySpecResultView: folderModel.childDiffOpeners.applySpecResultView,
     runFolderFromRecent: folderModel.interactions.runFolderFromRecent,
     setMode,
   })
@@ -216,8 +183,6 @@ export function useDesktopAppModel() {
     onRun,
     jsonWorkflow: jsonModel.workflow,
     jsonViewState: jsonModel.viewState,
-    specWorkflow: specModel.workflow,
-    specViewState: specModel.viewState,
     textWorkflow: textModel.workflow,
     textViewState: textModel.viewState,
     scenarioWorkflow,

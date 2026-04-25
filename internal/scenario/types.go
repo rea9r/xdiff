@@ -7,7 +7,6 @@ import (
 const (
 	KindJSON = "json"
 	KindText = "text"
-	KindSpec = "spec"
 
 	StatusOK    = "ok"
 	StatusDiff  = "diff"

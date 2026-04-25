@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import type {
   CompareJSONRichResponse,
-  CompareSpecRichResponse,
   DesktopRecentFolderPair,
   DesktopRecentPair,
   Mode,
@@ -11,7 +10,6 @@ import { DesktopModeHeaderActions } from './ui/DesktopModeHeaderActions'
 type RecentActionRunner = (label: string, action: () => Promise<void>) => Promise<void>
 
 type StructuredResultView = Pick<CompareJSONRichResponse, 'result' | 'diffText'>
-type StructuredSpecResultView = Pick<CompareSpecRichResponse, 'result' | 'diffText'>
 
 type UseDesktopHeaderActionsOptions = {
   mode: Mode
@@ -19,13 +17,10 @@ type UseDesktopHeaderActionsOptions = {
   compareOptionsOpened: boolean
   onToggleCompareOptions: () => void
   jsonCompareDisabled: boolean
-  specCompareDisabled: boolean
   folderCompareDisabled: boolean
   onRun: () => void
   jsonRecentPairs: DesktopRecentPair[]
   onClearJSONRecent: () => void
-  specRecentPairs: DesktopRecentPair[]
-  onClearSpecRecent: () => void
   textRecentPairs: DesktopRecentPair[]
   onClearTextRecent: () => void
   folderRecentPairs: DesktopRecentFolderPair[]
@@ -36,8 +31,6 @@ type UseDesktopHeaderActionsOptions = {
   resetTextSearch: () => void
   runJSONFromRecent: (pair: DesktopRecentPair) => Promise<CompareJSONRichResponse>
   applyJSONResultView: (result: StructuredResultView) => void
-  runSpecFromRecent: (pair: DesktopRecentPair) => Promise<CompareSpecRichResponse>
-  applySpecResultView: (result: StructuredSpecResultView) => void
   runFolderFromRecent: (entry: DesktopRecentFolderPair) => Promise<void>
   setMode: (value: Mode) => void
 }
@@ -48,13 +41,10 @@ export function useDesktopHeaderActions({
   compareOptionsOpened,
   onToggleCompareOptions,
   jsonCompareDisabled,
-  specCompareDisabled,
   folderCompareDisabled,
   onRun,
   jsonRecentPairs,
   onClearJSONRecent,
-  specRecentPairs,
-  onClearSpecRecent,
   textRecentPairs,
   onClearTextRecent,
   folderRecentPairs,
@@ -65,8 +55,6 @@ export function useDesktopHeaderActions({
   resetTextSearch,
   runJSONFromRecent,
   applyJSONResultView,
-  runSpecFromRecent,
-  applySpecResultView,
   runFolderFromRecent,
   setMode,
 }: UseDesktopHeaderActionsOptions) {
@@ -88,15 +76,6 @@ export function useDesktopHeaderActions({
     [applyJSONResultView, runJSONFromRecent, setMode],
   )
 
-  const runSpecFromRecentWithViewReset = useCallback(
-    async (pair: DesktopRecentPair) => {
-      const richResult = await runSpecFromRecent(pair)
-      applySpecResultView(richResult)
-      setMode('spec')
-    },
-    [applySpecResultView, runSpecFromRecent, setMode],
-  )
-
   const compareRecentItems = useMemo(
     () =>
       mode === 'json'
@@ -106,29 +85,20 @@ export function useDesktopHeaderActions({
             onClick: () =>
               void runRecentAction('Recent JSON compare', () => runJSONFromRecentWithViewReset(pair)),
           }))
-        : mode === 'spec'
-          ? specRecentPairs.map((pair) => ({
+        : mode === 'text'
+          ? textRecentPairs.map((pair) => ({
               key: `${pair.oldPath}::${pair.newPath}`,
               label: `${pair.oldPath} -> ${pair.newPath}`,
               onClick: () =>
-                void runRecentAction('Recent Spec compare', () => runSpecFromRecentWithViewReset(pair)),
+                void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair)),
             }))
-          : mode === 'text'
-            ? textRecentPairs.map((pair) => ({
-                key: `${pair.oldPath}::${pair.newPath}`,
-                label: `${pair.oldPath} -> ${pair.newPath}`,
-                onClick: () =>
-                  void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair)),
-              }))
-            : [],
+          : [],
     [
       jsonRecentPairs,
       mode,
       runJSONFromRecentWithViewReset,
       runRecentAction,
-      runSpecFromRecentWithViewReset,
       runTextFromRecentWithViewReset,
-      specRecentPairs,
       textRecentPairs,
     ],
   )
@@ -145,17 +115,17 @@ export function useDesktopHeaderActions({
   )
 
   const headerActions = useMemo(() => {
-    if (mode === 'json' || mode === 'spec' || mode === 'text') {
+    if (mode === 'json' || mode === 'text') {
       return (
         <DesktopModeHeaderActions
           kind="compare"
           loading={loading}
-          compareDisabled={mode === 'json' ? jsonCompareDisabled : mode === 'spec' ? specCompareDisabled : false}
+          compareDisabled={mode === 'json' ? jsonCompareDisabled : false}
           onCompare={() => void onRun()}
           optionsOpen={compareOptionsOpened}
           onToggleOptions={onToggleCompareOptions}
           recentItems={compareRecentItems}
-          onClearRecent={mode === 'json' ? onClearJSONRecent : mode === 'spec' ? onClearSpecRecent : onClearTextRecent}
+          onClearRecent={mode === 'json' ? onClearJSONRecent : onClearTextRecent}
         />
       )
     }
@@ -184,11 +154,9 @@ export function useDesktopHeaderActions({
     mode,
     onClearFolderRecent,
     onClearJSONRecent,
-    onClearSpecRecent,
     onClearTextRecent,
     onRun,
     onToggleCompareOptions,
-    specCompareDisabled,
   ])
 
   return {

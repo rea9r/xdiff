@@ -24,7 +24,6 @@ type UseDirectoryCompareChildDiffActionsOptions = {
   setFolderStatus: (value: string) => void
   setMode: (value: Mode) => void
   onOpenJSONDiff: (entry: FolderCompareItem) => Promise<void>
-  onOpenSpecDiff: (entry: FolderCompareItem) => Promise<void>
   onOpenTextDiff: (entry: FolderCompareItem) => Promise<void>
   onOpenChildDiffError?: (message: string) => void
 }
@@ -42,7 +41,6 @@ export function useDirectoryCompareChildDiffActions({
   setFolderStatus,
   setMode,
   onOpenJSONDiff,
-  onOpenSpecDiff,
   onOpenTextDiff,
   onOpenChildDiffError,
 }: UseDirectoryCompareChildDiffActionsOptions) {
@@ -72,11 +70,6 @@ export function useDirectoryCompareChildDiffActions({
           return
         }
 
-        if (entry.compareModeHint === 'spec') {
-          await onOpenSpecDiff(entry)
-          return
-        }
-
         await onOpenTextDiff(entry)
       } catch (error) {
         const message = `Failed to open diff: ${formatUnknownError(error)}`
@@ -93,7 +86,6 @@ export function useDirectoryCompareChildDiffActions({
       folderViewMode,
       onOpenChildDiffError,
       onOpenJSONDiff,
-      onOpenSpecDiff,
       onOpenTextDiff,
       setFolderStatus,
     ],

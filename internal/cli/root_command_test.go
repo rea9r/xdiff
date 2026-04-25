@@ -18,9 +18,6 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 	if !strings.Contains(cmd.Long, "Text comparison") {
 		t.Fatalf("missing Text comparison section in Long help")
 	}
-	if !strings.Contains(cmd.Long, "OpenAPI comparison") {
-		t.Fatalf("missing OpenAPI comparison section in Long help")
-	}
 	if !strings.Contains(cmd.Long, "Scenario mode") {
 		t.Fatalf("missing Scenario mode section in Long help")
 	}
@@ -90,7 +87,6 @@ func TestSubcommandsHaveExamples(t *testing.T) {
 	}{
 		{name: "json", cmd: newJSONCommand(common, new(int))},
 		{name: "text", cmd: newTextCommand(common, new(int))},
-		{name: "spec", cmd: newSpecCommand(common, new(int))},
 		{name: "run", cmd: newRunCommand(new(int), io.Discard)},
 	}
 
@@ -127,14 +123,6 @@ func TestIgnoreOrderFlagAvailability(t *testing.T) {
 	if strings.Contains(textCmd.Flags().FlagUsages(), "--ignore-order") {
 		t.Fatal("text help should not include --ignore-order")
 	}
-
-	specCmd := newSpecCommand(common, new(int))
-	if specCmd.Flags().Lookup("ignore-order") != nil {
-		t.Fatal("spec command should not expose --ignore-order")
-	}
-	if strings.Contains(specCmd.Flags().FlagUsages(), "--ignore-order") {
-		t.Fatal("spec help should not include --ignore-order")
-	}
 }
 
 func TestTextStyleFlagAvailability(t *testing.T) {
@@ -159,11 +147,6 @@ func TestTextStyleFlagAvailability(t *testing.T) {
 	textCmd := newTextCommand(common, new(int))
 	if textCmd.Flags().Lookup("text-style") == nil {
 		t.Fatal("text command should expose --text-style")
-	}
-
-	specCmd := newSpecCommand(common, new(int))
-	if specCmd.Flags().Lookup("text-style") == nil {
-		t.Fatal("spec command should expose --text-style")
 	}
 }
 
@@ -192,13 +175,5 @@ func TestShowPathsFlagAvailability(t *testing.T) {
 	}
 	if !strings.Contains(textCmd.Flags().FlagUsages(), "--show-paths") {
 		t.Fatal("text help should include --show-paths")
-	}
-
-	specCmd := newSpecCommand(common, new(int))
-	if specCmd.Flags().Lookup("show-paths") == nil {
-		t.Fatal("spec command should expose --show-paths")
-	}
-	if !strings.Contains(specCmd.Flags().FlagUsages(), "--show-paths") {
-		t.Fatal("spec help should include --show-paths")
 	}
 }

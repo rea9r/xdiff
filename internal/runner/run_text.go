@@ -61,8 +61,7 @@ func RunTextValuesDetailed(oldText, newText string, opts CompareOptions) RunResu
 
 		if style == TextStyleSemantic {
 			out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
-				UseColor:      opts.UseColor,
-				PathFormatter: opts.PathFormatter,
+				UseColor: opts.UseColor,
 			})
 		} else {
 			out = output.RenderUnifiedTextWithColor(oldText, newText, opts.UseColor)

@@ -102,51 +102,6 @@ const jsonResultProps = {
   registerJSONDiffSearchRowRef: () => noop,
 }
 
-const specSourceProps = {
-  oldSourcePath: '',
-  newSourcePath: '',
-  oldValue: '',
-  newValue: '',
-  oldLanguage: 'yaml' as const,
-  newLanguage: 'yaml' as const,
-  oldParseError: null,
-  newParseError: null,
-  busy: false,
-  fileBusyTarget: null,
-  clipboardBusyTarget: null,
-  copyBusyTarget: null,
-  onOpenFile: noop,
-  onPasteClipboard: noop,
-  onCopyInput: noop,
-  onClearInput: noop,
-  onOldChange: noop,
-  onNewChange: noop,
-}
-
-const specResultProps = {
-  specResult: null,
-  specRichResult: null,
-  specResultView: 'diff' as const,
-  setSpecResultView: noop,
-  textDiffLayout: 'unified' as const,
-  setTextDiffLayout: noop,
-  specSearchQuery: '',
-  setSpecSearchQuery: noop,
-  specActiveSearchIndex: 0,
-  normalizedSpecSearchQuery: '',
-  specSearchMatches: [],
-  specDiffSearchMatches: [],
-  specDiffSearchMatchIds: new Set<string>(),
-  activeSpecDiffSearchMatchId: null,
-  canRenderSpecDiff: false,
-  specCopyBusy: false,
-  copySpecResultRawOutput: noop,
-  moveSpecSearch: noop,
-  specDiffTextItems: null,
-  specSearchMatchIndexSet: new Set<number>(),
-  registerSpecDiffSearchRowRef: () => noop,
-}
-
 const folderItem: FolderCompareItem = {
   name: 'file.txt',
   relativePath: 'file.txt',
@@ -265,8 +220,6 @@ describe('DesktopMainContent', () => {
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
-        specSourceProps={specSourceProps}
-        specResultProps={specResultProps}
         folderResultProps={folderResultProps}
         scenarioSourceProps={scenarioSourceProps}
         scenarioResultProps={scenarioResultProps}
@@ -289,8 +242,6 @@ describe('DesktopMainContent', () => {
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
-        specSourceProps={specSourceProps}
-        specResultProps={specResultProps}
         folderResultProps={folderResultProps}
         scenarioSourceProps={scenarioSourceProps}
         scenarioResultProps={scenarioResultProps}
@@ -310,8 +261,6 @@ describe('DesktopMainContent', () => {
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
-        specSourceProps={specSourceProps}
-        specResultProps={specResultProps}
         folderResultProps={folderResultProps}
         scenarioSourceProps={scenarioSourceProps}
         scenarioResultProps={scenarioResultProps}

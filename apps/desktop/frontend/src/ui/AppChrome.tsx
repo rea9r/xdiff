@@ -26,7 +26,6 @@ const MODE_OPTIONS = [
     items: [
       { value: 'text', label: 'Text compare' },
       { value: 'json', label: 'JSON compare' },
-      { value: 'spec', label: 'OpenAPI spec compare' },
       { value: 'folder', label: 'Folder compare' },
     ],
   },

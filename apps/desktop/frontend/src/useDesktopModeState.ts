@@ -2,22 +2,12 @@ import { useEffect, useState } from 'react'
 import type { CompareCommon, Mode } from './types'
 
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
-const APP_MODES: Mode[] = ['text', 'json', 'spec', 'folder', 'scenario']
+const APP_MODES: Mode[] = ['text', 'json', 'folder', 'scenario']
 
 export const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
   outputFormat: 'text',
   textStyle: 'auto',
-  ignorePaths: [],
-  showPaths: false,
-  onlyBreaking: false,
-  noColor: true,
-}
-
-export const defaultSpecCommon: CompareCommon = {
-  failOn: 'any',
-  outputFormat: 'text',
-  textStyle: 'semantic',
   ignorePaths: [],
   showPaths: false,
   onlyBreaking: false,

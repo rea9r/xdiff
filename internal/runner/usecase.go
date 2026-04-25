@@ -132,8 +132,7 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 		}
 		if style == TextStyleSemantic {
 			out = output.RenderSemanticText(diffs, output.SemanticTextOptions{
-				UseColor:      opts.UseColor,
-				PathFormatter: opts.PathFormatter,
+				UseColor: opts.UseColor,
 			})
 			break
 		}
@@ -147,43 +146,6 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 	}
 
 	return finalizeRun(diffs, out, nil, opts.FailOn)
-}
-
-func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error) {
-	return RunDeltaDiffsDetailed(diffs, opts).Triple()
-}
-
-func RunDeltaDiffsDetailed(diffs []delta.Diff, opts CompareOptions) RunResult {
-	if err := validateCompareOptions(opts); err != nil {
-		return finalizeRun(nil, "", err, opts.FailOn)
-	}
-
-	filtered := delta.ApplyOptions(diffs, delta.Options{
-		IgnorePaths:  opts.IgnorePaths,
-		OnlyBreaking: opts.OnlyBreaking,
-	})
-
-	var out string
-	switch {
-	case opts.ShowPaths:
-		out = output.RenderPaths(filtered)
-	case opts.Format == output.TextFormat:
-		if _, err := resolveDeltaTextStyle(opts); err != nil {
-			return finalizeRun(filtered, "", err, opts.FailOn)
-		}
-		out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
-			UseColor:      opts.UseColor,
-			PathFormatter: opts.PathFormatter,
-		})
-	case opts.Format == output.JSONFormat:
-		rendered, err := output.RenderJSON(filtered)
-		if err != nil {
-			return finalizeRun(filtered, "", err, opts.FailOn)
-		}
-		out = rendered
-	}
-
-	return finalizeRun(filtered, out, nil, opts.FailOn)
 }
 
 func validateFileOptions(opts Options) error {

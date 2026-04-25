@@ -5,8 +5,6 @@ import type {
   CompareResponse,
   CompareJSONValuesRequest,
   CompareJSONRichResponse,
-  CompareSpecValuesRequest,
-  CompareSpecRichResponse,
   CompareFoldersRequest,
   CompareFoldersResponse,
   DesktopState,
@@ -38,11 +36,6 @@ export function useDesktopBridge() {
       ): Promise<CompareJSONRichResponse> =>
         App.CompareJSONValuesRich(req as any) as Promise<CompareJSONRichResponse>,
 
-      compareSpecValuesRich: (
-        req: CompareSpecValuesRequest,
-      ): Promise<CompareSpecRichResponse> =>
-        App.CompareSpecValuesRich(req as any) as Promise<CompareSpecRichResponse>,
-
       compareFolders: (
         req: CompareFoldersRequest,
       ): Promise<CompareFoldersResponse> =>
@@ -57,7 +50,6 @@ export function useDesktopBridge() {
         App.ListScenarioChecks(req as any),
 
       pickJSONFile: App.PickJSONFile,
-      pickSpecFile: App.PickSpecFile,
       pickScenarioFile: App.PickScenarioFile,
       pickTextFile: App.PickTextFile,
       pickFolderRoot: App.PickFolderRoot,

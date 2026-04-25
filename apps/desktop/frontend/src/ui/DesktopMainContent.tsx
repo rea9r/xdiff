@@ -7,8 +7,6 @@ import type { TextCompareResultPanelProps } from '../features/text/TextCompareRe
 import type { TextCompareSourceWorkspaceProps } from '../features/text/TextCompareSourceWorkspace'
 import type { JSONCompareResultPanelProps } from '../features/json/JSONCompareResultPanel'
 import type { JSONCompareSourceWorkspaceProps } from '../features/json/JSONCompareSourceWorkspace'
-import type { SpecCompareResultPanelProps } from '../features/spec/SpecCompareResultPanel'
-import type { SpecCompareSourceWorkspaceProps } from '../features/spec/SpecCompareSourceWorkspace'
 import type { ScenarioResultPanelProps } from '../features/scenario/ScenarioResultPanel'
 import type { ScenarioSourceWorkspaceProps } from '../features/scenario/ScenarioSourceWorkspace'
 
@@ -37,16 +35,6 @@ const JSONCompareSourceWorkspace = lazy(() =>
     default: module.JSONCompareSourceWorkspace,
   })),
 )
-const SpecCompareResultPanel = lazy(() =>
-  import('../features/spec/SpecCompareResultPanel').then((module) => ({
-    default: module.SpecCompareResultPanel,
-  })),
-)
-const SpecCompareSourceWorkspace = lazy(() =>
-  import('../features/spec/SpecCompareSourceWorkspace').then((module) => ({
-    default: module.SpecCompareSourceWorkspace,
-  })),
-)
 const ScenarioResultPanel = lazy(() =>
   import('../features/scenario/ScenarioResultPanel').then((module) => ({
     default: module.ScenarioResultPanel,
@@ -70,8 +58,6 @@ type DesktopMainContentProps = {
   textResultProps: TextCompareResultPanelProps
   jsonSourceProps: JSONCompareSourceWorkspaceProps
   jsonResultProps: JSONCompareResultPanelProps
-  specSourceProps: SpecCompareSourceWorkspaceProps
-  specResultProps: SpecCompareResultPanelProps
   folderResultProps: DirectoryCompareResultPanelProps
   scenarioSourceProps: ScenarioSourceWorkspaceProps
   scenarioResultProps: ScenarioResultPanelProps
@@ -85,8 +71,6 @@ export function DesktopMainContent({
   textResultProps,
   jsonSourceProps,
   jsonResultProps,
-  specSourceProps,
-  specResultProps,
   folderResultProps,
   scenarioSourceProps,
   scenarioResultProps,
@@ -126,20 +110,6 @@ export function DesktopMainContent({
           <CompareWorkspaceShell
             source={<JSONCompareSourceWorkspace {...jsonSourceProps} />}
             result={<JSONCompareResultPanel {...jsonResultProps} />}
-          />
-        </Suspense>
-      </div>
-    )
-  }
-
-  if (mode === 'spec') {
-    return (
-      <div className="compare-main-shell">
-        {folderReturnPathBanner}
-        <Suspense fallback={<MainContentLoadingFallback />}>
-          <CompareWorkspaceShell
-            source={<SpecCompareSourceWorkspace {...specSourceProps} />}
-            result={<SpecCompareResultPanel {...specResultProps} />}
           />
         </Suspense>
       </div>

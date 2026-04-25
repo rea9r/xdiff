@@ -254,12 +254,7 @@ func inferCompareModeHint(relativePath, status, leftKind, rightKind string) stri
 		return "none"
 	}
 
-	lowerPath := strings.ToLower(relativePath)
 	ext := strings.ToLower(filepath.Ext(relativePath))
-	isSpecExt := ext == ".yaml" || ext == ".yml" || ext == ".json"
-	if isSpecExt && (strings.Contains(lowerPath, "openapi") || strings.Contains(lowerPath, "swagger")) {
-		return "spec"
-	}
 	if ext == ".json" {
 		return "json"
 	}

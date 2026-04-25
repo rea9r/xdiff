@@ -10,8 +10,7 @@ import (
 )
 
 type SemanticTextOptions struct {
-	UseColor      bool
-	PathFormatter func(string) string
+	UseColor bool
 }
 
 func FormatText(diffs []delta.Diff) string {
@@ -37,9 +36,6 @@ func renderSemanticDiffSection(diffs []delta.Diff, opts SemanticTextOptions) str
 		for _, d := range diffs {
 			marker := colorizeAction(diffMarker(d.Type), d.Type, opts.UseColor)
 			path := d.Path
-			if opts.PathFormatter != nil {
-				path = opts.PathFormatter(path)
-			}
 			if path == "" {
 				path = "(root)"
 			}

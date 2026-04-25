@@ -47,7 +47,7 @@ func TestDesktopStateStoreSaveLoadRoundtrip(t *testing.T) {
 		path: filepath.Join(t.TempDir(), "desktop-state.json"),
 	}
 	input := defaultDesktopState()
-	input.LastUsedMode = "spec"
+	input.LastUsedMode = "text"
 	input.Folder.LeftRoot = "/tmp/left"
 	input.Folder.RightRoot = "/tmp/right"
 	input.Folder.ViewMode = "tree"
@@ -63,8 +63,8 @@ func TestDesktopStateStoreSaveLoadRoundtrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if loaded.LastUsedMode != "spec" {
-		t.Fatalf("lastUsedMode = %q, want spec", loaded.LastUsedMode)
+	if loaded.LastUsedMode != "text" {
+		t.Fatalf("lastUsedMode = %q, want text", loaded.LastUsedMode)
 	}
 	if loaded.Folder.LeftRoot != "/tmp/left" || loaded.Folder.RightRoot != "/tmp/right" {
 		t.Fatalf("folder roots mismatch: %+v", loaded.Folder)
@@ -177,7 +177,7 @@ func TestServiceStateConcurrentAccess(t *testing.T) {
 			if n%2 == 0 {
 				// Writer
 				state := defaultDesktopState()
-				state.LastUsedMode = "spec"
+				state.LastUsedMode = "text"
 				state.Folder.LeftRoot = fmt.Sprintf("/tmp/left-%d", n)
 				if err := svc.SaveDesktopState(state); err != nil {
 					t.Errorf("goroutine %d: Save() error = %v", n, err)

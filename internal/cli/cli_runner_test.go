@@ -91,58 +91,6 @@ func TestRunCLI_Text_JSONFormat(t *testing.T) {
 	}
 }
 
-func TestRunCLI_Spec_NonBreaking(t *testing.T) {
-	oldPath := fixturePath("testdata/spec/non_breaking_old.yaml")
-	newPath := fixturePath("testdata/spec/non_breaking_new.yaml")
-
-	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 0 {
-		t.Fatalf("exit code mismatch: got=%d want=0", code)
-	}
-}
-
-func TestRunCLI_Spec_Breaking(t *testing.T) {
-	oldPath := fixturePath("testdata/spec/breaking_old.yaml")
-	newPath := fixturePath("testdata/spec/breaking_new.yaml")
-
-	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 1 {
-		t.Fatalf("exit code mismatch: got=%d want=1", code)
-	}
-}
-
-func TestRunCLI_Spec_Breaking_RequestBodyRequired(t *testing.T) {
-	oldPath := fixturePath("testdata/spec/required_old.yaml")
-	newPath := fixturePath("testdata/spec/required_new.yaml")
-
-	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 1 {
-		t.Fatalf("exit code mismatch: got=%d want=1", code)
-	}
-}
-
-func TestRunCLI_Spec_Breaking_ResponseTypeChanged(t *testing.T) {
-	oldPath := fixturePath("testdata/spec/response_type_old.yaml")
-	newPath := fixturePath("testdata/spec/response_type_new.yaml")
-
-	code, err := runCLIForTest([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 1 {
-		t.Fatalf("exit code mismatch: got=%d want=1", code)
-	}
-}
-
 func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
@@ -192,22 +140,6 @@ func TestRunCLI_IgnoreOrder_ReorderedArrayReturnsZero(t *testing.T) {
 	}
 	if code != 0 {
 		t.Fatalf("exit code mismatch: got=%d want=0", code)
-	}
-}
-
-func TestRunCLI_Spec_TextStylePatchIsUnsupported(t *testing.T) {
-	oldPath := fixturePath("testdata/spec/non_breaking_old.yaml")
-	newPath := fixturePath("testdata/spec/non_breaking_new.yaml")
-
-	code, err := runCLIForTest([]string{"spec", "--text-style", "patch", oldPath, newPath})
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if code != 2 {
-		t.Fatalf("exit code mismatch: got=%d want=2", code)
-	}
-	if !strings.Contains(err.Error(), `text style "patch" is not supported for delta-only comparisons`) {
-		t.Fatalf("unexpected error message: %v", err)
 	}
 }
 
@@ -480,10 +412,6 @@ func writeCLIFile(t *testing.T, content string, fileName string) string {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 	return path
-}
-
-func fixturePath(path string) string {
-	return filepath.Clean(path)
 }
 
 func writeCLIFileInDir(t *testing.T, dir string, content string, fileName string) string {

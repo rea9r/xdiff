@@ -24,18 +24,6 @@ type CompareJSONValuesRequest struct {
 	IgnoreOrder bool          `json:"ignoreOrder"`
 }
 
-type CompareSpecRequest struct {
-	OldPath string        `json:"oldPath"`
-	NewPath string        `json:"newPath"`
-	Common  CompareCommon `json:"common"`
-}
-
-type CompareSpecValuesRequest struct {
-	OldValue string        `json:"oldValue"`
-	NewValue string        `json:"newValue"`
-	Common   CompareCommon `json:"common"`
-}
-
 type CompareTextRequest struct {
 	OldText string        `json:"oldText"`
 	NewText string        `json:"newText"`
@@ -139,32 +127,6 @@ type CompareJSONRichResponse struct {
 	Diffs    []JSONRichDiffItem `json:"diffs"`
 }
 
-type SpecRichDiffItem struct {
-	Type      string `json:"type"` // added | removed | changed | type_changed
-	Path      string `json:"path"` // canonical diff path
-	Label     string `json:"label"`
-	GroupKey  string `json:"groupKey"` // e.g. POST /users
-	GroupKind string `json:"groupKind"`
-	Breaking  bool   `json:"breaking"`
-	OldValue  any    `json:"oldValue,omitempty"`
-	NewValue  any    `json:"newValue,omitempty"`
-}
-
-type SpecRichSummary struct {
-	Added       int `json:"added"`
-	Removed     int `json:"removed"`
-	Changed     int `json:"changed"`
-	TypeChanged int `json:"typeChanged"`
-	Breaking    int `json:"breaking"`
-}
-
-type CompareSpecRichResponse struct {
-	Result   CompareResponse    `json:"result"`
-	DiffText string             `json:"diffText"`
-	Summary  SpecRichSummary    `json:"summary"`
-	Diffs    []SpecRichDiffItem `json:"diffs"`
-}
-
 type ScenarioSummary struct {
 	Total    int `json:"total"`
 	OK       int `json:"ok"`
@@ -213,12 +175,6 @@ type DesktopJSONSession struct {
 	Common        CompareCommon `json:"common"`
 }
 
-type DesktopSpecSession struct {
-	OldSourcePath string        `json:"oldSourcePath"`
-	NewSourcePath string        `json:"newSourcePath"`
-	Common        CompareCommon `json:"common"`
-}
-
 type DesktopTextSession struct {
 	OldSourcePath string        `json:"oldSourcePath"`
 	NewSourcePath string        `json:"newSourcePath"`
@@ -262,12 +218,10 @@ type DesktopState struct {
 	Version             int                         `json:"version"`
 	LastUsedMode        string                      `json:"lastUsedMode"`
 	JSON                DesktopJSONSession          `json:"json"`
-	Spec                DesktopSpecSession          `json:"spec"`
 	Text                DesktopTextSession          `json:"text"`
 	Folder              DesktopFolderSession        `json:"folder"`
 	Scenario            DesktopScenarioSession      `json:"scenario"`
 	JSONRecentPairs     []DesktopRecentPair         `json:"jsonRecentPairs"`
-	SpecRecentPairs     []DesktopRecentPair         `json:"specRecentPairs"`
 	TextRecentPairs     []DesktopRecentPair         `json:"textRecentPairs"`
 	FolderRecentPairs   []DesktopRecentFolderPair   `json:"folderRecentPairs"`
 	ScenarioRecentPaths []DesktopRecentScenarioPath `json:"scenarioRecentPaths"`

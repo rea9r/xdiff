@@ -39,19 +39,6 @@ type UseDesktopPersistenceOptions = {
     setOldText: StateSetter<string>
     setNewText: StateSetter<string>
   }
-  spec: {
-    oldSourcePath: string
-    newSourcePath: string
-    common: DesktopState['spec']['common']
-    recentPairs: DesktopState['specRecentPairs']
-    setCommon: StateSetter<DesktopState['spec']['common']>
-    setIgnorePathsDraft: StateSetter<string>
-    setOldSourcePath: StateSetter<string>
-    setNewSourcePath: StateSetter<string>
-    setRecentPairs: StateSetter<DesktopState['specRecentPairs']>
-    setOldText: StateSetter<string>
-    setNewText: StateSetter<string>
-  }
   text: {
     oldSourcePath: string
     newSourcePath: string
@@ -88,7 +75,7 @@ type UseDesktopPersistenceOptions = {
   }
 }
 
-const APP_MODES: Mode[] = ['text', 'json', 'spec', 'folder', 'scenario']
+const APP_MODES: Mode[] = ['text', 'json', 'folder', 'scenario']
 
 function isMode(value: string): value is Mode {
   return APP_MODES.includes(value as Mode)
@@ -101,7 +88,6 @@ export function useDesktopPersistence({
   saveDesktopState,
   loadTextFile,
   json,
-  spec,
   text,
   folder,
   scenario,
@@ -123,20 +109,6 @@ export function useDesktopPersistence({
     setOldText: setJSONOldText,
     setNewText: setJSONNewText,
   } = json
-
-  const {
-    oldSourcePath: specOldSourcePath,
-    newSourcePath: specNewSourcePath,
-    common: specCommon,
-    recentPairs: specRecentPairs,
-    setCommon: setSpecCommon,
-    setIgnorePathsDraft: setSpecIgnorePathsDraft,
-    setOldSourcePath: setSpecOldSourcePath,
-    setNewSourcePath: setSpecNewSourcePath,
-    setRecentPairs: setSpecRecentPairs,
-    setOldText: setSpecOldText,
-    setNewText: setSpecNewText,
-  } = spec
 
   const {
     oldSourcePath: textOldSourcePath,
@@ -202,11 +174,6 @@ export function useDesktopPersistence({
         setJSONOldSourcePath(saved.json.oldSourcePath || '')
         setJSONNewSourcePath(saved.json.newSourcePath || '')
 
-        setSpecCommon(saved.spec.common)
-        setSpecIgnorePathsDraft(ignorePathsToText(saved.spec.common.ignorePaths))
-        setSpecOldSourcePath(saved.spec.oldSourcePath || '')
-        setSpecNewSourcePath(saved.spec.newSourcePath || '')
-
         setTextCommon(saved.text.common)
         setTextDiffLayout(saved.text.diffLayout === 'unified' ? 'unified' : 'split')
         setTextOldSourcePath(saved.text.oldSourcePath || '')
@@ -221,7 +188,6 @@ export function useDesktopPersistence({
         setReportFormat(saved.scenario.reportFormat === 'json' ? 'json' : 'text')
 
         setJSONRecentPairs(saved.jsonRecentPairs ?? [])
-        setSpecRecentPairs(saved.specRecentPairs ?? [])
         setTextRecentPairs(saved.textRecentPairs ?? [])
         setFolderRecentPairs(saved.folderRecentPairs ?? [])
         setScenarioRecentPaths(saved.scenarioRecentPaths ?? [])
@@ -242,15 +208,12 @@ export function useDesktopPersistence({
             }
           }
 
-          const [jsonOld, jsonNew, specOld, specNew, textOldLoaded, textNewLoaded] =
-            await Promise.all([
-              safeLoad(saved.json.oldSourcePath || ''),
-              safeLoad(saved.json.newSourcePath || ''),
-              safeLoad(saved.spec.oldSourcePath || ''),
-              safeLoad(saved.spec.newSourcePath || ''),
-              safeLoad(saved.text.oldSourcePath || ''),
-              safeLoad(saved.text.newSourcePath || ''),
-            ])
+          const [jsonOld, jsonNew, textOldLoaded, textNewLoaded] = await Promise.all([
+            safeLoad(saved.json.oldSourcePath || ''),
+            safeLoad(saved.json.newSourcePath || ''),
+            safeLoad(saved.text.oldSourcePath || ''),
+            safeLoad(saved.text.newSourcePath || ''),
+          ])
 
           if (!active) {
             return
@@ -258,8 +221,6 @@ export function useDesktopPersistence({
 
           setJSONOldText(jsonOld)
           setJSONNewText(jsonNew)
-          setSpecOldText(specOld)
-          setSpecNewText(specNew)
           setTextOld(textOldLoaded)
           setTextNew(textNewLoaded)
         }
@@ -296,13 +257,6 @@ export function useDesktopPersistence({
     setReportFormat,
     setScenarioPath,
     setScenarioRecentPaths,
-    setSpecCommon,
-    setSpecIgnorePathsDraft,
-    setSpecNewSourcePath,
-    setSpecNewText,
-    setSpecOldSourcePath,
-    setSpecOldText,
-    setSpecRecentPairs,
     setTextCommon,
     setTextDiffLayout,
     setTextNew,
@@ -327,11 +281,6 @@ export function useDesktopPersistence({
           ignoreOrder,
           common: jsonCommon,
         },
-        spec: {
-          oldSourcePath: specOldSourcePath,
-          newSourcePath: specNewSourcePath,
-          common: specCommon,
-        },
         text: {
           oldSourcePath: textOldSourcePath,
           newSourcePath: textNewSourcePath,
@@ -349,7 +298,6 @@ export function useDesktopPersistence({
           reportFormat,
         },
         jsonRecentPairs,
-        specRecentPairs,
         textRecentPairs,
         folderRecentPairs,
         scenarioRecentPaths,
@@ -380,10 +328,6 @@ export function useDesktopPersistence({
     saveDesktopState,
     scenarioPath,
     scenarioRecentPaths,
-    specCommon,
-    specNewSourcePath,
-    specOldSourcePath,
-    specRecentPairs,
     textCommon,
     textDiffLayout,
     textNewSourcePath,

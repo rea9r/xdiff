@@ -19,8 +19,6 @@ import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
-import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
-import { useSpecCompareWorkflow } from './features/spec/useSpecCompareWorkflow'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
 type DesktopShellModel = {
@@ -43,8 +41,6 @@ type UseDesktopShellModelArgs = {
   onRun: () => void
   jsonWorkflow: ReturnType<typeof useJSONCompareWorkflow>
   jsonViewState: ReturnType<typeof useJSONCompareViewState>
-  specWorkflow: ReturnType<typeof useSpecCompareWorkflow>
-  specViewState: ReturnType<typeof useSpecCompareViewState>
   textWorkflow: ReturnType<typeof useTextCompareWorkflow>
   textViewState: ReturnType<typeof useTextDiffViewState>
   scenarioWorkflow: ReturnType<typeof useScenarioWorkflow>
@@ -73,8 +69,6 @@ export function useDesktopShellModel({
   onRun,
   jsonWorkflow,
   jsonViewState,
-  specWorkflow,
-  specViewState,
   textWorkflow,
   textViewState,
   scenarioWorkflow,
@@ -90,14 +84,10 @@ export function useDesktopShellModel({
   folderChildDiffActions,
   folderInteractions,
 }: UseDesktopShellModelArgs): DesktopShellModel {
-  const isCompareCentricMode = mode === 'text' || mode === 'json' || mode === 'spec'
+  const isCompareCentricMode = mode === 'text' || mode === 'json'
 
   const compareOptionsTitle =
-    mode === 'text'
-      ? 'Text compare options'
-      : mode === 'json'
-        ? 'JSON compare options'
-        : 'Spec compare options'
+    mode === 'text' ? 'Text compare options' : 'JSON compare options'
 
   const compareOptionsContent = (
     <DesktopCompareOptionsContent
@@ -121,23 +111,6 @@ export function useDesktopShellModel({
         onlyBreaking: jsonWorkflow.jsonCommon.onlyBreaking,
         onOnlyBreakingChange: (checked) =>
           jsonWorkflow.updateJSONCommon('onlyBreaking', checked),
-      }}
-      specProps={{
-        outputFormat: specWorkflow.specCommon.outputFormat,
-        onOutputFormatChange: (value) => specWorkflow.updateSpecCommon('outputFormat', value),
-        textStyle: specWorkflow.specCommon.textStyle,
-        onTextStyleChange: (value) => specWorkflow.updateSpecCommon('textStyle', value),
-        failOn: specWorkflow.specCommon.failOn,
-        onFailOnChange: (value) => specWorkflow.updateSpecCommon('failOn', value),
-        ignorePathsDraft: specWorkflow.specIgnorePathsDraft,
-        onIgnorePathsDraftChange: specWorkflow.setSpecIgnorePathsDraft,
-        onIgnorePathsCommit: (value) =>
-          specWorkflow.updateSpecCommon('ignorePaths', parseIgnorePaths(value)),
-        showPaths: specWorkflow.specCommon.showPaths,
-        onShowPathsChange: (checked) => specWorkflow.updateSpecCommon('showPaths', checked),
-        onlyBreaking: specWorkflow.specCommon.onlyBreaking,
-        onOnlyBreakingChange: (checked) =>
-          specWorkflow.updateSpecCommon('onlyBreaking', checked),
       }}
       textProps={{
         outputFormat: textWorkflow.textCommon.outputFormat,
@@ -266,49 +239,6 @@ export function useDesktopShellModel({
         toggleJSONGroup: jsonViewState.toggleJSONGroup,
         toggleJSONExpandedValue: jsonViewState.toggleJSONExpandedValue,
         registerJSONDiffSearchRowRef: jsonViewState.registerJSONDiffSearchRowRef,
-      }}
-      specSourceProps={{
-        oldSourcePath: specWorkflow.specOldSourcePath,
-        newSourcePath: specWorkflow.specNewSourcePath,
-        oldValue: specWorkflow.specOldText,
-        newValue: specWorkflow.specNewText,
-        oldLanguage: specWorkflow.specOldLanguage,
-        newLanguage: specWorkflow.specNewLanguage,
-        oldParseError: specWorkflow.specOldParseError,
-        newParseError: specWorkflow.specNewParseError,
-        busy: specWorkflow.specEditorBusy,
-        fileBusyTarget: specWorkflow.specFileBusyTarget,
-        clipboardBusyTarget: specWorkflow.specClipboardBusyTarget,
-        copyBusyTarget: specWorkflow.specCopyBusyTarget,
-        onOpenFile: (target) => void specWorkflow.loadSpecFromFile(target),
-        onPasteClipboard: (target) => void specWorkflow.pasteSpecFromClipboard(target),
-        onCopyInput: (target) => void specWorkflow.copySpecInput(target),
-        onClearInput: specWorkflow.clearSpecInput,
-        onOldChange: specWorkflow.setSpecOldInput,
-        onNewChange: specWorkflow.setSpecNewInput,
-      }}
-      specResultProps={{
-        specResult: specViewState.specResult,
-        specRichResult: specWorkflow.specRichResult,
-        specResultView: specViewState.specResultView,
-        setSpecResultView: specViewState.setSpecResultView,
-        textDiffLayout: textViewState.textDiffLayout,
-        setTextDiffLayout: textViewState.setTextDiffLayout,
-        specSearchQuery: specViewState.specSearchQuery,
-        setSpecSearchQuery: specViewState.setSpecSearchQuery,
-        specActiveSearchIndex: specViewState.specActiveSearchIndex,
-        normalizedSpecSearchQuery: specViewState.normalizedSpecSearchQuery,
-        specSearchMatches: specViewState.specSearchMatches,
-        specDiffSearchMatches: specViewState.specDiffSearchMatches,
-        specDiffSearchMatchIds: specViewState.specDiffSearchMatchIds,
-        activeSpecDiffSearchMatchId: specViewState.activeSpecDiffSearchMatchId,
-        canRenderSpecDiff: specViewState.canRenderSpecDiff,
-        specCopyBusy: specWorkflow.specCopyBusy,
-        copySpecResultRawOutput: specWorkflow.copySpecResultRawOutput,
-        moveSpecSearch: specViewState.moveSpecSearch,
-        specDiffTextItems: specViewState.specDiffTextItems,
-        specSearchMatchIndexSet: specViewState.specSearchMatchIndexSet,
-        registerSpecDiffSearchRowRef: specViewState.registerSpecDiffSearchRowRef,
       }}
       folderResultProps={{
         folderResult,

@@ -7,15 +7,14 @@ import type { ScenarioRunResponse } from '../../../types'
 const runResult: ScenarioRunResponse = {
   exitCode: 1,
   summary: {
-    total: 3,
+    total: 2,
     ok: 1,
-    diff: 1,
+    diff: 0,
     error: 1,
     exitCode: 1,
   },
   results: [
     { name: 'check-ok', kind: 'json', status: 'ok', exitCode: 0, diffFound: false },
-    { name: 'check-diff', kind: 'spec', status: 'diff', exitCode: 1, diffFound: true },
     { name: 'check-error', kind: 'text', status: 'error', exitCode: 2, diffFound: false },
   ],
 }
