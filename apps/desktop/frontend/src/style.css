@@ -123,7 +123,7 @@
 
   --xdiff-viewer-border: #D6DAE2;
   --xdiff-viewer-border-strong: #B5BBC7;
-  --xdiff-viewer-surface: #F7F9FC;
+  --xdiff-viewer-surface: #EFF2F7;
   --xdiff-viewer-surface-subtle: #EFF2F7;
   --xdiff-viewer-surface-muted: #E2E5EC;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
@@ -133,10 +133,14 @@
 
 :root[data-mantine-color-scheme='dark'] {
   --mantine-color-body: #26282C;
+  --mantine-color-default: #26282C;
+  --mantine-color-default-hover: color-mix(in srgb, var(--mantine-color-blue-4) 12%, transparent);
+  --mantine-color-dark-6: #26282C;
+  --mantine-color-dark-7: #26282C;
 
   --xdiff-viewer-border: #393B40;
   --xdiff-viewer-border-strong: #4E5159;
-  --xdiff-viewer-surface: #2B2D30;
+  --xdiff-viewer-surface: #26282C;
   --xdiff-viewer-surface-subtle: #26282C;
   --xdiff-viewer-surface-muted: #1A1C1F;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-4) 12%, transparent);
@@ -1178,7 +1182,7 @@ button {
   overflow: auto;
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: transparent;
+  background: var(--xdiff-viewer-code-bg);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1740,12 +1744,12 @@ button {
 }
 
 .folder-table-wrap {
-  flex: 0 0 auto;
+  flex: 1;
   min-height: 0;
-  overflow: visible;
-  border: none;
-  border-radius: 0;
-  background: transparent;
+  overflow: auto;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: var(--xdiff-radius-md);
+  background: var(--xdiff-viewer-code-bg);
 }
 
 .folder-table-wrap:focus {
@@ -1936,19 +1940,19 @@ button {
 }
 
 .folder-tree-wrap {
-  flex: 0 0 auto;
+  flex: 1;
   min-height: 0;
-  overflow: visible;
-  border: none;
-  border-radius: 0;
-  background: transparent;
+  overflow: auto;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: var(--xdiff-radius-md);
+  background: var(--xdiff-viewer-code-bg);
   padding: var(--xdiff-space-2);
 }
 
 .folder-tree {
   display: flex;
   flex-direction: column;
-  gap: var(--xdiff-space-1);
+  gap: 0;
 }
 
 .folder-tree-row {
@@ -1956,7 +1960,7 @@ button {
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--xdiff-space-3);
-  padding: var(--xdiff-row-padding-y) var(--xdiff-space-3);
+  padding: var(--xdiff-row-padding-y-tight) var(--xdiff-space-3);
   border-radius: var(--xdiff-radius-sm);
   font-size: var(--xdiff-folder-font-size);
   line-height: var(--xdiff-folder-line-height);
