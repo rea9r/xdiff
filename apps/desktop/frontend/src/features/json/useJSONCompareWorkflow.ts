@@ -99,7 +99,7 @@ export function useJSONCompareWorkflow({
     [jsonIgnorePathsDraft],
   )
   const jsonPatchBlockedByFilters =
-    ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
+    ignoreOrder || effectiveJSONIgnorePaths.length > 0
   const jsonOldParseError = useMemo(() => getJSONParseError(jsonOldText), [jsonOldText])
   const jsonNewParseError = useMemo(() => getJSONParseError(jsonNewText), [jsonNewText])
   const jsonInputInvalid = !!jsonOldParseError || !!jsonNewParseError

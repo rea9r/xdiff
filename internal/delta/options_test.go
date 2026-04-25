@@ -11,18 +11,16 @@ func TestApplyOptions(t *testing.T) {
 		{Type: Added, Path: "user.phone"},
 		{Type: Changed, Path: "user.name"},
 		{Type: Removed, Path: "user.email"},
-		{Type: TypeChanged, Path: "user.age"},
 	}
 
 	opts := Options{
-		IgnorePaths:  []string{"user.phone"},
-		OnlyBreaking: true,
+		IgnorePaths: []string{"user.phone"},
 	}
 
 	got := ApplyOptions(diffs, opts)
 	want := []Diff{
+		{Type: Changed, Path: "user.name"},
 		{Type: Removed, Path: "user.email"},
-		{Type: TypeChanged, Path: "user.age"},
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {

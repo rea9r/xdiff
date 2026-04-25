@@ -1,14 +1,9 @@
 package delta
 
 type Options struct {
-	IgnorePaths  []string
-	OnlyBreaking bool
+	IgnorePaths []string
 }
 
 func ApplyOptions(diffs []Diff, opts Options) []Diff {
-	filtered := FilterIgnoredPaths(diffs, opts.IgnorePaths)
-	if opts.OnlyBreaking {
-		filtered = FilterOnlyBreaking(filtered)
-	}
-	return filtered
+	return FilterIgnoredPaths(diffs, opts.IgnorePaths)
 }

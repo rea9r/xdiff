@@ -10,7 +10,6 @@ import (
 func TestRunWithText_TextFormat(t *testing.T) {
 	code, out, err := RunTextValues("hello\nworld\n", "hello\ngopher\n", CompareOptions{
 		Format: "text",
-		FailOn: FailOnAny,
 	})
 	if err != nil {
 		t.Fatalf("RunTextValues returned error: %v", err)
@@ -26,7 +25,6 @@ func TestRunWithText_TextFormat(t *testing.T) {
 func TestRunWithText_JSONFormat(t *testing.T) {
 	code, out, err := RunTextValues("a\n", "b\n", CompareOptions{
 		Format: "json",
-		FailOn: FailOnAny,
 	})
 	if err != nil {
 		t.Fatalf("RunTextValues returned error: %v", err)
@@ -46,7 +44,6 @@ func TestRunTextWithOptions_FileInput(t *testing.T) {
 	code, out, err := RunTextFiles(Options{
 		CompareOptions: CompareOptions{
 			Format: "text",
-			FailOn: FailOnAny,
 		},
 		OldPath: oldPath,
 		NewPath: newPath,
@@ -65,7 +62,6 @@ func TestRunTextWithOptions_FileInput(t *testing.T) {
 func TestRunWithText_TextStyleSemantic(t *testing.T) {
 	code, out, err := RunTextValues("hello\nworld\n", "hello\ngopher\n", CompareOptions{
 		Format:    "text",
-		FailOn:    FailOnAny,
 		TextStyle: TextStyleSemantic,
 	})
 	if err != nil {

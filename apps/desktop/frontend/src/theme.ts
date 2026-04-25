@@ -44,17 +44,5 @@ export const appTheme = createTheme({
       '#946000',
       '#6b4500',
     ],
-    diffBreaking: [
-      '#fff0f6',
-      '#ffe0eb',
-      '#ffc1d8',
-      '#ff94ba',
-      '#ff6699',
-      '#fa3e7a',
-      '#e62267',
-      '#b3134f',
-      '#8c0c3d',
-      '#68072c',
-    ],
   },
 })

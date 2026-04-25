@@ -145,11 +145,6 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 }
 
 func normalizeCompareCommon(common CompareCommon, defaults CompareCommon) CompareCommon {
-	switch common.FailOn {
-	case "none", "breaking", "any":
-	default:
-		common.FailOn = defaults.FailOn
-	}
 	switch common.OutputFormat {
 	case "text", "json":
 	default:
@@ -225,24 +220,20 @@ func normalizeRecentFolderPairs(input []DesktopRecentFolderPair) []DesktopRecent
 
 func defaultJSONCompareCommon() CompareCommon {
 	return CompareCommon{
-		FailOn:       "any",
 		OutputFormat: "text",
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
 		ShowPaths:    false,
-		OnlyBreaking: false,
 		NoColor:      true,
 	}
 }
 
 func defaultTextCompareCommon() CompareCommon {
 	return CompareCommon{
-		FailOn:       "any",
 		OutputFormat: "text",
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
 		ShowPaths:    false,
-		OnlyBreaking: false,
 		NoColor:      true,
 	}
 }

@@ -1,12 +1,10 @@
 package desktopapi
 
 type CompareCommon struct {
-	FailOn       string   `json:"failOn"`
 	OutputFormat string   `json:"outputFormat"`
 	TextStyle    string   `json:"textStyle"`
 	IgnorePaths  []string `json:"ignorePaths"`
 	ShowPaths    bool     `json:"showPaths"`
-	OnlyBreaking bool     `json:"onlyBreaking"`
 	NoColor      bool     `json:"noColor"`
 }
 
@@ -97,7 +95,6 @@ type JSONRichDiffItem struct {
 	Path     string `json:"path"`
 	OldValue any    `json:"oldValue,omitempty"`
 	NewValue any    `json:"newValue,omitempty"`
-	Breaking bool   `json:"breaking"`
 }
 
 type JSONRichSummary struct {
@@ -105,7 +102,6 @@ type JSONRichSummary struct {
 	Removed     int `json:"removed"`
 	Changed     int `json:"changed"`
 	TypeChanged int `json:"typeChanged"`
-	Breaking    int `json:"breaking"`
 }
 
 type CompareJSONRichResponse struct {

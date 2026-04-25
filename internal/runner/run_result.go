@@ -13,7 +13,7 @@ func (r RunResult) Triple() (int, string, error) {
 	return r.ExitCode, r.Output, r.Err
 }
 
-func finalizeRun(diffs []delta.Diff, out string, err error, failOn string) RunResult {
+func finalizeRun(diffs []delta.Diff, out string, err error) RunResult {
 	if err != nil {
 		return RunResult{
 			ExitCode:  exitError,
@@ -24,7 +24,7 @@ func finalizeRun(diffs []delta.Diff, out string, err error, failOn string) RunRe
 	}
 
 	code := exitOK
-	if HasFailureByMode(diffs, failOn) {
+	if len(diffs) > 0 {
 		code = exitDiffFound
 	}
 

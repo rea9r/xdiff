@@ -5,22 +5,18 @@ const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
 const APP_MODES: Mode[] = ['text', 'json', 'folder']
 
 export const defaultJSONCommon: CompareCommon = {
-  failOn: 'any',
   outputFormat: 'text',
   textStyle: 'auto',
   ignorePaths: [],
   showPaths: false,
-  onlyBreaking: false,
   noColor: true,
 }
 
 export const defaultTextCommon: CompareCommon = {
-  failOn: 'any',
   outputFormat: 'text',
   textStyle: 'auto',
   ignorePaths: [],
   showPaths: false,
-  onlyBreaking: false,
   noColor: true,
 }
 

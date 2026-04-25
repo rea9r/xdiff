@@ -18,7 +18,6 @@ export type JSONDiffGroup = {
     removed: number
     changed: number
     typeChanged: number
-    breaking: number
   }
 }
 
@@ -71,7 +70,7 @@ function buildJSONDiffGroups(diffs: JSONRichDiffItem[]): JSONDiffGroup[] {
       map.get(key) ?? {
         key,
         items: [],
-        summary: { added: 0, removed: 0, changed: 0, typeChanged: 0, breaking: 0 },
+        summary: { added: 0, removed: 0, changed: 0, typeChanged: 0 },
       }
 
     group.items.push(diff)
@@ -79,7 +78,6 @@ function buildJSONDiffGroups(diffs: JSONRichDiffItem[]): JSONDiffGroup[] {
     else if (diff.type === 'removed') group.summary.removed++
     else if (diff.type === 'changed') group.summary.changed++
     else if (diff.type === 'type_changed') group.summary.typeChanged++
-    if (diff.breaking) group.summary.breaking++
 
     map.set(key, group)
   }

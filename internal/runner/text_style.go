@@ -14,16 +14,16 @@ func isSupportedTextStyle(style string) bool {
 func resolveJSONTextStyle(opts CompareOptions) (string, error) {
 	switch opts.TextStyle {
 	case "", TextStyleAuto:
-		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking || opts.IgnoreOrder {
+		if len(opts.IgnorePaths) > 0 || opts.IgnoreOrder {
 			return TextStyleSemantic, nil
 		}
 		return TextStylePatch, nil
 	case TextStylePatch:
-		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking || opts.IgnoreOrder {
+		if len(opts.IgnorePaths) > 0 || opts.IgnoreOrder {
 			return "", newUserHintError(
-				fmt.Sprintf("text style %q cannot be used with --ignore-path, --only-breaking, or --ignore-order", TextStylePatch),
+				fmt.Sprintf("text style %q cannot be used with --ignore-path or --ignore-order", TextStylePatch),
 				"use --text-style semantic",
-				"or remove --ignore-path / --only-breaking / --ignore-order",
+				"or remove --ignore-path / --ignore-order",
 			)
 		}
 		return TextStylePatch, nil
@@ -41,16 +41,16 @@ func resolveJSONTextStyle(opts CompareOptions) (string, error) {
 func resolveTextDiffStyle(opts CompareOptions) (string, error) {
 	switch opts.TextStyle {
 	case "", TextStyleAuto:
-		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
+		if len(opts.IgnorePaths) > 0 {
 			return TextStyleSemantic, nil
 		}
 		return TextStylePatch, nil
 	case TextStylePatch:
-		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
+		if len(opts.IgnorePaths) > 0 {
 			return "", newUserHintError(
-				fmt.Sprintf("text style %q cannot be used with --ignore-path or --only-breaking", TextStylePatch),
+				fmt.Sprintf("text style %q cannot be used with --ignore-path", TextStylePatch),
 				"use --text-style semantic",
-				"or remove --ignore-path / --only-breaking",
+				"or remove --ignore-path",
 			)
 		}
 		return TextStylePatch, nil

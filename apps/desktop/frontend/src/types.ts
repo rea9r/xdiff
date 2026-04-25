@@ -1,12 +1,10 @@
 export type Mode = 'json' | 'text' | 'folder'
 
 export type CompareCommon = {
-  failOn: string
   outputFormat: string
   textStyle: string
   ignorePaths: string[]
   showPaths: boolean
-  onlyBreaking: boolean
   noColor: boolean
 }
 
@@ -23,7 +21,6 @@ export type JSONRichDiffItem = {
   path: string
   oldValue?: unknown
   newValue?: unknown
-  breaking: boolean
 }
 
 export type JSONRichSummary = {
@@ -31,7 +28,6 @@ export type JSONRichSummary = {
   removed: number
   changed: number
   typeChanged: number
-  breaking: number
 }
 
 export type CompareJSONRichResponse = {

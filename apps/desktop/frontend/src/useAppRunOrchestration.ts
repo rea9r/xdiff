@@ -41,7 +41,6 @@ function buildJSONErrorResult(errorText: string): CompareJSONRichResponse {
       removed: 0,
       changed: 0,
       typeChanged: 0,
-      breaking: 0,
     },
     diffs: [],
   }

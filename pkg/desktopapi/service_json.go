@@ -23,14 +23,12 @@ type jsonMachineResult struct {
 func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, error) {
 	opts := runner.Options{
 		CompareOptions: runner.CompareOptions{
-			Format:       normalizeOutputFormat(req.Common.OutputFormat),
-			FailOn:       req.Common.FailOn,
-			IgnorePaths:  append([]string(nil), req.Common.IgnorePaths...),
-			ShowPaths:    req.Common.ShowPaths,
-			OnlyBreaking: req.Common.OnlyBreaking,
-			TextStyle:    req.Common.TextStyle,
-			IgnoreOrder:  req.IgnoreOrder,
-			UseColor:     guiUseColor(),
+			Format:      normalizeOutputFormat(req.Common.OutputFormat),
+			IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
+			ShowPaths:   req.Common.ShowPaths,
+			TextStyle:   req.Common.TextStyle,
+			IgnoreOrder: req.IgnoreOrder,
+			UseColor:    guiUseColor(),
 		},
 		OldPath: req.OldPath,
 		NewPath: req.NewPath,
@@ -95,14 +93,12 @@ func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJ
 	}
 
 	rawOpts := runner.CompareOptions{
-		Format:       normalizeOutputFormat(req.Common.OutputFormat),
-		FailOn:       req.Common.FailOn,
-		IgnorePaths:  append([]string(nil), req.Common.IgnorePaths...),
-		ShowPaths:    req.Common.ShowPaths,
-		OnlyBreaking: req.Common.OnlyBreaking,
-		TextStyle:    req.Common.TextStyle,
-		IgnoreOrder:  req.IgnoreOrder,
-		UseColor:     guiUseColor(),
+		Format:      normalizeOutputFormat(req.Common.OutputFormat),
+		IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
+		ShowPaths:   req.Common.ShowPaths,
+		TextStyle:   req.Common.TextStyle,
+		IgnoreOrder: req.IgnoreOrder,
+		UseColor:    guiUseColor(),
 	}
 	rawRun := runner.RunJSONValuesDetailed(oldValue, newValue, rawOpts)
 	rawResult := CompareResponse{
@@ -151,13 +147,11 @@ func parseJSONMachineDiffs(raw string) ([]JSONRichDiffItem, error) {
 
 	diffs = make([]JSONRichDiffItem, 0, len(parsed.Diffs))
 	for _, item := range parsed.Diffs {
-		breaking := item.Type == "removed" || item.Type == "type_changed"
 		diffs = append(diffs, JSONRichDiffItem{
 			Type:     item.Type,
 			Path:     item.Path,
 			OldValue: item.OldValue,
 			NewValue: item.NewValue,
-			Breaking: breaking,
 		})
 	}
 
@@ -176,10 +170,6 @@ func summarizeJSONRichDiffs(diffs []JSONRichDiffItem) JSONRichSummary {
 			summary.Changed++
 		case "type_changed":
 			summary.TypeChanged++
-		}
-
-		if diff.Breaking {
-			summary.Breaking++
 		}
 	}
 

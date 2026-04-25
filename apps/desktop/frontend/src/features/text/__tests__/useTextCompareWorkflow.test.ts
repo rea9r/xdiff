@@ -4,12 +4,10 @@ import type { CompareResponse } from '../../../types'
 import { useTextCompareWorkflow } from '../useTextCompareWorkflow'
 
 const initialCommon = {
-  failOn: 'none',
   outputFormat: 'text',
   textStyle: 'auto',
   ignorePaths: [],
   showPaths: false,
-  onlyBreaking: false,
   noColor: true,
 }
 

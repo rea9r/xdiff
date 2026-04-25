@@ -106,7 +106,6 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	input.Folder.ViewMode = "matrix"
 	input.JSON.Common.OutputFormat = "yaml"
 	input.JSON.Common.TextStyle = "invalid"
-	input.JSON.Common.FailOn = "wat"
 	input.JSON.Common.IgnorePaths = []string{"", "  ", "a.b"}
 	input.FolderRecentPairs = []DesktopRecentFolderPair{
 		{LeftRoot: " /left ", RightRoot: " /right ", CurrentPath: " /api ", ViewMode: "x"},
@@ -128,9 +127,6 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	}
 	if normalized.JSON.Common.TextStyle != "auto" {
 		t.Fatalf("json.common.textStyle = %q, want auto", normalized.JSON.Common.TextStyle)
-	}
-	if normalized.JSON.Common.FailOn != "any" {
-		t.Fatalf("json.common.failOn = %q, want any", normalized.JSON.Common.FailOn)
 	}
 	if len(normalized.JSON.Common.IgnorePaths) != 1 || normalized.JSON.Common.IgnorePaths[0] != "a.b" {
 		t.Fatalf("json.common.ignorePaths = %+v, want [a.b]", normalized.JSON.Common.IgnorePaths)

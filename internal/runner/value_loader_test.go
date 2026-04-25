@@ -13,7 +13,7 @@ func TestRunWithValueLoaders_OldLoaderError(t *testing.T) {
 	code, out, err := RunJSONLoaders(
 		func(context.Context) (any, error) { return nil, wantErr },
 		func(context.Context) (any, error) { return map[string]any{}, nil },
-		CompareOptions{Format: "text", FailOn: FailOnAny},
+		CompareOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -35,7 +35,7 @@ func TestRunWithValueLoaders_NewLoaderError(t *testing.T) {
 	code, out, err := RunJSONLoaders(
 		func(context.Context) (any, error) { return map[string]any{}, nil },
 		func(context.Context) (any, error) { return nil, wantErr },
-		CompareOptions{Format: "text", FailOn: FailOnAny},
+		CompareOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -76,7 +76,6 @@ func TestRunWithValueLoaders_StartsBothLoadersConcurrently(t *testing.T) {
 	go func() {
 		code, out, err = RunJSONLoaders(oldLoader, newLoader, CompareOptions{
 			Format: "text",
-			FailOn: FailOnAny,
 		})
 		close(done)
 	}()
@@ -123,7 +122,7 @@ func TestRunWithValueLoaders_BothErrorsPreferOldError(t *testing.T) {
 		func(context.Context) (any, error) {
 			return nil, newErr
 		},
-		CompareOptions{Format: "text", FailOn: FailOnAny},
+		CompareOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -163,7 +162,6 @@ func TestRunWithValueLoaders_ReturnsOldErrorEarlyAndCancelsNewLoader(t *testing.
 	go func() {
 		code, out, err = RunJSONLoaders(oldLoader, newLoader, CompareOptions{
 			Format: "text",
-			FailOn: FailOnAny,
 		})
 		close(done)
 	}()
@@ -209,7 +207,7 @@ func TestRunWithValueLoaders_NewFailsFirstOldFailsLater_ReturnsOldError(t *testi
 		func(context.Context) (any, error) {
 			return nil, newErr
 		},
-		CompareOptions{Format: "text", FailOn: FailOnAny},
+		CompareOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -236,7 +234,7 @@ func TestRunWithValueLoaders_NewFailsFirstOldSucceeds_ReturnsNewError(t *testing
 		func(context.Context) (any, error) {
 			return nil, newErr
 		},
-		CompareOptions{Format: "text", FailOn: FailOnAny},
+		CompareOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatal("expected error, got nil")

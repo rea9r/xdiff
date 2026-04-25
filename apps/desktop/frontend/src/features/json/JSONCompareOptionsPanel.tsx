@@ -6,15 +6,11 @@ export type JSONCompareOptionsPanelProps = {
   textStyle: string
   onTextStyleChange: (value: string) => void
   patchTextStyleDisabled: boolean
-  failOn: string
-  onFailOnChange: (value: string) => void
   ignorePathsDraft: string
   onIgnorePathsDraftChange: (value: string) => void
   onIgnorePathsCommit: (value: string) => void
   showPaths: boolean
   onShowPathsChange: (checked: boolean) => void
-  onlyBreaking: boolean
-  onOnlyBreakingChange: (checked: boolean) => void
 }
 
 export function JSONCompareOptionsPanel({
@@ -25,15 +21,11 @@ export function JSONCompareOptionsPanel({
   textStyle,
   onTextStyleChange,
   patchTextStyleDisabled,
-  failOn,
-  onFailOnChange,
   ignorePathsDraft,
   onIgnorePathsDraftChange,
   onIgnorePathsCommit,
   showPaths,
   onShowPathsChange,
-  onlyBreaking,
-  onOnlyBreakingChange,
 }: JSONCompareOptionsPanelProps) {
   return (
     <section className="mode-panel">
@@ -77,15 +69,6 @@ export function JSONCompareOptionsPanel({
         <summary className="advanced-summary">Advanced options</summary>
 
         <div className="field-block">
-          <label className="field-label">Fail on</label>
-          <select value={failOn} onChange={(e) => onFailOnChange(e.target.value)}>
-            <option value="none">none</option>
-            <option value="breaking">breaking</option>
-            <option value="any">any</option>
-          </select>
-        </div>
-
-        <div className="field-block">
           <label className="field-label">Ignore paths</label>
           <textarea
             className="ignore-paths-input"
@@ -106,15 +89,6 @@ export function JSONCompareOptionsPanel({
             onChange={(e) => onShowPathsChange(e.target.checked)}
           />
           show canonical paths
-        </label>
-
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={onlyBreaking}
-            onChange={(e) => onOnlyBreakingChange(e.target.checked)}
-          />
-          only breaking
         </label>
       </details>
     </section>

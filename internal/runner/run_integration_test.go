@@ -47,36 +47,6 @@ func TestRun_NoDiff_JSONFormat(t *testing.T) {
 	}
 }
 
-func TestRun_OnlyBreakingAndIgnorePath(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"email":"a@example.com","age":"20"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
-
-	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
-			Format:       "text",
-			IgnorePaths:  []string{"user.email"},
-			OnlyBreaking: true,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
-	})
-	if err != nil {
-		t.Fatalf("Run returned unexpected error: %v", err)
-	}
-	if code != exitDiffFound {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
-	}
-	if strings.Contains(out, "user.email") {
-		t.Fatalf("ignored path should not appear in output: %s", out)
-	}
-	if !strings.Contains(out, `! user.age: string -> number`) {
-		t.Fatalf("expected filtered semantic output, got: %s", out)
-	}
-	if strings.Contains(out, "--- old") || strings.Contains(out, "+++ new") {
-		t.Fatalf("expected semantic output for filtered mode, got: %s", out)
-	}
-}
-
 func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
 	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
@@ -100,14 +70,14 @@ func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
 	}
 }
 
-func TestRun_OnlyBreaking_TextMode_HidesNonBreakingDiffs(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+func TestRun_IgnorePath_TextMode_FiltersOutput(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"email":"a@example.com","age":"20"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
 		CompareOptions: CompareOptions{
-			Format:       "text",
-			OnlyBreaking: true,
+			Format:      "text",
+			IgnorePaths: []string{"user.email"},
 		},
 		OldPath: oldPath,
 		NewPath: newPath,
@@ -115,11 +85,14 @@ func TestRun_OnlyBreaking_TextMode_HidesNonBreakingDiffs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
 	}
-	if code != exitOK {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
 	}
-	if out != "No differences.\n" {
-		t.Fatalf("unexpected output: %q", out)
+	if strings.Contains(out, "user.email") {
+		t.Fatalf("ignored path should not appear in output: %s", out)
+	}
+	if !strings.Contains(out, `! user.age: string -> number`) {
+		t.Fatalf("expected filtered semantic output, got: %s", out)
 	}
 }
 
@@ -169,69 +142,6 @@ func TestRun_MissingPaths(t *testing.T) {
 	}
 	if out != "" {
 		t.Fatalf("expected empty output on error, got: %q", out)
-	}
-}
-
-func TestRun_FailOnNone_WithDiffs(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
-
-	code, _, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
-			Format: "text",
-			FailOn: FailOnNone,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
-	})
-	if err != nil {
-		t.Fatalf("Run returned unexpected error: %v", err)
-	}
-	if code != exitOK {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
-	}
-}
-
-func TestRun_FailOnBreaking_WithOnlyChanged(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
-
-	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
-			Format: "text",
-			FailOn: FailOnBreaking,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
-	})
-	if err != nil {
-		t.Fatalf("Run returned unexpected error: %v", err)
-	}
-	if code != exitOK {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
-	}
-	if !strings.Contains(out, "--- old") || !strings.Contains(out, "+++ new") {
-		t.Fatalf("expected unified diff output, got: %q", out)
-	}
-}
-
-func TestRun_FailOnBreaking_WithBreakingDiff(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"age":"20"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
-
-	code, _, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
-			Format: "text",
-			FailOn: FailOnBreaking,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
-	})
-	if err != nil {
-		t.Fatalf("Run returned unexpected error: %v", err)
-	}
-	if code != exitDiffFound {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
 	}
 }
 
@@ -332,7 +242,7 @@ func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
 	if out != "" {
 		t.Fatalf("expected empty output on error, got: %q", out)
 	}
-	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path, --only-breaking, or --ignore-order`) {
+	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path or --ignore-order`) {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
@@ -372,30 +282,6 @@ func TestRun_ShowPaths_RespectsIgnorePathFilter(t *testing.T) {
 			Format:      "json",
 			ShowPaths:   true,
 			IgnorePaths: []string{"user.name"},
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
-	})
-	if err != nil {
-		t.Fatalf("Run returned unexpected error: %v", err)
-	}
-	if code != exitDiffFound {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
-	}
-	if out != "user.age\n" {
-		t.Fatalf("unexpected output: %q", out)
-	}
-}
-
-func TestRun_ShowPaths_WithOnlyBreaking(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro","age":"20"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
-
-	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
-			Format:       "text",
-			ShowPaths:    true,
-			OnlyBreaking: true,
 		},
 		OldPath: oldPath,
 		NewPath: newPath,

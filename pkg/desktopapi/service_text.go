@@ -11,13 +11,11 @@ import (
 
 func (s *Service) CompareText(req CompareTextRequest) (*CompareResponse, error) {
 	opts := runner.CompareOptions{
-		Format:       normalizeOutputFormat(req.Common.OutputFormat),
-		FailOn:       req.Common.FailOn,
-		IgnorePaths:  append([]string(nil), req.Common.IgnorePaths...),
-		ShowPaths:    req.Common.ShowPaths,
-		OnlyBreaking: req.Common.OnlyBreaking,
-		TextStyle:    req.Common.TextStyle,
-		UseColor:     guiUseColor(),
+		Format:      normalizeOutputFormat(req.Common.OutputFormat),
+		IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
+		ShowPaths:   req.Common.ShowPaths,
+		TextStyle:   req.Common.TextStyle,
+		UseColor:    guiUseColor(),
 	}
 
 	res := runner.RunTextValuesDetailed(req.OldText, req.NewText, opts)

@@ -1,7 +1,7 @@
 export type CompareStatusBadgeItem = {
   key: string
   label: string
-  tone: 'added' | 'removed' | 'changed' | 'breaking' | 'neutral' | 'error'
+  tone: 'added' | 'removed' | 'changed' | 'neutral' | 'error'
 }
 
 type CompareStatusBadgesProps = {

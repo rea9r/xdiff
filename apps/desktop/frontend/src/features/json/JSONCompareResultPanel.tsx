@@ -43,7 +43,6 @@ export type JSONCompareResultPanelProps = {
     removed: number
     changed: number
     typeChanged: number
-    breaking: number
   }
   jsonDiffGroups: Array<{
     key: string
@@ -53,7 +52,6 @@ export type JSONCompareResultPanelProps = {
       removed: number
       changed: number
       typeChanged: number
-      breaking: number
     }
   }>
   effectiveJSONExpandedGroups: Set<string>
@@ -90,7 +88,6 @@ function buildJSONSummaryBadgeItems(params: {
   removed: number
   changed: number
   typeChanged: number
-  breaking: number
 }): CompareStatusBadgeItem[] {
   if (!params.hasResult) {
     return []
@@ -118,11 +115,8 @@ function buildJSONSummaryBadgeItems(params: {
     items.push({
       key: 'typeChanged',
       label: `type ${params.typeChanged}`,
-      tone: 'breaking',
+      tone: 'changed',
     })
-  }
-  if (params.breaking > 0) {
-    items.push({ key: 'breaking', label: `breaking ${params.breaking}`, tone: 'breaking' })
   }
   return items
 }
@@ -271,7 +265,6 @@ export function JSONCompareResultPanel({
     removed: jsonSummary?.removed ?? 0,
     changed: jsonSummary?.changed ?? 0,
     typeChanged: jsonSummary?.typeChanged ?? 0,
-    breaking: jsonSummary?.breaking ?? 0,
   })
   const jsonSearchStatus = normalizedJSONSearchQuery
     ? (jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length) > 0
@@ -441,11 +434,6 @@ export function JSONCompareResultPanel({
                                     type {group.summary.typeChanged}
                                   </span>
                                 ) : null}
-                                {group.summary.breaking > 0 ? (
-                                  <span className="json-breaking-badge">
-                                    breaking {group.summary.breaking}
-                                  </span>
-                                ) : null}
                               </>
                             }
                           />
@@ -474,9 +462,6 @@ export function JSONCompareResultPanel({
                                     <span className={`json-type-badge ${diff.type}`}>
                                       {renderJSONTypeLabel(diff.type)}
                                     </span>
-                                    {diff.breaking ? (
-                                      <span className="json-breaking-badge">breaking</span>
-                                    ) : null}
                                   </div>
                                 </td>
                                 <td className="json-diff-cell json-diff-cell-path">

@@ -12,7 +12,7 @@
   --xdiff-diff-add-bg: var(--mantine-color-diffAdd-1);
   --xdiff-diff-remove-bg: var(--mantine-color-diffRemove-1);
   --xdiff-diff-change-bg: var(--mantine-color-diffChange-1);
-  --xdiff-diff-breaking-bg: var(--mantine-color-diffBreaking-1);
+  --xdiff-diff-type-changed-bg: color-mix(in srgb, var(--mantine-color-violet-2) 70%, var(--mantine-color-body));
   --xdiff-control-padding-y: 6px;
   --xdiff-control-padding-x: 10px;
   --xdiff-control-padding-x-tight: 8px;
@@ -42,13 +42,13 @@
   --xdiff-json-row-added-bg: var(--mantine-color-diffAdd-2);
   --xdiff-json-row-removed-bg: var(--mantine-color-diffRemove-2);
   --xdiff-json-row-changed-bg: var(--mantine-color-diffChange-2);
-  --xdiff-json-row-breaking-bg: color-mix(in srgb, var(--mantine-color-violet-2) 70%, var(--xdiff-viewer-surface));
+  --xdiff-json-row-type-changed-bg: color-mix(in srgb, var(--mantine-color-violet-2) 70%, var(--xdiff-viewer-surface));
   --xdiff-json-badge-removed-fg: var(--mantine-color-red-8);
   --xdiff-json-badge-removed-bg: var(--xdiff-viewer-surface-subtle);
   --xdiff-json-badge-removed-border: color-mix(in srgb, var(--mantine-color-red-6) 38%, transparent);
-  --xdiff-json-badge-breaking-fg: var(--mantine-color-violet-8);
-  --xdiff-json-badge-breaking-bg: var(--xdiff-viewer-surface-subtle);
-  --xdiff-json-badge-breaking-border: color-mix(in srgb, var(--mantine-color-violet-5) 34%, transparent);
+  --xdiff-json-badge-type-changed-fg: var(--mantine-color-violet-8);
+  --xdiff-json-badge-type-changed-bg: var(--xdiff-viewer-surface-subtle);
+  --xdiff-json-badge-type-changed-border: color-mix(in srgb, var(--mantine-color-violet-5) 34%, transparent);
   --xdiff-compare-pane-gap: 8px;
   --xdiff-compare-pane-padding: 8px;
   --xdiff-compare-pane-header-gap: 6px;
@@ -71,17 +71,17 @@
   --xdiff-diff-add-bg: color-mix(in srgb, var(--mantine-color-diffAdd-7) 24%, transparent);
   --xdiff-diff-remove-bg: color-mix(in srgb, var(--mantine-color-diffRemove-7) 24%, transparent);
   --xdiff-diff-change-bg: color-mix(in srgb, var(--mantine-color-diffChange-7) 24%, transparent);
-  --xdiff-diff-breaking-bg: color-mix(in srgb, var(--mantine-color-diffBreaking-7) 24%, transparent);
+  --xdiff-diff-type-changed-bg: color-mix(in srgb, var(--mantine-color-violet-7) 24%, transparent);
   --xdiff-json-row-added-bg: color-mix(in srgb, var(--mantine-color-diffAdd-7) 28%, transparent);
   --xdiff-json-row-removed-bg: color-mix(in srgb, var(--mantine-color-diffRemove-7) 28%, transparent);
   --xdiff-json-row-changed-bg: color-mix(in srgb, var(--mantine-color-diffChange-7) 28%, transparent);
-  --xdiff-json-row-breaking-bg: color-mix(in srgb, var(--mantine-color-violet-8) 22%, transparent);
+  --xdiff-json-row-type-changed-bg: color-mix(in srgb, var(--mantine-color-violet-8) 22%, transparent);
   --xdiff-json-badge-removed-fg: var(--mantine-color-red-3);
   --xdiff-json-badge-removed-bg: color-mix(in srgb, var(--mantine-color-red-8) 18%, var(--xdiff-viewer-surface));
   --xdiff-json-badge-removed-border: color-mix(in srgb, var(--mantine-color-red-5) 42%, transparent);
-  --xdiff-json-badge-breaking-fg: var(--mantine-color-violet-2);
-  --xdiff-json-badge-breaking-bg: color-mix(in srgb, var(--mantine-color-violet-8) 14%, var(--xdiff-viewer-surface));
-  --xdiff-json-badge-breaking-border: color-mix(in srgb, var(--mantine-color-violet-4) 40%, transparent);
+  --xdiff-json-badge-type-changed-fg: var(--mantine-color-violet-2);
+  --xdiff-json-badge-type-changed-bg: color-mix(in srgb, var(--mantine-color-violet-8) 14%, var(--xdiff-viewer-surface));
+  --xdiff-json-badge-type-changed-border: color-mix(in srgb, var(--mantine-color-violet-4) 40%, transparent);
 }
 
 html,
@@ -915,13 +915,6 @@ button {
   color: var(--mantine-color-yellow-8);
 }
 
-.compare-summary-badge.breaking,
-.compare-status-badge.breaking {
-  background: var(--xdiff-json-badge-breaking-bg);
-  color: var(--xdiff-json-badge-breaking-fg);
-  border: 1px solid var(--xdiff-json-badge-breaking-border);
-}
-
 .compare-summary-badge.neutral,
 .compare-status-badge.neutral {
   background: var(--xdiff-viewer-surface-subtle);
@@ -1109,9 +1102,9 @@ button {
 }
 
 .json-group-stat.type-changed {
-  background: var(--xdiff-json-badge-breaking-bg);
-  color: var(--xdiff-json-badge-breaking-fg);
-  border: 1px solid var(--xdiff-json-badge-breaking-border);
+  background: var(--xdiff-json-badge-type-changed-bg);
+  color: var(--xdiff-json-badge-type-changed-fg);
+  border: 1px solid var(--xdiff-json-badge-type-changed-border);
 }
 
 .json-diff-row.added {
@@ -1127,7 +1120,7 @@ button {
 }
 
 .json-diff-row.type_changed {
-  background: var(--xdiff-json-row-breaking-bg);
+  background: var(--xdiff-json-row-type-changed-bg);
 }
 
 .json-diff-row.search-hit {
@@ -1144,8 +1137,7 @@ button {
   gap: 6px;
 }
 
-.json-type-badge,
-.json-breaking-badge {
+.json-type-badge {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
@@ -1172,15 +1164,9 @@ button {
 }
 
 .json-type-badge.type_changed {
-  background: var(--xdiff-json-badge-breaking-bg);
-  color: var(--xdiff-json-badge-breaking-fg);
-  border: 1px solid var(--xdiff-json-badge-breaking-border);
-}
-
-.json-breaking-badge {
-  background: var(--xdiff-json-badge-breaking-bg);
-  color: var(--xdiff-json-badge-breaking-fg);
-  border: 1px solid var(--xdiff-json-badge-breaking-border);
+  background: var(--xdiff-json-badge-type-changed-bg);
+  color: var(--xdiff-json-badge-type-changed-fg);
+  border: 1px solid var(--xdiff-json-badge-type-changed-border);
 }
 
 .json-path-cell {
@@ -1702,7 +1688,7 @@ button {
 }
 
 .folder-status-badge.type-mismatch {
-  background: var(--xdiff-diff-breaking-bg);
+  background: var(--xdiff-diff-type-changed-bg);
 }
 
 .folder-status-badge.error {

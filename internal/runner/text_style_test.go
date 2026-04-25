@@ -25,9 +25,8 @@ func TestResolveJSONTextStyle_PatchWithSemanticFilters_ReturnsUserHintError(t *t
 
 func TestValidateCompareOptions_InvalidEnums_ReturnUserHintError(t *testing.T) {
 	tests := []CompareOptions{
-		{Format: "yaml", FailOn: FailOnAny, TextStyle: TextStyleAuto},
-		{Format: "text", FailOn: "changed", TextStyle: TextStyleAuto},
-		{Format: "text", FailOn: FailOnAny, TextStyle: "fancy"},
+		{Format: "yaml", TextStyle: TextStyleAuto},
+		{Format: "text", TextStyle: "fancy"},
 	}
 
 	for _, tt := range tests {

@@ -24,7 +24,7 @@ func RunJSONFiles(opts Options) (int, string, error) {
 
 func RunJSONFilesDetailed(opts Options) RunResult {
 	if err := validateFileOptions(opts); err != nil {
-		return finalizeRun(nil, "", err, opts.FailOn)
+		return finalizeRun(nil, "", err)
 	}
 
 	return RunJSONLoadersDetailed(
@@ -73,10 +73,10 @@ func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts CompareOption
 			gotOld = true
 			if oldRes.err != nil {
 				cancel()
-				return finalizeRun(nil, "", oldRes.err, opts.FailOn)
+				return finalizeRun(nil, "", oldRes.err)
 			}
 			if gotNew && newRes.err != nil {
-				return finalizeRun(nil, "", newRes.err, opts.FailOn)
+				return finalizeRun(nil, "", newRes.err)
 			}
 		case res := <-newCh:
 			newRes = res
@@ -84,10 +84,10 @@ func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts CompareOption
 			if gotOld {
 				if oldRes.err != nil {
 					cancel()
-					return finalizeRun(nil, "", oldRes.err, opts.FailOn)
+					return finalizeRun(nil, "", oldRes.err)
 				}
 				if newRes.err != nil {
-					return finalizeRun(nil, "", newRes.err, opts.FailOn)
+					return finalizeRun(nil, "", newRes.err)
 				}
 			}
 		}
@@ -102,18 +102,17 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 
 func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResult {
 	if err := validateCompareOptions(opts); err != nil {
-		return finalizeRun(nil, "", err, opts.FailOn)
+		return finalizeRun(nil, "", err)
 	}
 
 	diffs, err := jsondiff.CompareWithOptions(oldValue, newValue, jsondiff.Options{
 		IgnoreOrder: opts.IgnoreOrder,
 	})
 	if err != nil {
-		return finalizeRun(nil, "", err, opts.FailOn)
+		return finalizeRun(nil, "", err)
 	}
 	diffs = delta.ApplyOptions(diffs, delta.Options{
-		IgnorePaths:  opts.IgnorePaths,
-		OnlyBreaking: opts.OnlyBreaking,
+		IgnorePaths: opts.IgnorePaths,
 	})
 
 	var out string
@@ -123,7 +122,7 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 	case opts.Format == output.TextFormat:
 		style, err := resolveJSONTextStyle(opts)
 		if err != nil {
-			return finalizeRun(diffs, "", err, opts.FailOn)
+			return finalizeRun(diffs, "", err)
 		}
 
 		if len(diffs) == 0 {
@@ -140,12 +139,12 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 	case opts.Format == output.JSONFormat:
 		rendered, err := output.RenderJSON(diffs)
 		if err != nil {
-			return finalizeRun(diffs, "", err, opts.FailOn)
+			return finalizeRun(diffs, "", err)
 		}
 		out = rendered
 	}
 
-	return finalizeRun(diffs, out, nil, opts.FailOn)
+	return finalizeRun(diffs, out, nil)
 }
 
 func validateFileOptions(opts Options) error {
@@ -161,13 +160,6 @@ func validateCompareOptions(opts CompareOptions) error {
 			fmt.Sprintf("invalid output format %q", opts.Format),
 			"allowed values: text, json",
 			"try --output-format text",
-		)
-	}
-	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {
-		return newUserHintError(
-			fmt.Sprintf("invalid fail-on mode %q", opts.FailOn),
-			"allowed values: none, breaking, any",
-			"try --fail-on any",
 		)
 	}
 	if !isSupportedTextStyle(opts.TextStyle) {

@@ -49,22 +49,6 @@ func TestRunCLI_InvalidFormat(t *testing.T) {
 	}
 }
 
-func TestRunCLI_InvalidFailOn(t *testing.T) {
-	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
-
-	code, err := runCLIForTest([]string{"json", "--fail-on", "changed", oldPath, newPath})
-	if err == nil {
-		t.Fatalf("expected error, got nil")
-	}
-	if code != 2 {
-		t.Fatalf("exit code mismatch: got=%d want=2", code)
-	}
-	if !strings.Contains(err.Error(), "invalid fail-on mode") {
-		t.Fatalf("unexpected error message: %v", err)
-	}
-}
-
 func TestRunCLI_Text_SuccessDiffFound(t *testing.T) {
 	oldPath := writeCLIFile(t, "hello\nworld\n", "old.txt")
 	newPath := writeCLIFile(t, "hello\ngopher\n", "new.txt")
@@ -83,45 +67,6 @@ func TestRunCLI_Text_JSONFormat(t *testing.T) {
 	newPath := writeCLIFile(t, "b\n", "new.txt")
 
 	code, err := runCLIForTest([]string{"text", "--output-format", "json", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 1 {
-		t.Fatalf("exit code mismatch: got=%d want=1", code)
-	}
-}
-
-func TestRunCLI_FailOnNone_ReturnsZeroEvenWhenDiffExists(t *testing.T) {
-	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
-
-	code, err := runCLIForTest([]string{"json", "--fail-on", "none", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 0 {
-		t.Fatalf("exit code mismatch: got=%d want=0", code)
-	}
-}
-
-func TestRunCLI_FailOnBreaking_ChangedOnlyReturnsZero(t *testing.T) {
-	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
-
-	code, err := runCLIForTest([]string{"json", "--fail-on", "breaking", oldPath, newPath})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 0 {
-		t.Fatalf("exit code mismatch: got=%d want=0", code)
-	}
-}
-
-func TestRunCLI_FailOnBreaking_BreakingDiffReturnsOne(t *testing.T) {
-	oldPath := writeCLIJSON(t, `{"user":{"age":"20"}}`, "old.json")
-	newPath := writeCLIJSON(t, `{"user":{"age":20}}`, "new.json")
-
-	code, err := runCLIForTest([]string{"json", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -154,7 +99,7 @@ func TestRunCLI_PatchStyleWithIgnoreOrderReturnsError(t *testing.T) {
 	if code != 2 {
 		t.Fatalf("exit code mismatch: got=%d want=2", code)
 	}
-	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path, --only-breaking, or --ignore-order`) {
+	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path or --ignore-order`) {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
@@ -190,7 +135,7 @@ func TestExecute_PrintsHintsForPatchAndIgnoreOrderConflict(t *testing.T) {
 	}
 
 	msg := stderr.String()
-	if !strings.Contains(msg, `text style "patch" cannot be used with --ignore-path, --only-breaking, or --ignore-order`) {
+	if !strings.Contains(msg, `text style "patch" cannot be used with --ignore-path or --ignore-order`) {
 		t.Fatalf("unexpected stderr: %q", msg)
 	}
 	if !strings.Contains(msg, "Try one of these:") {

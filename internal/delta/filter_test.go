@@ -32,21 +32,3 @@ func TestFilterIgnoredPaths_NoIgnores(t *testing.T) {
 		t.Fatalf("filtered diff mismatch (-want +got):\n%s", diff)
 	}
 }
-
-func TestFilterOnlyBreaking(t *testing.T) {
-	diffs := []Diff{
-		{Type: Added, Path: "user.phone"},
-		{Type: Changed, Path: "user.name"},
-		{Type: Removed, Path: "user.email"},
-		{Type: TypeChanged, Path: "user.age"},
-	}
-
-	got := FilterOnlyBreaking(diffs)
-	want := []Diff{
-		{Type: Removed, Path: "user.email"},
-		{Type: TypeChanged, Path: "user.age"},
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("filtered diff mismatch (-want +got):\n%s", diff)
-	}
-}

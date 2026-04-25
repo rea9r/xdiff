@@ -3,12 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { useJSONCompareWorkflow } from '../useJSONCompareWorkflow'
 
 const initialCommon = {
-  failOn: 'none',
   outputFormat: 'text',
   textStyle: 'patch',
   ignorePaths: [],
   showPaths: false,
-  onlyBreaking: false,
   noColor: true,
 }
 

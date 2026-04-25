@@ -84,23 +84,16 @@ export function useDesktopShellModel({
         textStyle: jsonWorkflow.jsonCommon.textStyle,
         onTextStyleChange: (value) => jsonWorkflow.updateJSONCommon('textStyle', value),
         patchTextStyleDisabled: jsonWorkflow.jsonPatchBlockedByFilters,
-        failOn: jsonWorkflow.jsonCommon.failOn,
-        onFailOnChange: (value) => jsonWorkflow.updateJSONCommon('failOn', value),
         ignorePathsDraft: jsonWorkflow.jsonIgnorePathsDraft,
         onIgnorePathsDraftChange: jsonWorkflow.setJSONIgnorePathsDraft,
         onIgnorePathsCommit: (value) =>
           jsonWorkflow.updateJSONCommon('ignorePaths', parseIgnorePaths(value)),
         showPaths: jsonWorkflow.jsonCommon.showPaths,
         onShowPathsChange: (checked) => jsonWorkflow.updateJSONCommon('showPaths', checked),
-        onlyBreaking: jsonWorkflow.jsonCommon.onlyBreaking,
-        onOnlyBreakingChange: (checked) =>
-          jsonWorkflow.updateJSONCommon('onlyBreaking', checked),
       }}
       textProps={{
         outputFormat: textWorkflow.textCommon.outputFormat,
         onOutputFormatChange: (value) => textWorkflow.updateTextCommon('outputFormat', value),
-        failOn: textWorkflow.textCommon.failOn,
-        onFailOnChange: (value) => textWorkflow.updateTextCommon('failOn', value),
       }}
     />
   )
