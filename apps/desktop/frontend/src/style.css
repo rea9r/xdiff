@@ -1131,6 +1131,17 @@ button {
   box-shadow: inset 0 0 0 2px var(--xdiff-search-hit-active-border);
 }
 
+.json-diff-row.active-diff-hit {
+  box-shadow: inset 4px 0 0 0 var(--xdiff-search-hit-active-border);
+  scroll-margin-block: 80px;
+}
+
+.json-diff-row.active-search-hit.active-diff-hit {
+  box-shadow:
+    inset 0 0 0 2px var(--xdiff-search-hit-active-border),
+    inset 4px 0 0 0 var(--xdiff-search-hit-active-border);
+}
+
 .json-type-cell {
   display: inline-flex;
   align-items: center;

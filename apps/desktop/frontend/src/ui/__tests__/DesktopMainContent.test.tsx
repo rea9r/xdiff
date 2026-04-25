@@ -104,6 +104,13 @@ const jsonResultProps = {
   toggleJSONGroup: noop,
   toggleJSONExpandedValue: noop,
   registerJSONDiffSearchRowRef: () => noop,
+  jsonDiffNavCount: 0,
+  jsonActiveDiffIndex: 0,
+  activeJSONSemanticDiffIndex: -1,
+  jsonDiffTextBlockIds: new Set<string>(),
+  activeJSONDiffTextBlockId: null,
+  moveJSONDiff: noop,
+  registerJSONSemanticDiffRowRef: () => noop,
 }
 
 const folderItem: FolderCompareItem = {

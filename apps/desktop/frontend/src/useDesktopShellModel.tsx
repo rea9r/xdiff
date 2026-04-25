@@ -196,6 +196,13 @@ export function useDesktopShellModel({
         toggleJSONGroup: jsonViewState.toggleJSONGroup,
         toggleJSONExpandedValue: jsonViewState.toggleJSONExpandedValue,
         registerJSONDiffSearchRowRef: jsonViewState.registerJSONDiffSearchRowRef,
+        jsonDiffNavCount: jsonViewState.jsonDiffNavCount,
+        jsonActiveDiffIndex: jsonViewState.jsonActiveDiffIndex,
+        activeJSONSemanticDiffIndex: jsonViewState.activeJSONSemanticDiffIndex,
+        jsonDiffTextBlockIds: jsonViewState.jsonDiffTextBlockIds,
+        activeJSONDiffTextBlockId: jsonViewState.activeJSONDiffTextBlockId,
+        moveJSONDiff: jsonViewState.moveJSONDiff,
+        registerJSONSemanticDiffRowRef: jsonViewState.registerJSONSemanticDiffRowRef,
       }}
       folderResultProps={{
         folderResult,

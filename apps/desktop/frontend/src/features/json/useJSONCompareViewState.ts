@@ -3,10 +3,13 @@ import type { CompareJSONRichResponse, JSONRichDiffItem } from '../../types'
 import { createSearchRowRefRegistrar } from '../../ui/RichDiffViewer'
 import {
   buildRichDiffItems,
+  buildTextDiffBlocks,
   buildTextSearchMatches,
   normalizeSearchQuery,
   parseUnifiedDiff,
 } from '../text/textDiff'
+
+const buildJSONSemanticDiffRowID = (index: number) => `json-semantic-${index}`
 
 export type JSONResultView = 'diff' | 'semantic' | 'raw'
 
@@ -109,11 +112,21 @@ export function useJSONCompareViewState({
   const [jsonResultView, setJSONResultView] = useState<JSONResultView>('diff')
   const [jsonSearchQuery, setJSONSearchQuery] = useState('')
   const [jsonActiveSearchIndex, setJSONActiveSearchIndex] = useState(0)
+  const [jsonActiveDiffIndex, setJSONActiveDiffIndex] = useState(0)
   const [jsonExpandedGroups, setJSONExpandedGroups] = useState<string[]>([])
   const [jsonExpandedValueKeys, setJSONExpandedValueKeys] = useState<string[]>([])
 
   const jsonDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const registerJSONDiffSearchRowRef = createSearchRowRefRegistrar(jsonDiffSearchRowRefs)
+  const jsonSemanticDiffRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({})
+  const registerJSONSemanticDiffRowRef =
+    (id: string) => (node: HTMLTableRowElement | null) => {
+      if (node) {
+        jsonSemanticDiffRowRefs.current[id] = node
+        return
+      }
+      delete jsonSemanticDiffRowRefs.current[id]
+    }
 
   const jsonResult = jsonRichResult?.result ?? null
   const jsonDiffRows = jsonRichResult?.diffs ?? []
@@ -165,13 +178,39 @@ export function useJSONCompareViewState({
     () => buildJSONMatchGroupKeys(jsonDiffRows, jsonSearchMatches),
     [jsonDiffRows, jsonSearchMatches],
   )
+
+  const jsonDiffTextBlocks = useMemo(
+    () => (jsonDiffTextItems ? buildTextDiffBlocks(jsonDiffTextItems) : []),
+    [jsonDiffTextItems],
+  )
+  const jsonDiffTextBlockIds = useMemo(
+    () => new Set(jsonDiffTextBlocks.map((block) => block.id)),
+    [jsonDiffTextBlocks],
+  )
+  const jsonDiffNavCount =
+    jsonResultView === 'semantic' ? jsonDiffRows.length : jsonDiffTextBlocks.length
+  const activeJSONSemanticDiffItem =
+    jsonResultView === 'semantic' ? (jsonDiffRows[jsonActiveDiffIndex] ?? null) : null
+  const activeJSONSemanticDiffRowID =
+    jsonResultView === 'semantic' && activeJSONSemanticDiffItem
+      ? buildJSONSemanticDiffRowID(jsonActiveDiffIndex)
+      : null
+  const activeJSONSemanticDiffGroupKey = activeJSONSemanticDiffItem
+    ? getJSONDiffGroupKey(activeJSONSemanticDiffItem.path)
+    : null
+  const activeJSONDiffTextBlockId =
+    jsonResultView === 'diff' ? (jsonDiffTextBlocks[jsonActiveDiffIndex]?.id ?? null) : null
+
   const effectiveJSONExpandedGroups = useMemo(() => {
     const keys = new Set<string>(jsonExpandedGroups)
     for (const key of jsonMatchGroupKeys) {
       keys.add(key)
     }
+    if (activeJSONSemanticDiffGroupKey) {
+      keys.add(activeJSONSemanticDiffGroupKey)
+    }
     return keys
-  }, [jsonExpandedGroups, jsonMatchGroupKeys])
+  }, [jsonExpandedGroups, jsonMatchGroupKeys, activeJSONSemanticDiffGroupKey])
 
   useEffect(() => {
     if (!jsonRichResult) {
@@ -223,6 +262,45 @@ export function useJSONCompareViewState({
     }
   }, [activeJSONDiffSearchMatch?.id, canRenderJSONDiff, jsonResultView, textDiffLayout])
 
+  useEffect(() => {
+    setJSONActiveDiffIndex(0)
+  }, [jsonDiffRows, jsonDiffTextItems, jsonResultView])
+
+  useEffect(() => {
+    if (jsonDiffNavCount === 0) {
+      if (jsonActiveDiffIndex !== 0) {
+        setJSONActiveDiffIndex(0)
+      }
+      return
+    }
+
+    if (jsonActiveDiffIndex >= jsonDiffNavCount) {
+      setJSONActiveDiffIndex(0)
+    }
+  }, [jsonDiffNavCount, jsonActiveDiffIndex])
+
+  useEffect(() => {
+    if (jsonResultView !== 'semantic' || !activeJSONSemanticDiffRowID) {
+      return
+    }
+
+    const node = jsonSemanticDiffRowRefs.current[activeJSONSemanticDiffRowID]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [activeJSONSemanticDiffRowID, jsonResultView, effectiveJSONExpandedGroups])
+
+  useEffect(() => {
+    if (jsonResultView !== 'diff' || !canRenderJSONDiff || !activeJSONDiffTextBlockId) {
+      return
+    }
+
+    const node = jsonDiffSearchRowRefs.current[activeJSONDiffTextBlockId]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [activeJSONDiffTextBlockId, canRenderJSONDiff, jsonResultView, textDiffLayout])
+
   const moveJSONSearch = (direction: 1 | -1) => {
     const targetMatches =
       jsonResultView === 'semantic' ? jsonSearchMatches : jsonDiffSearchMatches
@@ -240,6 +318,18 @@ export function useJSONCompareViewState({
       direction === 1
         ? (prev + 1) % targetMatches.length
         : (prev - 1 + targetMatches.length) % targetMatches.length,
+    )
+  }
+
+  const moveJSONDiff = (direction: 1 | -1) => {
+    if (jsonDiffNavCount === 0) {
+      return
+    }
+
+    setJSONActiveDiffIndex((prev) =>
+      direction === 1
+        ? (prev + 1) % jsonDiffNavCount
+        : (prev - 1 + jsonDiffNavCount) % jsonDiffNavCount,
     )
   }
 
@@ -289,5 +379,15 @@ export function useJSONCompareViewState({
     toggleJSONExpandedValue,
     registerJSONDiffSearchRowRef,
     resetJSONSearch,
+    jsonDiffNavCount,
+    jsonActiveDiffIndex,
+    activeJSONSemanticDiffIndex:
+      jsonResultView === 'semantic' ? jsonActiveDiffIndex : -1,
+    jsonDiffTextBlockIds,
+    activeJSONDiffTextBlockId,
+    moveJSONDiff,
+    registerJSONSemanticDiffRowRef,
   }
 }
+
+export { buildJSONSemanticDiffRowID }

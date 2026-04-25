@@ -1,8 +1,9 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import type { CompareResponse, JSONRichDiffItem } from '../../types'
 import { renderResult } from '../../utils/appHelpers'
+import { CompareDiffNavControls } from '../../ui/CompareDiffNavControls'
 import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
 import { CompareSearchControls } from '../../ui/CompareSearchControls'
 import {
@@ -16,6 +17,7 @@ import { CompareValueBlock } from '../../ui/CompareValueBlock'
 import { CompareStatusState } from '../../ui/CompareStatusState'
 import { RichDiffViewer } from '../../ui/RichDiffViewer'
 import type { RichDiffItem, TextSearchMatch } from '../text/textDiff'
+import { buildJSONSemanticDiffRowID } from './useJSONCompareViewState'
 
 export type JSONCompareResultPanelProps = {
   jsonResult: CompareResponse | null
@@ -60,6 +62,13 @@ export type JSONCompareResultPanelProps = {
   toggleJSONGroup: (groupKey: string) => void
   toggleJSONExpandedValue: (valueKey: string) => void
   registerJSONDiffSearchRowRef: (matchId: string) => (node: HTMLDivElement | null) => void
+  jsonDiffNavCount: number
+  jsonActiveDiffIndex: number
+  activeJSONSemanticDiffIndex: number
+  jsonDiffTextBlockIds: Set<string>
+  activeJSONDiffTextBlockId: string | null
+  moveJSONDiff: (direction: 1 | -1) => void
+  registerJSONSemanticDiffRowRef: (id: string) => (node: HTMLTableRowElement | null) => void
 }
 
 function stringifyJSONValue(value: unknown): string {
@@ -241,6 +250,13 @@ export function JSONCompareResultPanel({
   toggleJSONGroup,
   toggleJSONExpandedValue,
   registerJSONDiffSearchRowRef,
+  jsonDiffNavCount,
+  jsonActiveDiffIndex,
+  activeJSONSemanticDiffIndex,
+  jsonDiffTextBlockIds,
+  activeJSONDiffTextBlockId,
+  moveJSONDiff,
+  registerJSONSemanticDiffRowRef,
 }: JSONCompareResultPanelProps) {
   const raw = jsonResult ? renderResult(jsonResult) : ''
   const showDiff = jsonResultView === 'diff' && canRenderJSONDiff && !!jsonDiffTextItems
@@ -251,7 +267,35 @@ export function JSONCompareResultPanel({
       : jsonResultView === 'diff'
         ? showDiff
         : false
+  const canNavigate = showDiff || showSemantic
   const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
+  const moveJSONDiffRef = useRef(moveJSONDiff)
+  moveJSONDiffRef.current = moveJSONDiff
+
+  useEffect(() => {
+    if (!canNavigate || jsonDiffNavCount === 0) {
+      return
+    }
+
+    const handler = (event: KeyboardEvent) => {
+      if (!event.altKey || event.metaKey || event.ctrlKey) {
+        return
+      }
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+        return
+      }
+      const target = event.target as HTMLElement | null
+      if (target && target.tagName === 'INPUT') {
+        return
+      }
+
+      event.preventDefault()
+      moveJSONDiffRef.current(event.key === 'ArrowDown' ? 1 : -1)
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [canNavigate, jsonDiffNavCount])
   const hasJSONResult = !!jsonResult
   const jsonDiffRowIndexMap = new Map<JSONRichDiffItem, number>()
   jsonDiffRows.forEach((diff, index) => {
@@ -280,38 +324,49 @@ export function JSONCompareResultPanel({
       toolbar={
         <CompareResultToolbar
           primary={
-            <CompareSearchControls
-              value={jsonSearchQuery}
-              placeholder={jsonResultView === 'semantic' ? 'Search paths or values' : 'Search diff'}
-              statusText={jsonSearchStatus}
-              disabled={!canSearch}
-              onChange={setJSONSearchQuery}
-              onPrev={() => moveJSONSearch(-1)}
-              onNext={() => moveJSONSearch(1)}
-              prevDisabled={
-                !canSearch ||
-                (jsonResultView === 'semantic'
-                  ? jsonSearchMatches.length === 0
-                  : jsonDiffSearchMatches.length === 0)
-              }
-              nextDisabled={
-                !canSearch ||
-                (jsonResultView === 'semantic'
-                  ? jsonSearchMatches.length === 0
-                  : jsonDiffSearchMatches.length === 0)
-              }
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  moveJSONSearch(e.shiftKey ? -1 : 1)
-                  return
+            <>
+              <CompareSearchControls
+                value={jsonSearchQuery}
+                placeholder={
+                  jsonResultView === 'semantic' ? 'Search paths or values' : 'Search diff'
                 }
+                statusText={jsonSearchStatus}
+                disabled={!canSearch}
+                onChange={setJSONSearchQuery}
+                onPrev={() => moveJSONSearch(-1)}
+                onNext={() => moveJSONSearch(1)}
+                prevDisabled={
+                  !canSearch ||
+                  (jsonResultView === 'semantic'
+                    ? jsonSearchMatches.length === 0
+                    : jsonDiffSearchMatches.length === 0)
+                }
+                nextDisabled={
+                  !canSearch ||
+                  (jsonResultView === 'semantic'
+                    ? jsonSearchMatches.length === 0
+                    : jsonDiffSearchMatches.length === 0)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    moveJSONSearch(e.shiftKey ? -1 : 1)
+                    return
+                  }
 
-                if (e.key === 'Escape') {
-                  setJSONSearchQuery('')
-                }
-              }}
-            />
+                  if (e.key === 'Escape') {
+                    setJSONSearchQuery('')
+                  }
+                }}
+              />
+              <CompareDiffNavControls
+                count={jsonDiffNavCount}
+                activeIndex={jsonActiveDiffIndex}
+                onPrev={() => moveJSONDiff(-1)}
+                onNext={() => moveJSONDiff(1)}
+                disabled={!canNavigate}
+              />
+            </>
           }
           summary={<CompareStatusBadges items={jsonSummaryItems} />}
           secondary={
@@ -390,6 +445,8 @@ export function JSONCompareResultPanel({
           keyPrefix="json"
           searchMatchIds={jsonDiffSearchMatchIds}
           activeMatchId={activeJSONDiffSearchMatchId}
+          navMatchIds={jsonDiffTextBlockIds}
+          activeNavMatchId={activeJSONDiffTextBlockId}
           registerSearchRowRef={registerJSONDiffSearchRowRef}
         />
       ) : showSemantic ? (
@@ -445,14 +502,18 @@ export function JSONCompareResultPanel({
                             const index = jsonDiffRowIndexMap.get(diff) ?? -1
                             const searchHit = jsonSearchMatchIndexSet.has(index)
                             const activeHit = activeJSONMatch === index
+                            const isActiveNavRow = activeJSONSemanticDiffIndex === index
+                            const rowID = buildJSONSemanticDiffRowID(index)
                             return (
                               <tr
                                 key={`${diff.type}-${diff.path}-${index}`}
+                                ref={registerJSONSemanticDiffRowRef(rowID)}
                                 className={[
                                   'json-diff-row',
                                   diff.type,
                                   searchHit ? 'search-hit' : '',
                                   activeHit ? 'active-search-hit' : '',
+                                  isActiveNavRow ? 'active-diff-hit' : '',
                                 ]
                                   .filter(Boolean)
                                   .join(' ')}
