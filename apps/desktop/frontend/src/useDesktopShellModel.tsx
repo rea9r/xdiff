@@ -27,6 +27,7 @@ type DesktopShellModel = {
 
 type UseDesktopShellModelArgs = {
   mode: Mode
+  setMode: (mode: Mode) => void
   loading: boolean
   compareOptionsOpened: boolean
   onCloseCompareOptions: () => void
@@ -49,6 +50,7 @@ type UseDesktopShellModelArgs = {
 
 export function useDesktopShellModel({
   mode,
+  setMode,
   loading,
   compareOptionsOpened,
   onCloseCompareOptions,
@@ -120,6 +122,11 @@ export function useDesktopShellModel({
         onClearInput: textWorkflow.clearTextInput,
         onOldChange: textWorkflow.setTextOldInput,
         onNewChange: textWorkflow.setTextNewInput,
+        onSwitchToJSON: (oldText, newText) => {
+          jsonWorkflow.setJSONOldInput(oldText)
+          jsonWorkflow.setJSONNewInput(newText)
+          setMode('json')
+        },
       }}
       textResultProps={{
         textResult: textWorkflow.textResult,

@@ -151,6 +151,7 @@ export function useDesktopAppModel() {
 
   const { layoutMode, sidebar, main, inspector, inspectorOpen } = useDesktopShellModel({
     mode,
+    setMode,
     loading,
     compareOptionsOpened,
     onCloseCompareOptions: () => setCompareOptionsOpened(false),

@@ -350,6 +350,70 @@ body {
   gap: 4px;
 }
 
+.text-compare-source-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xdiff-space-2);
+  min-height: 0;
+}
+
+.text-json-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--xdiff-space-2);
+  align-self: flex-start;
+  padding: 4px 8px;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: var(--xdiff-radius-md);
+  background: color-mix(in srgb, var(--xdiff-accent) 8%, transparent);
+  font-size: var(--xdiff-text-sm);
+  color: var(--xdiff-viewer-text-dimmed);
+}
+
+.text-json-suggestion-label {
+  white-space: nowrap;
+}
+
+.text-json-suggestion-action {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--xdiff-accent-fg);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.text-json-suggestion-action:hover {
+  color: var(--xdiff-accent-strong);
+}
+
+.text-json-suggestion-action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--xdiff-accent) 35%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--xdiff-radius-sm);
+}
+
+.text-json-suggestion-dismiss {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 2px;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--xdiff-viewer-text-dimmed);
+  cursor: pointer;
+  border-radius: var(--xdiff-radius-sm);
+}
+
+.text-json-suggestion-dismiss:hover {
+  color: var(--mantine-color-text);
+  background: var(--xdiff-viewer-surface-hover);
+}
+
 .workspace-inspector {
   min-width: 0;
   min-height: 0;

@@ -26,6 +26,7 @@ const textSourceProps = {
   onClearInput: noop,
   onOldChange: noop,
   onNewChange: noop,
+  onSwitchToJSON: noop,
 }
 
 const textResultProps = {
