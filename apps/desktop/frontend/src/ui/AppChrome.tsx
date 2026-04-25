@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { Mode } from '../types'
 import { HeaderRailGroup, HeaderRailSelect } from './HeaderRail'
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp'
 import { ThemeModeControl } from './ThemeModeControl'
 
 export type AppChromeLayoutMode = 'workspace' | 'sidebar'
@@ -206,6 +207,8 @@ export function AppChrome({
           </div>
         )}
       </AppShell.Main>
+
+      <KeyboardShortcutsHelp />
     </AppShell>
   )
 }

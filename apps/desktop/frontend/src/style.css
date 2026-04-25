@@ -2017,3 +2017,59 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.shortcut-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xdiff-space-3);
+}
+
+.shortcut-help-title {
+  font-size: var(--xdiff-text-xs);
+  font-weight: 600;
+  color: var(--xdiff-viewer-text-dimmed);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--xdiff-space-1);
+}
+
+.shortcut-help-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--xdiff-space-1);
+}
+
+.shortcut-help-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  gap: var(--xdiff-space-2);
+  font-size: var(--xdiff-text-sm);
+}
+
+.shortcut-help-keys {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.shortcut-help-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 1px 6px;
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: var(--xdiff-radius-sm);
+  background: var(--xdiff-viewer-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.shortcut-help-label {
+  color: var(--xdiff-viewer-text);
+}

@@ -4,6 +4,7 @@ import type {
   CompareFoldersResponse,
   FolderCompareItem,
 } from '../../types'
+import { usePersistedState } from '../../usePersistedState'
 import {
   buildFolderBreadcrumbs,
   filterFolderItemsByQuickFilter,
@@ -127,7 +128,11 @@ export function useDirectoryCompareViewState({
   const [selectedFolderItemPath, setSelectedFolderItemPath] = useState('')
   const [folderSortKey, setFolderSortKey] = useState<FolderSortKey>('name')
   const [folderSortDirection, setFolderSortDirection] = useState<FolderSortDirection>('asc')
-  const [folderViewMode, setFolderViewMode] = useState<FolderViewMode>('list')
+  const [folderViewMode, setFolderViewMode] = usePersistedState<FolderViewMode>(
+    'xdiff.desktop.folderViewMode',
+    'list',
+    (value): value is FolderViewMode => value === 'list' || value === 'tree',
+  )
   const [folderTreeRoots, setFolderTreeRoots] = useState<FolderTreeNode[]>([])
   const [folderExpandedPaths, setFolderExpandedPaths] = useState<string[]>([])
   const [folderTreeLoadingPath, setFolderTreeLoadingPath] = useState('')

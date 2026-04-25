@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CompareResponse } from '../../types'
+import { usePersistedState } from '../../usePersistedState'
 import {
   buildRichDiffItems,
   buildTextDiffBlocks,
@@ -25,8 +26,16 @@ export function useTextDiffViewState({
   textLastRunOutputFormat,
 }: UseTextDiffViewStateParams) {
   const [textResultView, setTextResultView] = useState<TextResultView>('diff')
-  const [textDiffLayout, setTextDiffLayout] = useState<TextDiffLayout>('split')
-  const [textWrap, setTextWrap] = useState(true)
+  const [textDiffLayout, setTextDiffLayout] = usePersistedState<TextDiffLayout>(
+    'xdiff.desktop.textDiffLayout',
+    'split',
+    (value): value is TextDiffLayout => value === 'split' || value === 'unified',
+  )
+  const [textWrap, setTextWrap] = usePersistedState<boolean>(
+    'xdiff.desktop.textWrap',
+    true,
+    (value): value is boolean => typeof value === 'boolean',
+  )
   const [textExpandedUnchangedSectionIds, setTextExpandedUnchangedSectionIds] = useState<
     string[]
   >([])
