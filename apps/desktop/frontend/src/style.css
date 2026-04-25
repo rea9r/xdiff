@@ -118,8 +118,8 @@
   --xdiff-folder-cell-padding-x: var(--xdiff-row-padding-x);
 }
 
-[data-mantine-color-scheme='dark'] {
-  --mantine-color-body: #1E1F22;
+:root[data-mantine-color-scheme='dark'] {
+  --mantine-color-body: #26282C;
 
   --xdiff-viewer-border: #393B40;
   --xdiff-viewer-border-strong: #4E5159;
@@ -128,7 +128,7 @@
   --xdiff-viewer-surface-muted: #1A1C1F;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-4) 12%, transparent);
   --xdiff-viewer-input-bg: #17181B;
-  --xdiff-viewer-code-bg: #17181B;
+  --xdiff-viewer-code-bg: #1E1F22;
   --xdiff-viewer-text-dimmed: #A0A4AB;
 
   --xdiff-accent: var(--mantine-color-blue-4);
@@ -1787,7 +1787,7 @@ button {
 }
 
 .folder-sortable-header:hover {
-  background: var(--xdiff-viewer-surface-muted);
+  background: var(--xdiff-viewer-surface-hover);
 }
 
 .folder-sort-indicator {
