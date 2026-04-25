@@ -1,8 +1,84 @@
 {
-  "user": {
-    "name": "Hanako",
-    "age": 20,
-    "phone": "090-xxxx-xxxx"
+  "metadata": {
+    "schema": "account.profile",
+    "version": "1.5.0",
+    "generated_at": "2026-04-25T08:30:00Z",
+    "trace_id": "tr-9b21-088",
+    "source": "primary",
+    "region": "ap-northeast-1"
   },
-  "items": ["a", "c", "d"]
+  "user": {
+    "id": "u-7421",
+    "name": "Hanako Yamada",
+    "email": "hanako@example.com",
+    "age": 33,
+    "verified": true,
+    "roles": ["member", "early-adopter", "team-admin"],
+    "preferences": {
+      "language": "ja",
+      "timezone": "Asia/Tokyo",
+      "theme": "dark",
+      "density": "compact",
+      "notifications": {
+        "email": true,
+        "sms": false,
+        "push": false,
+        "digest": "daily",
+        "quiet_hours": {
+          "start": "22:00",
+          "end": "07:00"
+        }
+      }
+    },
+    "subscriptions": [
+      {
+        "plan": "premium",
+        "since": "2026-01-15",
+        "active": true,
+        "renews": true,
+        "trial": false
+      },
+      {
+        "plan": "team",
+        "since": "2026-03-01",
+        "active": true,
+        "renews": true,
+        "seats": 5
+      }
+    ]
+  },
+  "stats": {
+    "logins": 188,
+    "purchases": 11,
+    "revenue": 24890.5,
+    "last_login": "2026-04-24T18:02:00Z",
+    "devices": {
+      "desktop": 4,
+      "mobile": 2,
+      "tablet": 0,
+      "watch": 1
+    }
+  },
+  "tags": ["beta", "early-adopter", "jp-region", "team-admin"],
+  "feature_flags": {
+    "new_dashboard": true,
+    "experimental_search": true,
+    "ai_suggestions": true,
+    "dark_mode": true,
+    "compact_density": true,
+    "overview_ruler": true
+  },
+  "limits": {
+    "api_rpm": 1200,
+    "storage_mb": 10240,
+    "team_members": 10,
+    "concurrent_sessions": 4
+  },
+  "audit": {
+    "created_by": "system",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2026-04-25T08:29:30Z",
+    "deleted": false,
+    "version_chain": ["v1", "v2", "v3", "v4"]
+  }
 }

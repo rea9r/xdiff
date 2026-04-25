@@ -1,3 +1,174 @@
-hello
-xdiff
-this is xdiff desktop
+// notify package — mock changelog used for xdiff text-mode samples.
+// Lines, comments, and signatures are deliberately verbose so the
+// overview ruler has plenty of distributed diff markers to render.
+// Revision 2: introduces severity filtering and structured logging.
+
+package notify
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"sort"
+	"sync"
+	"time"
+)
+
+// Severity classifies how urgent a notification is.
+// The dispatcher uses it to decide retry behavior and routing.
+type Severity int
+
+const (
+	SeverityDebug Severity = iota
+	SeverityInfo
+	SeverityWarn
+	SeverityError
+	SeverityCritical
+)
+
+// Channel represents a single delivery target such as email or sms.
+type Channel struct {
+	Name     string
+	Enabled  bool
+	Priority int
+	Tags     []string
+	MinLevel Severity
+}
+
+// Message is a queued notification awaiting fan-out.
+type Message struct {
+	ID        string
+	Subject   string
+	Body      string
+	Severity  Severity
+	Tags      []string
+	CreatedAt time.Time
+}
+
+// Dispatcher fans messages out to all registered channels.
+// It is safe to register channels after Send has been called.
+type Dispatcher struct {
+	mu       sync.Mutex
+	channels []Channel
+	timeout  time.Duration
+	logger   *slog.Logger
+	closed   bool
+	sent     uint64
+}
+
+// NewDispatcher constructs a dispatcher with sane defaults.
+// The default per-channel timeout is eight seconds.
+func NewDispatcher(logger *slog.Logger) *Dispatcher {
+	return &Dispatcher{
+		channels: make([]Channel, 0, 8),
+		timeout:  8 * time.Second,
+		logger:   logger,
+	}
+}
+
+// Register adds a channel to the dispatcher.
+// Channels with empty names are silently dropped.
+// Channels are kept sorted by descending Priority.
+func (d *Dispatcher) Register(c Channel) {
+	if c.Name == "" {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.channels = append(d.channels, c)
+	sort.SliceStable(d.channels, func(i, j int) bool {
+		return d.channels[i].Priority > d.channels[j].Priority
+	})
+}
+
+// Send delivers msg to every enabled channel that accepts the
+// given severity. The first error short-circuits the loop.
+func (d *Dispatcher) Send(ctx context.Context, msg Message) error {
+	if msg.ID == "" {
+		return errors.New("message id is required")
+	}
+	d.mu.Lock()
+	if d.closed {
+		d.mu.Unlock()
+		return errors.New("dispatcher is closed")
+	}
+	channels := append([]Channel(nil), d.channels...)
+	d.mu.Unlock()
+
+	for _, c := range channels {
+		if !c.Enabled {
+			continue
+		}
+		if msg.Severity < c.MinLevel {
+			continue
+		}
+		if err := d.deliver(ctx, c, msg); err != nil {
+			d.logger.Error("deliver failed", "channel", c.Name, "err", err)
+			return err
+		}
+	}
+	d.mu.Lock()
+	d.sent++
+	d.mu.Unlock()
+	return nil
+}
+
+// deliver writes msg to a single channel, respecting the timeout.
+// A zero timeout means "no deadline".
+func (d *Dispatcher) deliver(ctx context.Context, c Channel, msg Message) error {
+	if d.timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, d.timeout)
+		defer cancel()
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(10 * time.Millisecond):
+		return nil
+	}
+}
+
+// Channels returns a defensive copy of the current channel list.
+func (d *Dispatcher) Channels() []Channel {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	out := make([]Channel, len(d.channels))
+	copy(out, d.channels)
+	return out
+}
+
+// SetTimeout updates the per-channel delivery timeout.
+// Pass zero to disable timeouts entirely.
+func (d *Dispatcher) SetTimeout(t time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.timeout = t
+}
+
+// Stats returns counters useful for observability.
+func (d *Dispatcher) Stats() (sent uint64, channels int) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.sent, len(d.channels)
+}
+
+// Close marks the dispatcher as drained and clears channels.
+// Subsequent Send calls return an error.
+func (d *Dispatcher) Close() error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.closed {
+		return nil
+	}
+	d.channels = nil
+	d.closed = true
+	d.logger.Info("dispatcher closed", "sent", d.sent)
+	return nil
+}
+
+// init prints a startup banner so log scrapers can detect load.
+func init() {
+	fmt.Println("notify: package loaded (rev2)")
+}
