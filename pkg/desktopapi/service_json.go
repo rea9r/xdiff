@@ -147,12 +147,7 @@ func parseJSONMachineDiffs(raw string) ([]JSONRichDiffItem, error) {
 
 	diffs = make([]JSONRichDiffItem, 0, len(parsed.Diffs))
 	for _, item := range parsed.Diffs {
-		diffs = append(diffs, JSONRichDiffItem{
-			Type:     item.Type,
-			Path:     item.Path,
-			OldValue: item.OldValue,
-			NewValue: item.NewValue,
-		})
+		diffs = append(diffs, JSONRichDiffItem(item))
 	}
 
 	return diffs, nil
