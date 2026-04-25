@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from 'react'
+import { Fragment, useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import type { CompareResponse, JSONRichDiffItem } from '../../types'
@@ -16,6 +16,7 @@ import { CompareSectionHeader } from '../../ui/CompareSectionHeader'
 import { CompareValueBlock } from '../../ui/CompareValueBlock'
 import { CompareStatusState } from '../../ui/CompareStatusState'
 import { RichDiffViewer } from '../../ui/RichDiffViewer'
+import { useCompareKeyboardShortcuts } from '../../ui/useCompareKeyboardShortcuts'
 import type { RichDiffItem, TextSearchMatch } from '../text/textDiff'
 import { buildJSONSemanticDiffRowID } from './useJSONCompareViewState'
 
@@ -268,35 +269,19 @@ export function JSONCompareResultPanel({
         ? showDiff
         : false
   const canNavigate = showDiff || showSemantic
-  const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
-  const moveJSONDiffRef = useRef(moveJSONDiff)
-  moveJSONDiffRef.current = moveJSONDiff
-
-  useEffect(() => {
-    if (!canNavigate || jsonDiffNavCount === 0) {
-      return
-    }
-
-    const handler = (event: KeyboardEvent) => {
-      if (!event.altKey || event.metaKey || event.ctrlKey) {
-        return
-      }
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-        return
-      }
-      const target = event.target as HTMLElement | null
-      if (target && target.tagName === 'INPUT') {
-        return
-      }
-
-      event.preventDefault()
-      moveJSONDiffRef.current(event.key === 'ArrowDown' ? 1 : -1)
-    }
-
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [canNavigate, jsonDiffNavCount])
   const hasJSONResult = !!jsonResult
+  const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const currentSearchMatchCount =
+    jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length
+
+  useCompareKeyboardShortcuts({
+    enabled: hasJSONResult,
+    searchInputRef,
+    canFocusSearch: canSearch,
+    onMoveSearch: currentSearchMatchCount > 0 ? moveJSONSearch : undefined,
+    onMoveDiff: canNavigate && jsonDiffNavCount > 0 ? moveJSONDiff : undefined,
+  })
   const jsonDiffRowIndexMap = new Map<JSONRichDiffItem, number>()
   jsonDiffRows.forEach((diff, index) => {
     jsonDiffRowIndexMap.set(diff, index)
@@ -326,6 +311,7 @@ export function JSONCompareResultPanel({
           primary={
             <>
               <CompareSearchControls
+                inputRef={searchInputRef}
                 value={jsonSearchQuery}
                 placeholder={
                   jsonResultView === 'semantic' ? 'Search paths or values' : 'Search diff'
@@ -355,7 +341,12 @@ export function JSONCompareResultPanel({
                   }
 
                   if (e.key === 'Escape') {
-                    setJSONSearchQuery('')
+                    e.preventDefault()
+                    if (jsonSearchQuery.length > 0) {
+                      setJSONSearchQuery('')
+                      return
+                    }
+                    e.currentTarget.blur()
                   }
                 }}
               />

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import type { CompareResponse } from '../../types'
@@ -13,6 +13,7 @@ import {
 import { ViewSettingsMenu } from '../../ui/ViewSettingsMenu'
 import { CompareResultShell } from '../../ui/CompareResultShell'
 import { RichDiffViewer } from '../../ui/RichDiffViewer'
+import { useCompareKeyboardShortcuts } from '../../ui/useCompareKeyboardShortcuts'
 import {
   summarizeTextDiffCounts,
   type RichDiffItem,
@@ -129,33 +130,16 @@ export function TextCompareResultPanel({
   const activeTextSearchMatchId = textSearchMatches[textActiveSearchIndex]?.id ?? null
   const textDiffBlockIds = new Set(textDiffBlocks.map((block) => block.id))
   const activeTextDiffBlockId = activeTextDiffBlock?.id ?? null
-  const moveTextDiffRef = useRef(moveTextDiff)
-  moveTextDiffRef.current = moveTextDiff
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
-  useEffect(() => {
-    if (!canRenderTextRich || textDiffBlocks.length === 0) {
-      return
-    }
-
-    const handler = (event: KeyboardEvent) => {
-      if (!event.altKey || event.metaKey || event.ctrlKey) {
-        return
-      }
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-        return
-      }
-      const target = event.target as HTMLElement | null
-      if (target && target.tagName === 'INPUT') {
-        return
-      }
-
-      event.preventDefault()
-      moveTextDiffRef.current(event.key === 'ArrowDown' ? 1 : -1)
-    }
-
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [canRenderTextRich, textDiffBlocks.length])
+  useCompareKeyboardShortcuts({
+    enabled: hasTextResult,
+    searchInputRef,
+    canFocusSearch: canSearchRich,
+    onMoveSearch: textSearchMatches.length > 0 ? moveTextSearch : undefined,
+    onMoveDiff:
+      canRenderTextRich && textDiffBlocks.length > 0 ? moveTextDiff : undefined,
+  })
 
   return (
     <CompareResultShell
@@ -165,6 +149,7 @@ export function TextCompareResultPanel({
           primary={
             <>
               <CompareSearchControls
+                inputRef={searchInputRef}
                 value={textSearchQuery}
                 placeholder="Search diff"
                 statusText={textSearchStatus}
@@ -182,7 +167,12 @@ export function TextCompareResultPanel({
                   }
 
                   if (e.key === 'Escape') {
-                    setTextSearchQuery('')
+                    e.preventDefault()
+                    if (textSearchQuery.length > 0) {
+                      setTextSearchQuery('')
+                      return
+                    }
+                    e.currentTarget.blur()
                   }
                 }}
               />

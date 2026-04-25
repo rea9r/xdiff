@@ -1,6 +1,6 @@
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
-import type { KeyboardEventHandler } from 'react'
+import type { KeyboardEventHandler, MutableRefObject } from 'react'
 
 type CompareSearchControlsProps = {
   value: string
@@ -13,6 +13,7 @@ type CompareSearchControlsProps = {
   disabled?: boolean
   prevDisabled?: boolean
   nextDisabled?: boolean
+  inputRef?: MutableRefObject<HTMLInputElement | null>
 }
 
 export function CompareSearchControls({
@@ -26,10 +27,12 @@ export function CompareSearchControls({
   disabled = false,
   prevDisabled = false,
   nextDisabled = false,
+  inputRef,
 }: CompareSearchControlsProps) {
   return (
     <>
       <input
+        ref={inputRef}
         type="text"
         className="text-search-input"
         placeholder={placeholder}
