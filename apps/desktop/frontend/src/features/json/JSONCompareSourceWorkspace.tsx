@@ -97,7 +97,6 @@ export function JSONCompareSourceWorkspace({
           <CompareCodeInputBody
             value={oldValue}
             onChange={onOldChange}
-            language="json"
             parseError={oldParseError}
           />
         </CompareSourcePane>
@@ -146,7 +145,6 @@ export function JSONCompareSourceWorkspace({
           <CompareCodeInputBody
             value={newValue}
             onChange={onNewChange}
-            language="json"
             parseError={newParseError}
           />
         </CompareSourcePane>

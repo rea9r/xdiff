@@ -6,13 +6,11 @@ import {
   createCompareCodeHighlightStyle,
 } from './codeEditorTheme'
 
-type CompareCodeInputLanguage = 'json' | 'yaml'
 const LazyCodeMirror = lazy(() => import('@uiw/react-codemirror'))
 
 type CompareCodeInputBodyProps = {
   value: string
   onChange: (value: string) => void
-  language: CompareCodeInputLanguage
   parseError?: string | null
   placeholder?: string
   helperText?: string
@@ -21,7 +19,6 @@ type CompareCodeInputBodyProps = {
 export function CompareCodeInputBody({
   value,
   onChange,
-  language,
   parseError = null,
   placeholder,
   helperText,
@@ -32,17 +29,9 @@ export function CompareCodeInputBody({
     let disposed = false
 
     const loadLanguageExtension = async () => {
-      if (language === 'json') {
-        const module = await import('@codemirror/lang-json')
-        if (!disposed) {
-          setLanguageExtension(module.json())
-        }
-        return
-      }
-
-      const module = await import('@codemirror/lang-yaml')
+      const module = await import('@codemirror/lang-json')
       if (!disposed) {
-        setLanguageExtension(module.yaml())
+        setLanguageExtension(module.json())
       }
     }
 
@@ -52,7 +41,7 @@ export function CompareCodeInputBody({
     return () => {
       disposed = true
     }
-  }, [language])
+  }, [])
 
   const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true })
   const editorTheme = useMemo(
@@ -67,21 +56,18 @@ export function CompareCodeInputBody({
     () => (languageExtension ? [languageExtension, editorTheme, editorHighlight] : []),
     [languageExtension, editorTheme, editorHighlight],
   )
-  const label = language === 'json' ? 'JSON' : 'YAML'
-  const defaultPlaceholder =
-    language === 'json' ? 'Paste or edit JSON here' : 'Paste or edit OpenAPI YAML here'
-  const resolvedPlaceholder = placeholder ?? defaultPlaceholder
+  const resolvedPlaceholder = placeholder ?? 'Paste or edit JSON here'
   const resolvedHelperText = helperText ?? 'Open file, paste clipboard, or edit directly'
   const showPlaceholder = value.trim().length === 0
 
   return (
     <div className="compare-code-input-body-wrap">
       <div className="compare-code-input-shell">
-        <div className="compare-code-input-language">{label}</div>
+        <div className="compare-code-input-language">JSON</div>
         {showPlaceholder ? (
           <div className="compare-code-input-placeholder">{resolvedPlaceholder}</div>
         ) : null}
-        <div className="compare-code-input-body" data-language={language}>
+        <div className="compare-code-input-body">
           {languageExtension ? (
             <Suspense
               fallback={
@@ -124,7 +110,7 @@ export function CompareCodeInputBody({
         ) : null}
         {parseError ? (
           <div className="compare-code-input-error">
-            Invalid {label}: {parseError}
+            Invalid JSON: {parseError}
           </div>
         ) : null}
       </div>
