@@ -5,7 +5,7 @@ They are not CLI runnable examples because folder compare is desktop-only in the
 
 ## Sets
 
-- `basic`: status coverage and child compare launch (`text` / `json` / `spec`)
+- `basic`: status coverage and child compare launch (`text` / `json`)
 - `filters`: `show same`, `name filter`, quick filters, and scanned/visible summary checks
 
 ## How to use in desktop app
@@ -23,7 +23,6 @@ Expected highlights:
 
 - `same`, `changed`, `left-only`, `right-only`, `type-mismatch`
 - `api/payload.json` can open JSON compare
-- `openapi/openapi.yaml` can open spec compare
 - `.txt` changed rows can open text compare
 
 ### Filters fixture roots

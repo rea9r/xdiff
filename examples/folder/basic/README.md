@@ -23,5 +23,4 @@ This fixture is for validating Folder Compare status coverage and child compare 
 ## Child compare launch checks
 
 - `api/payload.json`: JSON compare hint
-- `openapi/openapi.yaml`: Spec compare hint
 - `changed.txt` / `nested/changed-nested.txt`: Text compare hint
