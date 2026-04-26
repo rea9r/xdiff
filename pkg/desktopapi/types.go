@@ -165,3 +165,43 @@ type DesktopState struct {
 	TextRecentPairs      []DesktopRecentPair          `json:"textRecentPairs"`
 	DirectoryRecentPairs []DesktopRecentDirectoryPair `json:"directoryRecentPairs"`
 }
+
+type ExplainDiffRequest struct {
+	DiffText string `json:"diffText"`
+	Mode     string `json:"mode"`
+	Language string `json:"language,omitempty"`
+	Model    string `json:"model,omitempty"`
+}
+
+type ExplainDiffResponse struct {
+	Explanation string `json:"explanation"`
+	Provider    string `json:"provider"`
+	Model       string `json:"model"`
+	Error       string `json:"error,omitempty"`
+}
+
+type AIProviderStatus struct {
+	Available       bool     `json:"available"`
+	Provider        string   `json:"provider,omitempty"`
+	BaseURL         string   `json:"baseUrl,omitempty"`
+	Models          []string `json:"models,omitempty"`
+	Error           string   `json:"error,omitempty"`
+	OllamaInstalled bool     `json:"ollamaInstalled"`
+	OllamaReachable bool     `json:"ollamaReachable"`
+	CanAutoStart    bool     `json:"canAutoStart"`
+	HardwareTier    string   `json:"hardwareTier,omitempty"` // "low" | "mid" | "high" | ""
+}
+
+type AISetupRequest struct {
+	Model string `json:"model,omitempty"`
+}
+
+type AISetupProgress struct {
+	Phase         string  `json:"phase"`
+	Message       string  `json:"message,omitempty"`
+	Error         string  `json:"error,omitempty"`
+	Model         string  `json:"model,omitempty"`
+	PullCompleted int64   `json:"pullCompleted,omitempty"`
+	PullTotal     int64   `json:"pullTotal,omitempty"`
+	PullPercent   float64 `json:"pullPercent,omitempty"`
+}

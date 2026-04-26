@@ -8,8 +8,10 @@ import (
 )
 
 type Service struct {
-	stateMu    sync.RWMutex
-	stateStore *desktopStateStore
+	stateMu     sync.RWMutex
+	stateStore  *desktopStateStore
+	aiSetupOnce sync.Once
+	aiSetup     *aiSetupState
 }
 
 type directoryEntrySnapshot struct {

@@ -153,6 +153,58 @@ export type DesktopTabSession = {
   directory: DesktopDirectorySession
 }
 
+export type ExplainDiffMode = 'text' | 'json' | 'directory'
+
+export type ExplainDiffRequest = {
+  diffText: string
+  mode: ExplainDiffMode
+  language?: string
+  model?: string
+}
+
+export type ExplainDiffResponse = {
+  explanation: string
+  provider: string
+  model: string
+  error?: string
+}
+
+export type HardwareTier = 'low' | 'mid' | 'high'
+
+export type AIProviderStatus = {
+  available: boolean
+  provider?: string
+  baseUrl?: string
+  models?: string[]
+  error?: string
+  ollamaInstalled: boolean
+  ollamaReachable: boolean
+  canAutoStart: boolean
+  hardwareTier?: HardwareTier
+}
+
+export type AISetupRequest = {
+  model?: string
+}
+
+export type AISetupPhase =
+  | 'idle'
+  | 'starting'
+  | 'waiting'
+  | 'pulling'
+  | 'ready'
+  | 'error'
+
+export type AISetupProgress = {
+  phase: AISetupPhase
+  message?: string
+  error?: string
+  model?: string
+  pullCompleted?: number
+  pullTotal?: number
+  pullPercent?: number
+}
+
 export type DesktopState = {
   version: number
   tabs: DesktopTabSession[]

@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import * as App from '../wailsjs/go/main/App'
 import type {
+  AIProviderStatus,
+  AISetupProgress,
+  AISetupRequest,
   CompareCommon,
   CompareResponse,
   CompareJSONValuesRequest,
@@ -8,6 +11,8 @@ import type {
   CompareDirectoriesRequest,
   CompareDirectoriesResponse,
   DesktopState,
+  ExplainDiffRequest,
+  ExplainDiffResponse,
   LoadTextFileRequest,
   LoadTextFileResponse,
 } from './types'
@@ -49,6 +54,22 @@ export function useDesktopBridge() {
 
       saveDesktopState: (state: DesktopState): Promise<void> =>
         App.SaveDesktopState(state as any),
+
+      aiProviderStatus: (): Promise<AIProviderStatus> =>
+        App.AIProviderStatus() as unknown as Promise<AIProviderStatus>,
+
+      explainDiff: (req: ExplainDiffRequest): Promise<ExplainDiffResponse> =>
+        App.ExplainDiff(req as any) as unknown as Promise<ExplainDiffResponse>,
+
+      startAISetup: (req: AISetupRequest): Promise<void> =>
+        App.StartAISetup(req as any),
+
+      aiSetupProgress: (): Promise<AISetupProgress> =>
+        App.AISetupProgress() as unknown as Promise<AISetupProgress>,
+
+      cancelAISetup: (): Promise<void> => App.CancelAISetup(),
+
+      openOllamaDownloadPage: (): Promise<void> => App.OpenOllamaDownloadPage(),
     }),
     [],
   )

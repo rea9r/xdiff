@@ -55,6 +55,33 @@ func (a *App) SaveDesktopState(req desktopapi.DesktopState) error {
 	return a.api.SaveDesktopState(req)
 }
 
+func (a *App) AIProviderStatus() (*desktopapi.AIProviderStatus, error) {
+	return a.api.AIProviderStatus()
+}
+
+func (a *App) ExplainDiff(req desktopapi.ExplainDiffRequest) (*desktopapi.ExplainDiffResponse, error) {
+	return a.api.ExplainDiff(req)
+}
+
+func (a *App) StartAISetup(req desktopapi.AISetupRequest) error {
+	return a.api.StartAISetup(req)
+}
+
+func (a *App) AISetupProgress() (*desktopapi.AISetupProgress, error) {
+	return a.api.AISetupProgressSnapshot()
+}
+
+func (a *App) CancelAISetup() error {
+	return a.api.CancelAISetup()
+}
+
+func (a *App) OpenOllamaDownloadPage() {
+	if a.ctx == nil {
+		return
+	}
+	runtime.BrowserOpenURL(a.ctx, "https://ollama.com/download")
+}
+
 func (a *App) PickJSONFile() (string, error) {
 	return a.pickFile("Select JSON file", []runtime.FileFilter{
 		{

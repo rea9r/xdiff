@@ -1,7 +1,8 @@
-import { Fragment, useRef } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { IconCopy } from '@tabler/icons-react'
+import { IconCopy, IconSparkles } from '@tabler/icons-react'
 import type { CompareResponse, JSONRichDiffItem } from '../../types'
+import { AIExplainDrawer } from '../ai/AIExplainDrawer'
 import { renderResult } from '../../utils/appHelpers'
 import { CompareDiffNavControls } from '../../ui/CompareDiffNavControls'
 import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
@@ -276,6 +277,8 @@ export function JSONCompareResultPanel({
   const hasJSONResult = !!jsonResult
   const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
+  const canExplain = hasJSONResult && !!raw && !jsonResult?.error
   const currentSearchMatchCount =
     jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length
 
@@ -366,6 +369,18 @@ export function JSONCompareResultPanel({
           summary={<CompareStatusBadges items={jsonSummaryItems} />}
           secondary={
             <>
+              <Tooltip label="Explain diff with local AI">
+                <ActionIcon
+                  variant="default"
+                  size={28}
+                  aria-label="Explain diff with local AI"
+                  className="text-result-action"
+                  onClick={() => setAiDrawerOpen(true)}
+                  disabled={!canExplain}
+                >
+                  <IconSparkles size={15} />
+                </ActionIcon>
+              </Tooltip>
               <Tooltip label="Copy raw output">
                 <ActionIcon
                   variant="default"
@@ -565,6 +580,12 @@ export function JSONCompareResultPanel({
       ) : (
         <pre className="result-output">{raw}</pre>
       )}
+      <AIExplainDrawer
+        opened={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        diffText={raw}
+        mode="json"
+      />
     </CompareResultShell>
   )
 }

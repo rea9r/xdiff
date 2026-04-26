@@ -1,7 +1,13 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { IconArrowBackUp, IconArrowForwardUp, IconCopy } from '@tabler/icons-react'
+import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconCopy,
+  IconSparkles,
+} from '@tabler/icons-react'
 import type { CompareResponse } from '../../types'
+import { AIExplainDrawer } from '../ai/AIExplainDrawer'
 import { renderResult } from '../../utils/appHelpers'
 import { CompareDiffNavControls } from '../../ui/CompareDiffNavControls'
 import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
@@ -149,6 +155,8 @@ export function TextCompareResultPanel({
   const textDiffBlockIds = new Set(textDiffBlocks.map((block) => block.id))
   const activeTextDiffBlockId = activeTextDiffBlock?.id ?? null
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
+  const canExplain = hasTextResult && !!raw && !textResult?.error
 
   const showAdoptHistoryControls = !!onAdoptBlock && (canUndoAdopt || canRedoAdopt)
   const isMac =
@@ -244,6 +252,18 @@ export function TextCompareResultPanel({
           summary={<CompareStatusBadges items={textSummaryItems} />}
           secondary={
             <>
+              <Tooltip label="Explain diff with local AI">
+                <ActionIcon
+                  variant="default"
+                  size={28}
+                  aria-label="Explain diff with local AI"
+                  className="text-result-action"
+                  onClick={() => setAiDrawerOpen(true)}
+                  disabled={!canExplain}
+                >
+                  <IconSparkles size={15} />
+                </ActionIcon>
+              </Tooltip>
               <Tooltip label="Copy raw output">
                 <ActionIcon
                   variant="default"
@@ -356,6 +376,12 @@ export function TextCompareResultPanel({
       ) : (
         <pre className="result-output">{raw}</pre>
       )}
+      <AIExplainDrawer
+        opened={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        diffText={raw}
+        mode="text"
+      />
     </CompareResultShell>
   )
 }
