@@ -1,4 +1,5 @@
 import { IconPlus, IconX } from '@tabler/icons-react'
+import { Menu } from '@mantine/core'
 import {
   useEffect,
   useRef,
@@ -14,6 +15,9 @@ type TabBarProps = {
   onSelectTab: (id: string) => void
   onAddTab: () => void
   onCloseTab: (id: string) => void
+  onCloseOthers: (id: string) => void
+  onCloseToRight: (id: string) => void
+  onCloseAll: () => void
   onReorderTab: (fromId: string, toId: string) => void
 }
 
@@ -33,16 +37,24 @@ export function TabBar({
   onSelectTab,
   onAddTab,
   onCloseTab,
+  onCloseOthers,
+  onCloseToRight,
+  onCloseAll,
   onReorderTab,
 }: TabBarProps) {
   const canClose = tabs.length > 1
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
+  const [menu, setMenu] = useState<{ tabId: string; x: number; y: number } | null>(null)
   const startRef = useRef<{ id: string; x: number; y: number } | null>(null)
   const draggingRef = useRef(false)
   const suppressClickRef = useRef(false)
   const onReorderRef = useRef(onReorderTab)
   onReorderRef.current = onReorderTab
+
+  const closeMenu = () => setMenu(null)
+  const menuTabIndex = menu ? tabs.findIndex((t) => t.id === menu.tabId) : -1
+  const isMenuTabLast = menuTabIndex >= 0 && menuTabIndex === tabs.length - 1
 
   useEffect(() => {
     const setBodyDragging = (active: boolean) => {
@@ -100,6 +112,7 @@ export function TabBar({
   }, [])
 
   return (
+    <>
     <div className="xdiff-tab-bar" role="tablist">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId
@@ -133,6 +146,12 @@ export function TabBar({
           if (canClose) onCloseTab(tab.id)
         }
 
+        const handleContextMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
+          event.preventDefault()
+          window.getSelection()?.removeAllRanges()
+          setMenu({ tabId: tab.id, x: event.clientX, y: event.clientY })
+        }
+
         const className = [
           'xdiff-tab',
           isActive ? 'is-active' : '',
@@ -153,6 +172,7 @@ export function TabBar({
             onPointerDown={handlePointerDown}
             onClick={handleClick}
             onAuxClick={handleAuxClick}
+            onContextMenu={handleContextMenu}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
@@ -178,10 +198,52 @@ export function TabBar({
         type="button"
         className="xdiff-tab-add"
         onClick={onAddTab}
+        onMouseDown={(event) => event.preventDefault()}
+        tabIndex={-1}
         aria-label="New tab"
       >
         <IconPlus size={14} />
       </button>
     </div>
+    <Menu
+      opened={menu !== null}
+      onClose={closeMenu}
+      position="bottom-start"
+      withinPortal
+      shadow="md"
+      closeOnItemClick
+    >
+      <Menu.Target>
+        <div
+          style={{
+            position: 'fixed',
+            left: menu?.x ?? 0,
+            top: menu?.y ?? 0,
+            width: 0,
+            height: 0,
+          }}
+        />
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item
+          disabled={tabs.length <= 1}
+          onClick={() => {
+            if (menu) onCloseOthers(menu.tabId)
+          }}
+        >
+          Close others
+        </Menu.Item>
+        <Menu.Item
+          disabled={isMenuTabLast || tabs.length <= 1}
+          onClick={() => {
+            if (menu) onCloseToRight(menu.tabId)
+          }}
+        >
+          Close to the right
+        </Menu.Item>
+        <Menu.Item onClick={onCloseAll}>Close all</Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+    </>
   )
 }

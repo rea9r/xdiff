@@ -312,7 +312,14 @@ body {
   border-bottom: 2px solid transparent;
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
   outline: none;
+}
+
+.xdiff-tab,
+.xdiff-tab * {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .xdiff-tab:hover {
@@ -384,10 +391,19 @@ body.xdiff-tab-dragging * {
   height: 100%;
   margin-left: var(--xdiff-space-1);
   align-self: stretch;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.xdiff-tab-add:focus,
+.xdiff-tab-add:focus-visible,
+.xdiff-tab-add:active {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .xdiff-tab-add:hover {
-  background: var(--mantine-color-default-hover);
   color: var(--mantine-color-text);
 }
 

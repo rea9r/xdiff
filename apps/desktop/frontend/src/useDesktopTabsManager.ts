@@ -49,6 +49,38 @@ export function useDesktopTabsManager({
     setTabs((prev) => (prev.length <= 1 ? prev : prev.filter((t) => t.id !== id)))
   }, [])
 
+  const closeOthers = useCallback((keepId: string) => {
+    setTabs((prev) => {
+      const target = prev.find((t) => t.id === keepId)
+      if (!target || prev.length <= 1) return prev
+      return [target]
+    })
+    setActiveTabId(keepId)
+  }, [])
+
+  const closeToRight = useCallback((id: string) => {
+    setTabs((prev) => {
+      const idx = prev.findIndex((t) => t.id === id)
+      if (idx < 0 || idx === prev.length - 1) return prev
+      return prev.slice(0, idx + 1)
+    })
+  }, [])
+
+  const closeAll = useCallback(() => {
+    counterRef.current += 1
+    const next = counterRef.current
+    const id = `tab-${next}-${Date.now()}`
+    const label = `Tab ${next}`
+    const newTab: DesktopTab = { id, label }
+    commit((prev) => ({
+      ...prev,
+      tabs: [fallbackTabSession(id, label)],
+      activeTabId: id,
+    }))
+    setTabs([newTab])
+    setActiveTabId(id)
+  }, [commit, fallbackTabSession])
+
   const updateTabLabel = useCallback((id: string, label: string) => {
     setTabs((prev) => {
       const target = prev.find((t) => t.id === id)
@@ -106,6 +138,9 @@ export function useDesktopTabsManager({
     setActiveTabId,
     addTab,
     closeTab,
+    closeOthers,
+    closeToRight,
+    closeAll,
     updateTabLabel,
     reorderTab,
   }

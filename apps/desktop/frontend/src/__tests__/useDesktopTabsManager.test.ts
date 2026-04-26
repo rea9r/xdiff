@@ -138,6 +138,111 @@ describe('useDesktopTabsManager.reorderTab', () => {
   })
 })
 
+describe('useDesktopTabsManager.closeOthers', () => {
+  it('keeps only the specified tab and makes it active', () => {
+    const initial = makeInitial(['a', 'b', 'c'])
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeOthers('b'))
+
+    expect(result.current.tabs.map((t) => t.id)).toEqual(['b'])
+    expect(result.current.activeTabId).toBe('b')
+  })
+
+  it('is a no-op when only one tab exists', () => {
+    const initial = makeInitial(['only'])
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeOthers('only'))
+
+    expect(result.current.tabs.map((t) => t.id)).toEqual(['only'])
+  })
+})
+
+describe('useDesktopTabsManager.closeToRight', () => {
+  it('removes tabs after the specified one', () => {
+    const initial = makeInitial(['a', 'b', 'c', 'd'])
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeToRight('b'))
+
+    expect(result.current.tabs.map((t) => t.id)).toEqual(['a', 'b'])
+  })
+
+  it('is a no-op when called on the rightmost tab', () => {
+    const initial = makeInitial(['a', 'b'])
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeToRight('b'))
+
+    expect(result.current.tabs.map((t) => t.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('useDesktopTabsManager.closeAll', () => {
+  it('replaces all tabs with a single fresh tab', () => {
+    const initial = makeInitial(['a', 'b', 'c'])
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeAll())
+
+    expect(result.current.tabs).toHaveLength(1)
+    expect(result.current.tabs[0].id).not.toBe('a')
+    expect(result.current.tabs[0].id).not.toBe('b')
+    expect(result.current.tabs[0].id).not.toBe('c')
+    expect(result.current.activeTabId).toBe(result.current.tabs[0].id)
+  })
+
+  it('persists the reset via commit', () => {
+    const initial = makeInitial(['a', 'b'])
+    const commit = vi.fn()
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit,
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeAll())
+
+    const updater = commit.mock.calls[0][0] as (prev: DesktopState) => DesktopState
+    const next = updater(initial)
+    expect(next.tabs).toHaveLength(1)
+    expect(next.activeTabId).toBe(next.tabs[0].id)
+  })
+})
+
 describe('useDesktopTabsManager.addTab', () => {
   it('inherits lastUsedMode from the currently active tab', () => {
     const initial = makeInitial(['a', 'b'])

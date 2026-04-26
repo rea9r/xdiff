@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MantineProvider } from '@mantine/core'
 import { TabBar } from '../TabBar'
 import type { DesktopTab } from '../../useDesktopTabsManager'
 
@@ -12,18 +13,26 @@ const tabs: DesktopTab[] = [
 function renderTabBar(overrides: Partial<Parameters<typeof TabBar>[0]> = {}) {
   const onReorderTab = vi.fn()
   const onSelectTab = vi.fn()
+  const onCloseOthers = vi.fn()
+  const onCloseToRight = vi.fn()
+  const onCloseAll = vi.fn()
   const result = render(
-    <TabBar
-      tabs={tabs}
-      activeTabId="tab-a"
-      onSelectTab={onSelectTab}
-      onAddTab={vi.fn()}
-      onCloseTab={vi.fn()}
-      onReorderTab={onReorderTab}
-      {...overrides}
-    />,
+    <MantineProvider>
+      <TabBar
+        tabs={tabs}
+        activeTabId="tab-a"
+        onSelectTab={onSelectTab}
+        onAddTab={vi.fn()}
+        onCloseTab={vi.fn()}
+        onCloseOthers={onCloseOthers}
+        onCloseToRight={onCloseToRight}
+        onCloseAll={onCloseAll}
+        onReorderTab={onReorderTab}
+        {...overrides}
+      />
+    </MantineProvider>,
   )
-  return { ...result, onReorderTab, onSelectTab }
+  return { ...result, onReorderTab, onSelectTab, onCloseOthers, onCloseToRight, onCloseAll }
 }
 
 let pointTarget: Element | null = null
@@ -164,5 +173,62 @@ describe('TabBar middle-click close', () => {
     fireEvent(tabB, new MouseEvent('auxclick', { bubbles: true, button: 0 }))
 
     expect(onCloseTab).not.toHaveBeenCalled()
+  })
+})
+
+describe('TabBar context menu', () => {
+  it('invokes onCloseOthers with the right tab id', async () => {
+    const { onCloseOthers, container } = renderTabBar()
+    const tabB = container.querySelector('[data-tab-id="tab-b"]') as HTMLElement
+
+    fireEvent.contextMenu(tabB, { clientX: 10, clientY: 10 })
+    fireEvent.click(await screen.findByRole('menuitem', { name: /close others/i }))
+
+    expect(onCloseOthers).toHaveBeenCalledWith('tab-b')
+  })
+
+  it('invokes onCloseToRight with the right tab id', async () => {
+    const { onCloseToRight, container } = renderTabBar()
+    const tabA = container.querySelector('[data-tab-id="tab-a"]') as HTMLElement
+
+    fireEvent.contextMenu(tabA, { clientX: 0, clientY: 0 })
+    fireEvent.click(await screen.findByRole('menuitem', { name: /close to the right/i }))
+
+    expect(onCloseToRight).toHaveBeenCalledWith('tab-a')
+  })
+
+  it('disables Close to the right on the rightmost tab', async () => {
+    const { onCloseToRight, container } = renderTabBar()
+    const tabC = container.querySelector('[data-tab-id="tab-c"]') as HTMLElement
+
+    fireEvent.contextMenu(tabC, { clientX: 0, clientY: 0 })
+    const item = await screen.findByRole('menuitem', { name: /close to the right/i })
+    fireEvent.click(item)
+
+    expect(item).toHaveAttribute('data-disabled')
+    expect(onCloseToRight).not.toHaveBeenCalled()
+  })
+
+  it('invokes onCloseAll', async () => {
+    const { onCloseAll, container } = renderTabBar()
+    const tabA = container.querySelector('[data-tab-id="tab-a"]') as HTMLElement
+
+    fireEvent.contextMenu(tabA, { clientX: 0, clientY: 0 })
+    fireEvent.click(await screen.findByRole('menuitem', { name: /close all/i }))
+
+    expect(onCloseAll).toHaveBeenCalled()
+  })
+
+  it('disables Close others when only one tab exists', async () => {
+    const onlyOne: DesktopTab[] = [{ id: 'tab-only', label: 'Only' }]
+    const { onCloseOthers, container } = renderTabBar({ tabs: onlyOne, activeTabId: 'tab-only' })
+    const tab = container.querySelector('[data-tab-id="tab-only"]') as HTMLElement
+
+    fireEvent.contextMenu(tab, { clientX: 0, clientY: 0 })
+    const item = await screen.findByRole('menuitem', { name: /close others/i })
+    fireEvent.click(item)
+
+    expect(item).toHaveAttribute('data-disabled')
+    expect(onCloseOthers).not.toHaveBeenCalled()
   })
 })

@@ -78,7 +78,17 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
 
 function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerState }) {
   const slots = useActiveDesktopTabSlots()
-  const { tabs, activeTabId, setActiveTabId, addTab, closeTab, reorderTab } = tabsManager
+  const {
+    tabs,
+    activeTabId,
+    setActiveTabId,
+    addTab,
+    closeTab,
+    closeOthers,
+    closeToRight,
+    closeAll,
+    reorderTab,
+  } = tabsManager
 
   if (!slots) {
     return null
@@ -101,6 +111,9 @@ function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerSt
           onSelectTab={setActiveTabId}
           onAddTab={addTab}
           onCloseTab={closeTab}
+          onCloseOthers={closeOthers}
+          onCloseToRight={closeToRight}
+          onCloseAll={closeAll}
           onReorderTab={reorderTab}
         />
       }
