@@ -1,17 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { DesktopState, DesktopTabSession } from './types'
+import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
 export type DesktopTab = {
   id: string
   label: string
 }
 
-const INITIAL_TAB_ID = 'tab-1'
-const INITIAL_TAB: DesktopTab = { id: INITIAL_TAB_ID, label: 'Tab 1' }
+export type UseDesktopTabsManagerOptions = {
+  initial: DesktopState
+  commit: DesktopStatePersistor['commit']
+  fallbackTabSession: DesktopStatePersistor['fallbackTabSession']
+}
 
-export function useDesktopTabsManager() {
-  const [tabs, setTabs] = useState<DesktopTab[]>([INITIAL_TAB])
-  const [activeTabId, setActiveTabId] = useState<string>(INITIAL_TAB_ID)
-  const counterRef = useRef<number>(1)
+export function useDesktopTabsManager({
+  initial,
+  commit,
+  fallbackTabSession,
+}: UseDesktopTabsManagerOptions) {
+  const initialTabsRef = useRef<DesktopTab[]>(
+    initial.tabs.map((t) => ({ id: t.id, label: t.label })),
+  )
+  const initialActiveTabIdRef = useRef<string>(initial.activeTabId)
+  const initialIdRef = useRef<string>(initial.tabs[0]?.id ?? 'tab-1')
+
+  const [tabs, setTabs] = useState<DesktopTab[]>(initialTabsRef.current)
+  const [activeTabId, setActiveTabId] = useState<string>(initialActiveTabIdRef.current)
+  const counterRef = useRef<number>(initialTabsRef.current.length)
 
   const addTab = useCallback(() => {
     counterRef.current += 1
@@ -42,6 +57,24 @@ export function useDesktopTabsManager() {
     }
   }, [tabs, activeTabId])
 
+  const isFirstSyncRef = useRef(true)
+  useEffect(() => {
+    if (isFirstSyncRef.current) {
+      isFirstSyncRef.current = false
+      return
+    }
+    commit((prev) => {
+      const newSessions: DesktopTabSession[] = tabs.map((t) => {
+        const existing = prev.tabs.find((s) => s.id === t.id)
+        if (existing) {
+          return existing.label === t.label ? existing : { ...existing, label: t.label }
+        }
+        return fallbackTabSession(t.id, t.label)
+      })
+      return { ...prev, tabs: newSessions, activeTabId }
+    })
+  }, [tabs, activeTabId, commit, fallbackTabSession])
+
   return {
     tabs,
     activeTabId,
@@ -49,7 +82,7 @@ export function useDesktopTabsManager() {
     addTab,
     closeTab,
     updateTabLabel,
-    initialTabId: INITIAL_TAB_ID,
+    initialTabId: initialIdRef.current,
   }
 }
 

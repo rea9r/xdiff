@@ -3,18 +3,31 @@ package desktopapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 const (
-	desktopStateVersion = 2
+	desktopStateVersion = 3
 	maxRecentEntries    = 10
+	defaultTabID        = "tab-1"
+	defaultTabLabel     = "Tab 1"
 )
 
 type legacyDesktopState struct {
-	DesktopState
+	Version              int                          `json:"version"`
+	LastUsedMode         string                       `json:"lastUsedMode,omitempty"`
+	JSON                 *DesktopJSONSession          `json:"json,omitempty"`
+	Text                 *DesktopTextSession          `json:"text,omitempty"`
+	Directory            *DesktopDirectorySession     `json:"directory,omitempty"`
+	Tabs                 []DesktopTabSession          `json:"tabs,omitempty"`
+	ActiveTabID          string                       `json:"activeTabId,omitempty"`
+	JSONRecentPairs      []DesktopRecentPair          `json:"jsonRecentPairs"`
+	TextRecentPairs      []DesktopRecentPair          `json:"textRecentPairs"`
+	DirectoryRecentPairs []DesktopRecentDirectoryPair `json:"directoryRecentPairs"`
+
 	LegacyDirectory            *DesktopDirectorySession     `json:"folder,omitempty"`
 	LegacyDirectoryRecentPairs []DesktopRecentDirectoryPair `json:"folderRecentPairs,omitempty"`
 }
@@ -53,16 +66,8 @@ func (s *desktopStateStore) Load() (DesktopState, error) {
 	if err := json.Unmarshal(raw, &legacy); err != nil {
 		return state, nil
 	}
-	decoded := legacy.DesktopState
-	if legacy.LegacyDirectory != nil && (decoded.Directory == DesktopDirectorySession{}) {
-		decoded.Directory = *legacy.LegacyDirectory
-	}
-	if len(legacy.LegacyDirectoryRecentPairs) > 0 && len(decoded.DirectoryRecentPairs) == 0 {
-		decoded.DirectoryRecentPairs = legacy.LegacyDirectoryRecentPairs
-	}
-	if decoded.LastUsedMode == "folder" {
-		decoded.LastUsedMode = "directory"
-	}
+
+	decoded := upgradeLegacyDesktopState(legacy)
 	return normalizeDesktopState(decoded), nil
 }
 
@@ -108,9 +113,69 @@ func (s *desktopStateStore) Save(state DesktopState) error {
 	return nil
 }
 
-func defaultDesktopState() DesktopState {
+func upgradeLegacyDesktopState(legacy legacyDesktopState) DesktopState {
+	if len(legacy.Tabs) > 0 {
+		return DesktopState{
+			Version:              legacy.Version,
+			Tabs:                 legacy.Tabs,
+			ActiveTabID:          legacy.ActiveTabID,
+			JSONRecentPairs:      legacy.JSONRecentPairs,
+			TextRecentPairs:      legacy.TextRecentPairs,
+			DirectoryRecentPairs: legacy.DirectoryRecentPairs,
+		}
+	}
+
+	mode := legacy.LastUsedMode
+	if mode == "folder" {
+		mode = "directory"
+	}
+
+	tab := DesktopTabSession{
+		ID:           defaultTabID,
+		Label:        defaultTabLabel,
+		LastUsedMode: mode,
+	}
+	if legacy.JSON != nil {
+		tab.JSON = *legacy.JSON
+	}
+	if legacy.Text != nil {
+		tab.Text = *legacy.Text
+	}
+	if legacy.Directory != nil {
+		tab.Directory = *legacy.Directory
+	}
+	if (tab.Directory == DesktopDirectorySession{}) && legacy.LegacyDirectory != nil {
+		tab.Directory = *legacy.LegacyDirectory
+	}
+
+	directoryRecent := legacy.DirectoryRecentPairs
+	if len(directoryRecent) == 0 && len(legacy.LegacyDirectoryRecentPairs) > 0 {
+		directoryRecent = legacy.LegacyDirectoryRecentPairs
+	}
+
 	return DesktopState{
-		Version:      desktopStateVersion,
+		Version:              desktopStateVersion,
+		Tabs:                 []DesktopTabSession{tab},
+		ActiveTabID:          tab.ID,
+		JSONRecentPairs:      legacy.JSONRecentPairs,
+		TextRecentPairs:      legacy.TextRecentPairs,
+		DirectoryRecentPairs: directoryRecent,
+	}
+}
+
+func defaultDesktopState() DesktopState {
+	tab := defaultDesktopTabSession(defaultTabID, defaultTabLabel)
+	return DesktopState{
+		Version:     desktopStateVersion,
+		Tabs:        []DesktopTabSession{tab},
+		ActiveTabID: tab.ID,
+	}
+}
+
+func defaultDesktopTabSession(id, label string) DesktopTabSession {
+	return DesktopTabSession{
+		ID:           id,
+		Label:        label,
 		LastUsedMode: "json",
 		JSON: DesktopJSONSession{
 			Common: defaultJSONCompareCommon(),
@@ -126,31 +191,27 @@ func defaultDesktopState() DesktopState {
 }
 
 func normalizeDesktopState(state DesktopState) DesktopState {
-	defaults := defaultDesktopState()
-
 	state.Version = desktopStateVersion
-	switch state.LastUsedMode {
-	case "json", "text", "directory":
-	default:
-		state.LastUsedMode = defaults.LastUsedMode
+
+	if len(state.Tabs) == 0 {
+		state.Tabs = []DesktopTabSession{defaultDesktopTabSession(defaultTabID, defaultTabLabel)}
 	}
 
-	state.JSON.OldSourcePath = strings.TrimSpace(state.JSON.OldSourcePath)
-	state.JSON.NewSourcePath = strings.TrimSpace(state.JSON.NewSourcePath)
-	state.JSON.Common = normalizeCompareCommon(state.JSON.Common, defaultJSONCompareCommon())
-
-	state.Text.OldSourcePath = strings.TrimSpace(state.Text.OldSourcePath)
-	state.Text.NewSourcePath = strings.TrimSpace(state.Text.NewSourcePath)
-	state.Text.Common = normalizeCompareCommon(state.Text.Common, defaultTextCompareCommon())
-	if state.Text.DiffLayout != "split" && state.Text.DiffLayout != "unified" {
-		state.Text.DiffLayout = defaults.Text.DiffLayout
+	seenIDs := map[string]struct{}{}
+	cleanedTabs := make([]DesktopTabSession, 0, len(state.Tabs))
+	for i, tab := range state.Tabs {
+		tab = normalizeTabSession(tab, i)
+		if _, dup := seenIDs[tab.ID]; dup {
+			tab.ID = fmt.Sprintf("%s-%d", tab.ID, i+1)
+		}
+		seenIDs[tab.ID] = struct{}{}
+		cleanedTabs = append(cleanedTabs, tab)
 	}
+	state.Tabs = cleanedTabs
 
-	state.Directory.LeftRoot = strings.TrimSpace(state.Directory.LeftRoot)
-	state.Directory.RightRoot = strings.TrimSpace(state.Directory.RightRoot)
-	state.Directory.CurrentPath = strings.TrimSpace(state.Directory.CurrentPath)
-	if state.Directory.ViewMode != "list" && state.Directory.ViewMode != "tree" {
-		state.Directory.ViewMode = defaults.Directory.ViewMode
+	state.ActiveTabID = strings.TrimSpace(state.ActiveTabID)
+	if !tabIDExists(state.Tabs, state.ActiveTabID) {
+		state.ActiveTabID = state.Tabs[0].ID
 	}
 
 	state.JSONRecentPairs = normalizeRecentPairs(state.JSONRecentPairs)
@@ -158,6 +219,57 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 	state.DirectoryRecentPairs = normalizeRecentDirectoryPairs(state.DirectoryRecentPairs)
 
 	return state
+}
+
+func normalizeTabSession(tab DesktopTabSession, index int) DesktopTabSession {
+	tab.ID = strings.TrimSpace(tab.ID)
+	if tab.ID == "" {
+		tab.ID = fmt.Sprintf("tab-%d", index+1)
+	}
+	tab.Label = strings.TrimSpace(tab.Label)
+	if tab.Label == "" {
+		tab.Label = fmt.Sprintf("Tab %d", index+1)
+	}
+
+	switch tab.LastUsedMode {
+	case "json", "text", "directory":
+	case "folder":
+		tab.LastUsedMode = "directory"
+	default:
+		tab.LastUsedMode = "json"
+	}
+
+	tab.JSON.OldSourcePath = strings.TrimSpace(tab.JSON.OldSourcePath)
+	tab.JSON.NewSourcePath = strings.TrimSpace(tab.JSON.NewSourcePath)
+	tab.JSON.Common = normalizeCompareCommon(tab.JSON.Common, defaultJSONCompareCommon())
+
+	tab.Text.OldSourcePath = strings.TrimSpace(tab.Text.OldSourcePath)
+	tab.Text.NewSourcePath = strings.TrimSpace(tab.Text.NewSourcePath)
+	tab.Text.Common = normalizeCompareCommon(tab.Text.Common, defaultTextCompareCommon())
+	if tab.Text.DiffLayout != "split" && tab.Text.DiffLayout != "unified" {
+		tab.Text.DiffLayout = "split"
+	}
+
+	tab.Directory.LeftRoot = strings.TrimSpace(tab.Directory.LeftRoot)
+	tab.Directory.RightRoot = strings.TrimSpace(tab.Directory.RightRoot)
+	tab.Directory.CurrentPath = strings.TrimSpace(tab.Directory.CurrentPath)
+	if tab.Directory.ViewMode != "list" && tab.Directory.ViewMode != "tree" {
+		tab.Directory.ViewMode = "list"
+	}
+
+	return tab
+}
+
+func tabIDExists(tabs []DesktopTabSession, id string) bool {
+	if id == "" {
+		return false
+	}
+	for _, t := range tabs {
+		if t.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizeCompareCommon(common CompareCommon, defaults CompareCommon) CompareCommon {

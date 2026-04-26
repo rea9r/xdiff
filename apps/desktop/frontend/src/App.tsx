@@ -1,4 +1,5 @@
 import './style.css'
+import { useMemo } from 'react'
 import { AppChrome } from './ui/AppChrome'
 import { TabBar } from './ui/TabBar'
 import { DesktopTabSurface } from './DesktopTabSurface'
@@ -12,26 +13,63 @@ import {
   useDesktopTabsManager,
   type DesktopTabsManagerState,
 } from './useDesktopTabsManager'
+import { useDesktopStatePersistor } from './useDesktopStatePersistor'
+import type { DesktopState, DesktopTabSession } from './types'
 
 export function App() {
   const api = useDesktopBridge()
-  const recentPairs = useDesktopRecentPairs()
-  const tabsManager = useDesktopTabsManager()
+  const persistor = useDesktopStatePersistor({ api })
+
+  if (!persistor.hydrated || !persistor.snapshot) {
+    return null
+  }
+
+  return <AppHydrated api={api} persistor={persistor} initial={persistor.snapshot} />
+}
+
+type AppHydratedProps = {
+  api: ReturnType<typeof useDesktopBridge>
+  persistor: ReturnType<typeof useDesktopStatePersistor>
+  initial: DesktopState
+}
+
+function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
+  const recentPairs = useDesktopRecentPairs({ initial, commit: persistor.commit })
+  const tabsManager = useDesktopTabsManager({
+    initial,
+    commit: persistor.commit,
+    fallbackTabSession: persistor.fallbackTabSession,
+  })
+
+  const initialSessionsById = useMemo(() => {
+    const map = new Map<string, DesktopTabSession>()
+    for (const session of initial.tabs) {
+      map.set(session.id, session)
+    }
+    return map
+  }, [initial])
 
   return (
     <DesktopTabSlotsProvider>
       <ActiveTabAppChrome tabsManager={tabsManager} />
-      {tabsManager.tabs.map((tab) => (
-        <DesktopTabSurface
-          key={tab.id}
-          tabId={tab.id}
-          isActive={tab.id === tabsManager.activeTabId}
-          isInitialTab={tab.id === tabsManager.initialTabId}
-          api={api}
-          recentPairs={recentPairs}
-          onLabelChange={tabsManager.updateTabLabel}
-        />
-      ))}
+      {tabsManager.tabs.map((tab) => {
+        const initialSession =
+          initialSessionsById.get(tab.id) ?? persistor.fallbackTabSession(tab.id, tab.label)
+        return (
+          <DesktopTabSurface
+            key={tab.id}
+            tabId={tab.id}
+            isActive={tab.id === tabsManager.activeTabId}
+            isInitialTab={tab.id === tabsManager.initialTabId}
+            api={api}
+            recentPairs={recentPairs}
+            onLabelChange={tabsManager.updateTabLabel}
+            initialSession={initialSession}
+            initialTabId={tabsManager.initialTabId}
+            commit={persistor.commit}
+          />
+        )
+      })}
     </DesktopTabSlotsProvider>
   )
 }

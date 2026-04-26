@@ -1,57 +1,49 @@
-import {
-  useEffect,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from 'react'
+import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 import type {
   DesktopState,
+  DesktopTabSession,
   LoadTextFileRequest,
   LoadTextFileResponse,
   Mode,
 } from './types'
 import { ignorePathsToText } from './utils/appHelpers'
 import { defaultJSONCommon, defaultTextCommon } from './useDesktopModeState'
+import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
 type StateSetter<T> = Dispatch<SetStateAction<T>>
 
-type LoadDesktopStateFn = () => Promise<DesktopState>
-type SaveDesktopStateFn = (state: DesktopState) => Promise<void>
 type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
 
 type UseDesktopPersistenceOptions = {
+  enabled?: boolean
+  initialSession: DesktopTabSession
+  initialTabId: string
+  commit: DesktopStatePersistor['commit']
+  loadTextFile?: LoadTextFileFn
   mode: Mode
   setMode: StateSetter<Mode>
-  enabled?: boolean
-  loadDesktopState?: LoadDesktopStateFn
-  saveDesktopState?: SaveDesktopStateFn
-  loadTextFile?: LoadTextFileFn
   json: {
     oldSourcePath: string
     newSourcePath: string
     ignoreOrder: boolean
-    common: DesktopState['json']['common']
-    recentPairs: DesktopState['jsonRecentPairs']
+    common: DesktopState['tabs'][number]['json']['common']
     setIgnoreOrder: StateSetter<boolean>
-    setCommon: StateSetter<DesktopState['json']['common']>
+    setCommon: StateSetter<DesktopState['tabs'][number]['json']['common']>
     setIgnorePathsDraft: StateSetter<string>
     setOldSourcePath: StateSetter<string>
     setNewSourcePath: StateSetter<string>
-    setRecentPairs: StateSetter<DesktopState['jsonRecentPairs']>
     setOldText: StateSetter<string>
     setNewText: StateSetter<string>
   }
   text: {
     oldSourcePath: string
     newSourcePath: string
-    common: DesktopState['text']['common']
-    diffLayout: DesktopState['text']['diffLayout']
-    recentPairs: DesktopState['textRecentPairs']
-    setCommon: StateSetter<DesktopState['text']['common']>
-    setDiffLayout: StateSetter<DesktopState['text']['diffLayout']>
+    common: DesktopState['tabs'][number]['text']['common']
+    diffLayout: DesktopState['tabs'][number]['text']['diffLayout']
+    setCommon: StateSetter<DesktopState['tabs'][number]['text']['common']>
+    setDiffLayout: StateSetter<DesktopState['tabs'][number]['text']['diffLayout']>
     setOldSourcePath: StateSetter<string>
     setNewSourcePath: StateSetter<string>
-    setRecentPairs: StateSetter<DesktopState['textRecentPairs']>
     setOldText: StateSetter<string>
     setNewText: StateSetter<string>
   }
@@ -59,13 +51,11 @@ type UseDesktopPersistenceOptions = {
     leftRoot: string
     rightRoot: string
     currentPath: string
-    viewMode: DesktopState['directory']['viewMode']
-    recentPairs: DesktopState['directoryRecentPairs']
+    viewMode: DesktopState['tabs'][number]['directory']['viewMode']
     setLeftRoot: StateSetter<string>
     setRightRoot: StateSetter<string>
     setCurrentPath: StateSetter<string>
-    setViewMode: StateSetter<DesktopState['directory']['viewMode']>
-    setRecentPairs: StateSetter<DesktopState['directoryRecentPairs']>
+    setViewMode: StateSetter<DesktopState['tabs'][number]['directory']['viewMode']>
   }
 }
 
@@ -76,30 +66,29 @@ function isMode(value: string): value is Mode {
 }
 
 export function useDesktopPersistence({
+  enabled = true,
+  initialSession,
+  initialTabId,
+  commit,
+  loadTextFile,
   mode,
   setMode,
-  enabled = true,
-  loadDesktopState,
-  saveDesktopState,
-  loadTextFile,
   json,
   text,
   directory,
 }: UseDesktopPersistenceOptions) {
-  const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
+  const hydratedRef = useRef(false)
 
   const {
     oldSourcePath: jsonOldSourcePath,
     newSourcePath: jsonNewSourcePath,
     ignoreOrder,
     common: jsonCommon,
-    recentPairs: jsonRecentPairs,
     setIgnoreOrder,
     setCommon: setJSONCommon,
     setIgnorePathsDraft: setJSONIgnorePathsDraft,
     setOldSourcePath: setJSONOldSourcePath,
     setNewSourcePath: setJSONNewSourcePath,
-    setRecentPairs: setJSONRecentPairs,
     setOldText: setJSONOldText,
     setNewText: setJSONNewText,
   } = json
@@ -109,12 +98,10 @@ export function useDesktopPersistence({
     newSourcePath: textNewSourcePath,
     common: textCommon,
     diffLayout: textDiffLayout,
-    recentPairs: textRecentPairs,
     setCommon: setTextCommon,
     setDiffLayout: setTextDiffLayout,
     setOldSourcePath: setTextOldSourcePath,
     setNewSourcePath: setTextNewSourcePath,
-    setRecentPairs: setTextRecentPairs,
     setOldText: setTextOld,
     setNewText: setTextNew,
   } = text
@@ -124,59 +111,41 @@ export function useDesktopPersistence({
     rightRoot: directoryRightRoot,
     currentPath: directoryCurrentPath,
     viewMode: directoryViewMode,
-    recentPairs: directoryRecentPairs,
     setLeftRoot: setDirectoryLeftRoot,
     setRightRoot: setDirectoryRightRoot,
     setCurrentPath: setDirectoryCurrentPath,
     setViewMode: setDirectoryViewMode,
-    setRecentPairs: setDirectoryRecentPairs,
   } = directory
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || hydratedRef.current) {
       return
     }
 
     let active = true
 
     const hydrate = async () => {
-      if (!loadDesktopState) {
-        if (active) {
-          setDesktopStateHydrated(true)
-        }
-        return
-      }
-
       try {
-        const saved = await loadDesktopState()
-        if (!active || !saved) {
-          return
+        if (isMode(initialSession.lastUsedMode)) {
+          setMode(initialSession.lastUsedMode)
         }
 
-        if (isMode(saved.lastUsedMode)) {
-          setMode(saved.lastUsedMode)
-        }
-
-        setIgnoreOrder(!!saved.json.ignoreOrder)
-        const mergedJSONCommon = { ...defaultJSONCommon, ...saved.json.common }
+        setIgnoreOrder(!!initialSession.json.ignoreOrder)
+        const mergedJSONCommon = { ...defaultJSONCommon, ...initialSession.json.common }
         setJSONCommon(mergedJSONCommon)
         setJSONIgnorePathsDraft(ignorePathsToText(mergedJSONCommon.ignorePaths))
-        setJSONOldSourcePath(saved.json.oldSourcePath || '')
-        setJSONNewSourcePath(saved.json.newSourcePath || '')
+        setJSONOldSourcePath(initialSession.json.oldSourcePath || '')
+        setJSONNewSourcePath(initialSession.json.newSourcePath || '')
 
-        setTextCommon({ ...defaultTextCommon, ...saved.text.common })
-        setTextDiffLayout(saved.text.diffLayout === 'unified' ? 'unified' : 'split')
-        setTextOldSourcePath(saved.text.oldSourcePath || '')
-        setTextNewSourcePath(saved.text.newSourcePath || '')
+        setTextCommon({ ...defaultTextCommon, ...initialSession.text.common })
+        setTextDiffLayout(initialSession.text.diffLayout === 'unified' ? 'unified' : 'split')
+        setTextOldSourcePath(initialSession.text.oldSourcePath || '')
+        setTextNewSourcePath(initialSession.text.newSourcePath || '')
 
-        setDirectoryLeftRoot(saved.directory.leftRoot || '')
-        setDirectoryRightRoot(saved.directory.rightRoot || '')
-        setDirectoryCurrentPath(saved.directory.currentPath || '')
-        setDirectoryViewMode(saved.directory.viewMode === 'tree' ? 'tree' : 'list')
-
-        setJSONRecentPairs(saved.jsonRecentPairs ?? [])
-        setTextRecentPairs(saved.textRecentPairs ?? [])
-        setDirectoryRecentPairs(saved.directoryRecentPairs ?? [])
+        setDirectoryLeftRoot(initialSession.directory.leftRoot || '')
+        setDirectoryRightRoot(initialSession.directory.rightRoot || '')
+        setDirectoryCurrentPath(initialSession.directory.currentPath || '')
+        setDirectoryViewMode(initialSession.directory.viewMode === 'tree' ? 'tree' : 'list')
 
         if (loadTextFile) {
           const safeLoad = async (path: string): Promise<string> => {
@@ -195,10 +164,10 @@ export function useDesktopPersistence({
           }
 
           const [jsonOld, jsonNew, textOldLoaded, textNewLoaded] = await Promise.all([
-            safeLoad(saved.json.oldSourcePath || ''),
-            safeLoad(saved.json.newSourcePath || ''),
-            safeLoad(saved.text.oldSourcePath || ''),
-            safeLoad(saved.text.newSourcePath || ''),
+            safeLoad(initialSession.json.oldSourcePath || ''),
+            safeLoad(initialSession.json.newSourcePath || ''),
+            safeLoad(initialSession.text.oldSourcePath || ''),
+            safeLoad(initialSession.text.newSourcePath || ''),
           ])
 
           if (!active) {
@@ -211,10 +180,10 @@ export function useDesktopPersistence({
           setTextNew(textNewLoaded)
         }
       } catch {
-        // keep app usable even when persistence load fails
+        // keep app usable even when hydration fails
       } finally {
         if (active) {
-          setDesktopStateHydrated(true)
+          hydratedRef.current = true
         }
       }
     }
@@ -225,11 +194,10 @@ export function useDesktopPersistence({
     }
   }, [
     enabled,
-    loadDesktopState,
+    initialSession,
     loadTextFile,
     setDirectoryCurrentPath,
     setDirectoryLeftRoot,
-    setDirectoryRecentPairs,
     setDirectoryRightRoot,
     setDirectoryViewMode,
     setIgnoreOrder,
@@ -239,7 +207,6 @@ export function useDesktopPersistence({
     setJSONNewText,
     setJSONOldSourcePath,
     setJSONOldText,
-    setJSONRecentPairs,
     setMode,
     setTextCommon,
     setTextDiffLayout,
@@ -247,68 +214,66 @@ export function useDesktopPersistence({
     setTextNewSourcePath,
     setTextOld,
     setTextOldSourcePath,
-    setTextRecentPairs,
   ])
 
   useEffect(() => {
-    if (!enabled || !desktopStateHydrated || !saveDesktopState) {
+    if (!enabled || !hydratedRef.current) {
       return
     }
 
     const timer = window.setTimeout(() => {
-      const state: DesktopState = {
-        version: 1,
-        lastUsedMode: mode,
-        json: {
-          oldSourcePath: jsonOldSourcePath,
-          newSourcePath: jsonNewSourcePath,
-          ignoreOrder,
-          common: jsonCommon,
-        },
-        text: {
-          oldSourcePath: textOldSourcePath,
-          newSourcePath: textNewSourcePath,
-          common: textCommon,
-          diffLayout: textDiffLayout,
-        },
-        directory: {
-          leftRoot: directoryLeftRoot,
-          rightRoot: directoryRightRoot,
-          currentPath: directoryCurrentPath,
-          viewMode: directoryViewMode,
-        },
-        jsonRecentPairs,
-        textRecentPairs,
-        directoryRecentPairs,
-      }
-
-      void saveDesktopState(state).catch(() => {
-        // keep save errors non-fatal
+      commit((prev) => {
+        const targetIndex = prev.tabs.findIndex((t) => t.id === initialTabId)
+        if (targetIndex < 0) {
+          return prev
+        }
+        const updatedSession: DesktopTabSession = {
+          ...prev.tabs[targetIndex],
+          lastUsedMode: mode,
+          json: {
+            oldSourcePath: jsonOldSourcePath,
+            newSourcePath: jsonNewSourcePath,
+            ignoreOrder,
+            common: jsonCommon,
+          },
+          text: {
+            oldSourcePath: textOldSourcePath,
+            newSourcePath: textNewSourcePath,
+            common: textCommon,
+            diffLayout: textDiffLayout,
+          },
+          directory: {
+            leftRoot: directoryLeftRoot,
+            rightRoot: directoryRightRoot,
+            currentPath: directoryCurrentPath,
+            viewMode: directoryViewMode,
+          },
+        }
+        const newTabs = [...prev.tabs]
+        newTabs[targetIndex] = updatedSession
+        return { ...prev, tabs: newTabs }
       })
-    }, 500)
+    }, 200)
 
     return () => {
       window.clearTimeout(timer)
     }
   }, [
-    desktopStateHydrated,
-    directoryCurrentPath,
-    directoryLeftRoot,
-    directoryRecentPairs,
-    directoryRightRoot,
-    directoryViewMode,
     enabled,
+    commit,
+    initialTabId,
+    mode,
+    jsonOldSourcePath,
+    jsonNewSourcePath,
     ignoreOrder,
     jsonCommon,
-    jsonNewSourcePath,
-    jsonOldSourcePath,
-    jsonRecentPairs,
-    mode,
-    saveDesktopState,
+    textOldSourcePath,
+    textNewSourcePath,
     textCommon,
     textDiffLayout,
-    textNewSourcePath,
-    textOldSourcePath,
-    textRecentPairs,
+    directoryLeftRoot,
+    directoryRightRoot,
+    directoryCurrentPath,
+    directoryViewMode,
   ])
 }

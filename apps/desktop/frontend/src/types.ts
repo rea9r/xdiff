@@ -145,12 +145,19 @@ export type DesktopRecentDirectoryPair = {
   usedAt: string
 }
 
-export type DesktopState = {
-  version: number
+export type DesktopTabSession = {
+  id: string
+  label: string
   lastUsedMode: Mode
   json: DesktopJSONSession
   text: DesktopTextSession
   directory: DesktopDirectorySession
+}
+
+export type DesktopState = {
+  version: number
+  tabs: DesktopTabSession[]
+  activeTabId: string
   jsonRecentPairs: DesktopRecentPair[]
   textRecentPairs: DesktopRecentPair[]
   directoryRecentPairs: DesktopRecentDirectoryPair[]

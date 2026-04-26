@@ -3,6 +3,8 @@ import { useDesktopAppModel } from './useDesktopAppModel'
 import { usePublishDesktopTabSlots } from './useDesktopTabSlotsContext'
 import type { useDesktopBridge } from './useDesktopBridge'
 import type { DesktopRecentPairsState } from './useDesktopRecentPairs'
+import type { DesktopTabSession } from './types'
+import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
 type DesktopTabSurfaceProps = {
   tabId: string
@@ -11,6 +13,9 @@ type DesktopTabSurfaceProps = {
   api: ReturnType<typeof useDesktopBridge>
   recentPairs: DesktopRecentPairsState
   onLabelChange: (id: string, label: string) => void
+  initialSession: DesktopTabSession
+  initialTabId: string
+  commit: DesktopStatePersistor['commit']
 }
 
 export function DesktopTabSurface({
@@ -20,10 +25,20 @@ export function DesktopTabSurface({
   api,
   recentPairs,
   onLabelChange,
+  initialSession,
+  initialTabId,
+  commit,
 }: DesktopTabSurfaceProps) {
-  // Persistence load is gated to the initial tab so newly added tabs start empty
-  // instead of clobbering each other with the same on-disk session snapshot.
-  const slots = useDesktopAppModel({ api, recentPairs, enabled: isInitialTab && isActive })
+  // Persistence is gated to the initial tab: only that tab's session is loaded
+  // on hydration and saved on changes. Other tabs start empty and won't write.
+  const slots = useDesktopAppModel({
+    api,
+    recentPairs,
+    enabled: isInitialTab && isActive,
+    initialSession,
+    initialTabId,
+    commit,
+  })
   const publish = usePublishDesktopTabSlots()
 
   // useLayoutEffect so the active tab's slots are published before paint,

@@ -150,12 +150,19 @@ type DesktopRecentDirectoryPair struct {
 	UsedAt      string `json:"usedAt"`
 }
 
+type DesktopTabSession struct {
+	ID           string                  `json:"id"`
+	Label        string                  `json:"label"`
+	LastUsedMode string                  `json:"lastUsedMode"`
+	JSON         DesktopJSONSession      `json:"json"`
+	Text         DesktopTextSession      `json:"text"`
+	Directory    DesktopDirectorySession `json:"directory"`
+}
+
 type DesktopState struct {
 	Version              int                          `json:"version"`
-	LastUsedMode         string                       `json:"lastUsedMode"`
-	JSON                 DesktopJSONSession           `json:"json"`
-	Text                 DesktopTextSession           `json:"text"`
-	Directory            DesktopDirectorySession      `json:"directory"`
+	Tabs                 []DesktopTabSession          `json:"tabs"`
+	ActiveTabID          string                       `json:"activeTabId"`
 	JSONRecentPairs      []DesktopRecentPair          `json:"jsonRecentPairs"`
 	TextRecentPairs      []DesktopRecentPair          `json:"textRecentPairs"`
 	DirectoryRecentPairs []DesktopRecentDirectoryPair `json:"directoryRecentPairs"`
