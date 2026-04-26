@@ -41,10 +41,12 @@ beforeEach(() => {
   pointTarget = null
   ;(document as unknown as { elementFromPoint: (x: number, y: number) => Element | null })
     .elementFromPoint = () => pointTarget
+  ;(Element.prototype as unknown as { scrollIntoView: () => void }).scrollIntoView = () => {}
 })
 
 afterEach(() => {
   delete (document as unknown as { elementFromPoint?: unknown }).elementFromPoint
+  delete (Element.prototype as unknown as { scrollIntoView?: unknown }).scrollIntoView
 })
 
 describe('TabBar drag reorder', () => {
@@ -139,6 +141,40 @@ describe('TabBar drag reorder', () => {
 
     fireEvent.click(tabB)
     expect(onSelectTab).toHaveBeenCalledWith('tab-b')
+  })
+})
+
+describe('TabBar add affordances', () => {
+  it('adds a tab when the empty area of the scroll container is double-clicked', () => {
+    const onAddTab = vi.fn()
+    const { container } = renderTabBar({ onAddTab })
+    const scroll = container.querySelector('.xdiff-tab-bar-scroll') as HTMLElement
+
+    fireEvent.mouseDown(scroll, { button: 0 })
+    fireEvent.mouseDown(scroll, { button: 0 })
+
+    expect(onAddTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not add a tab on a single click of the empty area', () => {
+    const onAddTab = vi.fn()
+    const { container } = renderTabBar({ onAddTab })
+    const scroll = container.querySelector('.xdiff-tab-bar-scroll') as HTMLElement
+
+    fireEvent.mouseDown(scroll, { button: 0 })
+
+    expect(onAddTab).not.toHaveBeenCalled()
+  })
+
+  it('does not add a tab when a tab itself is double-clicked', () => {
+    const onAddTab = vi.fn()
+    const { container } = renderTabBar({ onAddTab })
+    const tabA = container.querySelector('[data-tab-id="tab-a"]') as HTMLElement
+
+    fireEvent.mouseDown(tabA, { button: 0 })
+    fireEvent.mouseDown(tabA, { button: 0 })
+
+    expect(onAddTab).not.toHaveBeenCalled()
   })
 })
 

@@ -1,13 +1,18 @@
 import { IconPlus, IconX } from '@tabler/icons-react'
-import { Menu } from '@mantine/core'
+import { Menu, Tooltip } from '@mantine/core'
 import {
   useEffect,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from 'react'
 import type { DesktopTab } from '../useDesktopTabsManager'
+
+const isMac =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform)
+const NEW_TAB_SHORTCUT = isMac ? '⌘T' : 'Ctrl+T'
 
 type TabBarProps = {
   tabs: DesktopTab[]
@@ -51,6 +56,37 @@ export function TabBar({
   const suppressClickRef = useRef(false)
   const onReorderRef = useRef(onReorderTab)
   onReorderRef.current = onReorderTab
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const scroll = scrollRef.current
+    if (!scroll) return
+    const active = scroll.querySelector<HTMLElement>(`[${TAB_ID_ATTR}="${CSS.escape(activeTabId)}"]`)
+    if (!active) return
+    active.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [activeTabId, tabs])
+
+  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    const scroll = scrollRef.current
+    if (!scroll) return
+    if (event.deltaX !== 0) return
+    if (event.deltaY === 0) return
+    scroll.scrollLeft += event.deltaY
+  }
+
+  const lastEmptyClickRef = useRef<number>(0)
+  const handleScrollMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return
+    if (event.button !== 0) return
+    event.preventDefault()
+    const now = performance.now()
+    if (now - lastEmptyClickRef.current < 350) {
+      onAddTab()
+      lastEmptyClickRef.current = 0
+      return
+    }
+    lastEmptyClickRef.current = now
+  }
 
   const closeMenu = () => setMenu(null)
   const menuTabIndex = menu ? tabs.findIndex((t) => t.id === menu.tabId) : -1
@@ -113,7 +149,14 @@ export function TabBar({
 
   return (
     <>
-    <div className="xdiff-tab-bar" role="tablist">
+    <div className="xdiff-tab-bar">
+      <div
+        className="xdiff-tab-bar-scroll"
+        role="tablist"
+        ref={scrollRef}
+        onWheel={handleWheel}
+        onMouseDown={handleScrollMouseDown}
+      >
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId
         const isDragging = tab.id === dragId
@@ -194,16 +237,19 @@ export function TabBar({
           </div>
         )
       })}
-      <button
-        type="button"
-        className="xdiff-tab-add"
-        onClick={onAddTab}
-        onMouseDown={(event) => event.preventDefault()}
-        tabIndex={-1}
-        aria-label="New tab"
-      >
-        <IconPlus size={14} />
-      </button>
+      </div>
+      <Tooltip label={`New tab (${NEW_TAB_SHORTCUT})`} withArrow position="bottom">
+        <button
+          type="button"
+          className="xdiff-tab-add"
+          onClick={onAddTab}
+          onMouseDown={(event) => event.preventDefault()}
+          tabIndex={-1}
+          aria-label="New tab"
+        >
+          <IconPlus size={14} />
+        </button>
+      </Tooltip>
     </div>
     <Menu
       opened={menu !== null}

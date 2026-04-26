@@ -300,6 +300,23 @@ body {
   height: var(--xdiff-tab-bar-height);
   margin-bottom: var(--xdiff-tab-bar-margin);
   border-bottom: 1px solid var(--mantine-color-default-border);
+  min-width: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.xdiff-tab-bar-scroll {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.xdiff-tab-bar-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .xdiff-tab {
@@ -314,6 +331,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   outline: none;
+  flex-shrink: 0;
 }
 
 .xdiff-tab,
@@ -393,6 +411,7 @@ body.xdiff-tab-dragging * {
   align-self: stretch;
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
 .xdiff-tab-add:focus,
