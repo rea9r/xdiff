@@ -329,6 +329,21 @@ body {
   border-bottom-color: var(--xdiff-accent);
 }
 
+.xdiff-tab.is-dragging {
+  opacity: 0.4;
+}
+
+.xdiff-tab.is-drag-over {
+  box-shadow: inset 2px 0 0 0 var(--xdiff-accent);
+}
+
+body.xdiff-tab-dragging,
+body.xdiff-tab-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: grabbing !important;
+}
+
 .xdiff-tab-label {
   white-space: nowrap;
 }

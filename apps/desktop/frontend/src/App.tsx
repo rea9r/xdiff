@@ -56,7 +56,9 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
       <ActiveTabAppChrome tabsManager={tabsManager} />
       {tabsManager.tabs.map((tab) => {
         const initialSession =
-          initialSessionsById.get(tab.id) ?? persistor.fallbackTabSession(tab.id, tab.label)
+          initialSessionsById.get(tab.id) ??
+          persistor.getLatestSession(tab.id) ??
+          persistor.fallbackTabSession(tab.id, tab.label)
         return (
           <DesktopTabSurface
             key={tab.id}
@@ -76,7 +78,7 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
 
 function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerState }) {
   const slots = useActiveDesktopTabSlots()
-  const { tabs, activeTabId, setActiveTabId, addTab, closeTab } = tabsManager
+  const { tabs, activeTabId, setActiveTabId, addTab, closeTab, reorderTab } = tabsManager
 
   if (!slots) {
     return null
@@ -99,6 +101,7 @@ function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerSt
           onSelectTab={setActiveTabId}
           onAddTab={addTab}
           onCloseTab={closeTab}
+          onReorderTab={reorderTab}
         />
       }
     />

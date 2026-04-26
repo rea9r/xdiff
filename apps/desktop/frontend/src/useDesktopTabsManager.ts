@@ -31,10 +31,19 @@ export function useDesktopTabsManager({
     counterRef.current += 1
     const next = counterRef.current
     const id = `tab-${next}-${Date.now()}`
-    const newTab: DesktopTab = { id, label: `Tab ${next}` }
+    const label = `Tab ${next}`
+    const newTab: DesktopTab = { id, label }
+    commit((prev) => {
+      const sourceSession = prev.tabs.find((t) => t.id === prev.activeTabId)
+      const fresh = fallbackTabSession(id, label)
+      const newSession = sourceSession
+        ? { ...fresh, lastUsedMode: sourceSession.lastUsedMode }
+        : fresh
+      return { ...prev, tabs: [...prev.tabs, newSession] }
+    })
     setTabs((prev) => [...prev, newTab])
     setActiveTabId(id)
-  }, [])
+  }, [commit, fallbackTabSession])
 
   const closeTab = useCallback((id: string) => {
     setTabs((prev) => (prev.length <= 1 ? prev : prev.filter((t) => t.id !== id)))
@@ -47,6 +56,23 @@ export function useDesktopTabsManager({
         return prev
       }
       return prev.map((t) => (t.id === id ? { ...t, label } : t))
+    })
+  }, [])
+
+  const reorderTab = useCallback((fromId: string, toId: string) => {
+    if (fromId === toId) {
+      return
+    }
+    setTabs((prev) => {
+      const fromIdx = prev.findIndex((t) => t.id === fromId)
+      const toIdx = prev.findIndex((t) => t.id === toId)
+      if (fromIdx < 0 || toIdx < 0) {
+        return prev
+      }
+      const next = [...prev]
+      const [moved] = next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, moved)
+      return next
     })
   }, [])
 
@@ -81,6 +107,7 @@ export function useDesktopTabsManager({
     addTab,
     closeTab,
     updateTabLabel,
+    reorderTab,
   }
 }
 

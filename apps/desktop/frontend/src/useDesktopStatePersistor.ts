@@ -64,6 +64,7 @@ export type DesktopStatePersistor = {
   snapshot: DesktopState | null
   commit: (updater: (prev: DesktopState) => DesktopState) => void
   fallbackTabSession: (id: string, label: string) => DesktopTabSession
+  getLatestSession: (id: string) => DesktopTabSession | null
 }
 
 export function useDesktopStatePersistor({
@@ -143,10 +144,16 @@ export function useDesktopStatePersistor({
     [],
   )
 
+  const getLatestSession = useCallback(
+    (id: string) => stateRef.current?.tabs.find((t) => t.id === id) ?? null,
+    [],
+  )
+
   return {
     hydrated,
     snapshot,
     commit,
     fallbackTabSession,
+    getLatestSession,
   }
 }
