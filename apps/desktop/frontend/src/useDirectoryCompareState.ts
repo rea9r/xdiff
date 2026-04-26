@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CompareDirectoriesResponse, DesktopRecentDirectoryPair } from './types'
+import type { CompareDirectoriesResponse } from './types'
 
 export function useDirectoryCompareState() {
   const [directoryLeftRoot, setDirectoryLeftRoot] = useState('')
@@ -8,7 +8,6 @@ export function useDirectoryCompareState() {
   const [directoryCurrentPath, setDirectoryCurrentPath] = useState('')
   const [directoryResult, setDirectoryResult] = useState<CompareDirectoriesResponse | null>(null)
   const [directoryStatus, setDirectoryStatus] = useState('')
-  const [directoryRecentPairs, setDirectoryRecentPairs] = useState<DesktopRecentDirectoryPair[]>([])
 
   return {
     directoryLeftRoot,
@@ -23,7 +22,5 @@ export function useDirectoryCompareState() {
     setDirectoryResult,
     directoryStatus,
     setDirectoryStatus,
-    directoryRecentPairs,
-    setDirectoryRecentPairs,
   }
 }

@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { useDirectoryCompareState } from '../../useDirectoryCompareState'
 import { useDirectoryCompareViewState } from './useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './useDirectoryCompareWorkflow'
@@ -6,7 +7,7 @@ import { useDirectoryChildDiffOpeners } from './useDirectoryChildDiffOpeners'
 import { useDirectoryCompareInteractions } from './useDirectoryCompareInteractions'
 import { formatUnknownError } from '../../utils/appHelpers'
 import { showErrorNotification } from '../../utils/notifications'
-import type { Mode } from '../../types'
+import type { DesktopRecentDirectoryPair, Mode } from '../../types'
 
 export type DirectoryCompareModelDeps = {
   mode: Mode
@@ -20,10 +21,12 @@ export type DirectoryCompareModelDeps = {
   setJSONResultView: Parameters<typeof useDirectoryChildDiffOpeners>[0]['setJSONResultView']
   clearTextExpandedSections: () => void
   resetTextSearch: () => void
+  setDirectoryRecentPairs: Dispatch<SetStateAction<DesktopRecentDirectoryPair[]>>
 }
 
 export function useDirectoryCompareModel(deps: DirectoryCompareModelDeps) {
   const state = useDirectoryCompareState()
+  const { setDirectoryRecentPairs } = deps
 
   const {
     directoryLeftRoot,
@@ -38,8 +41,6 @@ export function useDirectoryCompareModel(deps: DirectoryCompareModelDeps) {
     setDirectoryResult,
     directoryStatus,
     setDirectoryStatus,
-    directoryRecentPairs,
-    setDirectoryRecentPairs,
   } = state
 
   const viewState = useDirectoryCompareViewState({

@@ -7,7 +7,11 @@ import type { TextDiffLayout } from '../text/useTextDiffViewState'
 
 export type JSONCompareModelDeps = Pick<
   UseJSONCompareWorkflowOptions,
-  'getCompareJSONValuesRich' | 'getPickJSONFile' | 'getLoadTextFile' | 'onJSONCompareCompleted'
+  | 'getCompareJSONValuesRich'
+  | 'getPickJSONFile'
+  | 'getLoadTextFile'
+  | 'onJSONCompareCompleted'
+  | 'setJSONRecentPairs'
 > & {
   textDiffLayout: TextDiffLayout
 }
@@ -19,6 +23,7 @@ export function useJSONCompareModel(deps: JSONCompareModelDeps) {
     getPickJSONFile: deps.getPickJSONFile,
     getLoadTextFile: deps.getLoadTextFile,
     onJSONCompareCompleted: deps.onJSONCompareCompleted,
+    setJSONRecentPairs: deps.setJSONRecentPairs,
   })
 
   const viewState = useJSONCompareViewState({

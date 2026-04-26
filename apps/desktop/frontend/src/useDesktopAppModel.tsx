@@ -2,6 +2,7 @@ import { useDesktopBridge } from './useDesktopBridge'
 import { useBrowseAndSet } from './useBrowseAndSet'
 import { useDesktopModeState } from './useDesktopModeState'
 import { useDesktopRunUiState } from './useDesktopRunUiState'
+import { useDesktopRecentPairs } from './useDesktopRecentPairs'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { useRecentActionRunner } from './useRecentActionRunner'
@@ -17,6 +18,7 @@ export function useDesktopAppModel() {
     useDesktopModeState()
   const api = useDesktopBridge()
   const { setSummaryLine, setOutput, loading, setLoading } = useDesktopRunUiState()
+  const recentPairs = useDesktopRecentPairs()
 
   // --- Domain models ---
   // NOTE: onXxxCompleted callbacks are closures that capture `setResult`.
@@ -27,6 +29,7 @@ export function useDesktopAppModel() {
     getPickTextFile: () => api.pickTextFile,
     getLoadTextFile: () => api.loadTextFile,
     onTextCompareCompleted: (res) => setResult(res),
+    setTextRecentPairs: recentPairs.setTextRecentPairs,
   })
 
   const jsonModel = useJSONCompareModel({
@@ -35,6 +38,7 @@ export function useDesktopAppModel() {
     getLoadTextFile: () => api.loadTextFile,
     onJSONCompareCompleted: (res) => setResult(res),
     textDiffLayout: textModel.viewState.textDiffLayout,
+    setJSONRecentPairs: recentPairs.setJSONRecentPairs,
   })
 
   const directoryModel = useDirectoryCompareModel({
@@ -49,6 +53,7 @@ export function useDesktopAppModel() {
     setJSONResultView: jsonModel.viewState.setJSONResultView,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
     resetTextSearch: textModel.viewState.resetTextSearch,
+    setDirectoryRecentPairs: recentPairs.setDirectoryRecentPairs,
   })
 
   // --- Orchestration ---
@@ -83,13 +88,13 @@ export function useDesktopAppModel() {
       newSourcePath: jsonModel.workflow.jsonNewSourcePath,
       ignoreOrder: jsonModel.workflow.ignoreOrder,
       common: jsonModel.workflow.jsonCommon,
-      recentPairs: jsonModel.workflow.jsonRecentPairs,
+      recentPairs: recentPairs.jsonRecentPairs,
       setIgnoreOrder: jsonModel.workflow.setIgnoreOrder,
       setCommon: jsonModel.workflow.setJSONCommon,
       setIgnorePathsDraft: jsonModel.workflow.setJSONIgnorePathsDraft,
       setOldSourcePath: jsonModel.workflow.setJSONOldSourcePath,
       setNewSourcePath: jsonModel.workflow.setJSONNewSourcePath,
-      setRecentPairs: jsonModel.workflow.setJSONRecentPairs,
+      setRecentPairs: recentPairs.setJSONRecentPairs,
       setOldText: jsonModel.workflow.setJSONOldText,
       setNewText: jsonModel.workflow.setJSONNewText,
     },
@@ -98,12 +103,12 @@ export function useDesktopAppModel() {
       newSourcePath: textModel.workflow.textNewSourcePath,
       common: textModel.workflow.textCommon,
       diffLayout: textModel.viewState.textDiffLayout,
-      recentPairs: textModel.workflow.textRecentPairs,
+      recentPairs: recentPairs.textRecentPairs,
       setCommon: textModel.workflow.setTextCommon,
       setDiffLayout: textModel.viewState.setTextDiffLayout,
       setOldSourcePath: textModel.workflow.setTextOldSourcePath,
       setNewSourcePath: textModel.workflow.setTextNewSourcePath,
-      setRecentPairs: textModel.workflow.setTextRecentPairs,
+      setRecentPairs: recentPairs.setTextRecentPairs,
       setOldText: textModel.workflow.setTextOld,
       setNewText: textModel.workflow.setTextNew,
     },
@@ -112,12 +117,12 @@ export function useDesktopAppModel() {
       rightRoot: directoryModel.state.directoryRightRoot,
       currentPath: directoryModel.state.directoryCurrentPath,
       viewMode: directoryModel.viewState.directoryViewMode,
-      recentPairs: directoryModel.state.directoryRecentPairs,
+      recentPairs: recentPairs.directoryRecentPairs,
       setLeftRoot: directoryModel.state.setDirectoryLeftRoot,
       setRightRoot: directoryModel.state.setDirectoryRightRoot,
       setCurrentPath: directoryModel.state.setDirectoryCurrentPath,
       setViewMode: directoryModel.viewState.setDirectoryViewMode,
-      setRecentPairs: directoryModel.state.setDirectoryRecentPairs,
+      setRecentPairs: recentPairs.setDirectoryRecentPairs,
     },
   })
 
@@ -166,12 +171,12 @@ export function useDesktopAppModel() {
     jsonCompareDisabled: jsonModel.compareDisabled,
     directoryCompareDisabled: directoryModel.compareDisabled,
     onRun,
-    jsonRecentPairs: jsonModel.workflow.jsonRecentPairs,
-    onClearJSONRecent: () => jsonModel.workflow.setJSONRecentPairs([]),
-    textRecentPairs: textModel.workflow.textRecentPairs,
-    onClearTextRecent: () => textModel.workflow.setTextRecentPairs([]),
-    directoryRecentPairs: directoryModel.state.directoryRecentPairs,
-    onClearDirectoryRecent: () => directoryModel.state.setDirectoryRecentPairs([]),
+    jsonRecentPairs: recentPairs.jsonRecentPairs,
+    onClearJSONRecent: () => recentPairs.setJSONRecentPairs([]),
+    textRecentPairs: recentPairs.textRecentPairs,
+    onClearTextRecent: () => recentPairs.setTextRecentPairs([]),
+    directoryRecentPairs: recentPairs.directoryRecentPairs,
+    onClearDirectoryRecent: () => recentPairs.setDirectoryRecentPairs([]),
     runRecentAction,
     runTextFromRecent: textModel.workflow.runTextFromRecent,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,

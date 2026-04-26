@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { upsertRecentPair } from '../../persistence'
 import type {
   CompareCommon,
@@ -40,6 +40,7 @@ export type UseJSONCompareWorkflowOptions = {
   getPickJSONFile: () => PickJSONFileFn | undefined
   getLoadTextFile: () => LoadTextFileFn | undefined
   onJSONCompareCompleted?: (res: CompareResponse) => void
+  setJSONRecentPairs: Dispatch<SetStateAction<DesktopRecentPair[]>>
 }
 
 type RunJSONCompareWithValuesOptions = {
@@ -74,6 +75,7 @@ export function useJSONCompareWorkflow({
   getPickJSONFile,
   getLoadTextFile,
   onJSONCompareCompleted,
+  setJSONRecentPairs,
 }: UseJSONCompareWorkflowOptions) {
   const [jsonOldText, setJSONOldText] = useState('')
   const [jsonNewText, setJSONNewText] = useState('')
@@ -92,7 +94,6 @@ export function useJSONCompareWorkflow({
   const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
     ignorePathsToText(initialCommon.ignorePaths),
   )
-  const [jsonRecentPairs, setJSONRecentPairs] = useState<DesktopRecentPair[]>([])
 
   const effectiveJSONIgnorePaths = useMemo(
     () => parseIgnorePaths(jsonIgnorePathsDraft),
@@ -178,7 +179,7 @@ export function useJSONCompareWorkflow({
         )
       }
     },
-    [onJSONCompareCompleted],
+    [onJSONCompareCompleted, setJSONRecentPairs],
   )
 
   const runJSONCompareWithValues = useCallback(
@@ -442,8 +443,6 @@ export function useJSONCompareWorkflow({
     jsonCopyBusyTarget,
     jsonIgnorePathsDraft,
     setJSONIgnorePathsDraft,
-    jsonRecentPairs,
-    setJSONRecentPairs,
     effectiveJSONIgnorePaths,
     jsonPatchBlockedByFilters,
     jsonOldParseError,

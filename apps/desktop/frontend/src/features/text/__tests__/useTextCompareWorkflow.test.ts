@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { CompareResponse } from '../../../types'
+import type { CompareResponse, DesktopRecentPair } from '../../../types'
 import { useTextCompareWorkflow } from '../useTextCompareWorkflow'
 
 const initialCommon = {
@@ -11,6 +12,14 @@ const initialCommon = {
   ignoreWhitespace: false,
   ignoreCase: false,
   ignoreEOL: false,
+}
+
+function useWorkflowWithRecent(
+  options: Omit<Parameters<typeof useTextCompareWorkflow>[0], 'setTextRecentPairs'>,
+) {
+  const [textRecentPairs, setTextRecentPairs] = useState<DesktopRecentPair[]>([])
+  const workflow = useTextCompareWorkflow({ ...options, setTextRecentPairs })
+  return { ...workflow, textRecentPairs }
 }
 
 describe('useTextCompareWorkflow', () => {
@@ -24,7 +33,7 @@ describe('useTextCompareWorkflow', () => {
     const compareText = async () => response
 
     const { result } = renderHook(() =>
-      useTextCompareWorkflow({
+      useWorkflowWithRecent({
         initialCommon,
         getCompareText: () => compareText,
         getPickTextFile: () => undefined,
@@ -60,7 +69,7 @@ describe('useTextCompareWorkflow', () => {
     })
 
     const { result } = renderHook(() =>
-      useTextCompareWorkflow({
+      useWorkflowWithRecent({
         initialCommon,
         getCompareText: () => undefined,
         getPickTextFile: () => undefined,

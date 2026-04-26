@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type Dispatch, type SetStateAction } from 'react'
 import { upsertRecentPair } from '../../persistence'
 import type {
   CompareCommon,
@@ -38,6 +38,7 @@ export type UseTextCompareWorkflowOptions = {
   getPickTextFile: () => PickTextFileFn | undefined
   getLoadTextFile: () => LoadTextFileFn | undefined
   onTextCompareCompleted?: (res: CompareResponse) => void
+  setTextRecentPairs: Dispatch<SetStateAction<DesktopRecentPair[]>>
 }
 
 type RunTextCompareWithValuesOptions = {
@@ -53,6 +54,7 @@ export function useTextCompareWorkflow({
   getPickTextFile,
   getLoadTextFile,
   onTextCompareCompleted,
+  setTextRecentPairs,
 }: UseTextCompareWorkflowOptions) {
   const [textOld, setTextOld] = useState('')
   const [textNew, setTextNew] = useState('')
@@ -73,7 +75,6 @@ export function useTextCompareWorkflow({
   const [textCopyBusy, setTextCopyBusy] = useState(false)
   const [textPaneCopyBusyTarget, setTextPaneCopyBusyTarget] =
     useState<TextInputTarget | null>(null)
-  const [textRecentPairs, setTextRecentPairs] = useState<DesktopRecentPair[]>([])
 
   const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
 
@@ -128,7 +129,7 @@ export function useTextCompareWorkflow({
         )
       }
     },
-    [onTextCompareCompleted, textCommon.outputFormat],
+    [onTextCompareCompleted, setTextRecentPairs, textCommon.outputFormat],
   )
 
   const runTextCompareWithValues = useCallback(
@@ -437,8 +438,6 @@ export function useTextCompareWorkflow({
     textCopyBusy,
     textPaneCopyBusyTarget,
     textEditorBusy,
-    textRecentPairs,
-    setTextRecentPairs,
     runText,
     runTextFromRecent,
     runTextCompareWithValues,

@@ -6,7 +6,11 @@ import { useTextDiffViewState } from './useTextDiffViewState'
 
 export type TextCompareModelDeps = Pick<
   UseTextCompareWorkflowOptions,
-  'getCompareText' | 'getPickTextFile' | 'getLoadTextFile' | 'onTextCompareCompleted'
+  | 'getCompareText'
+  | 'getPickTextFile'
+  | 'getLoadTextFile'
+  | 'onTextCompareCompleted'
+  | 'setTextRecentPairs'
 >
 
 export function useTextCompareModel(deps: TextCompareModelDeps) {
@@ -16,6 +20,7 @@ export function useTextCompareModel(deps: TextCompareModelDeps) {
     getPickTextFile: deps.getPickTextFile,
     getLoadTextFile: deps.getLoadTextFile,
     onTextCompareCompleted: deps.onTextCompareCompleted,
+    setTextRecentPairs: deps.setTextRecentPairs,
   })
 
   const viewState = useTextDiffViewState({
