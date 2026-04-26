@@ -15,12 +15,12 @@ import (
 
 const (
 	aiCallTimeout       = 180 * time.Second
-	aiDefaultModel      = "qwen3.5:0.8b"
+	aiDefaultModel      = "gemma3:1b"
 	aiDiffSnippetLimit  = 16000
 	aiKeepAlive         = "30m"
 	aiSystemInstruction = `You are a senior code reviewer. The user gives you a diff (unified diff for text mode, structured diff lines for JSON mode). Explain the changes for someone reviewing them.
 
-The user message starts with a "Reply in:" line specifying the response language. Use exactly that language for your entire response — do not switch to any other language.
+LANGUAGE RULE (highest priority): the user message ends with a "Respond in: <language>" line. Your entire response — every sentence, heading, and bullet — must be written in that exact language. If it says Japanese, write Japanese (日本語). If it says English, write English. Never mix languages, never translate identifiers, never default back to English when the user asked for another language.
 
 Output format:
 - One short sentence summarizing the change.
@@ -367,11 +367,20 @@ func buildExplainPrompt(diff, mode, language string) string {
 	if lang == "" {
 		lang = "English"
 	}
-	b.WriteString("Reply in: ")
-	b.WriteString(lang)
-	b.WriteString("\n")
 	b.WriteString("\nDiff:\n```\n")
 	b.WriteString(diff)
-	b.WriteString("\n```\n")
+	b.WriteString("\n```\n\n")
+	b.WriteString(languageDirective(lang))
 	return b.String()
+}
+
+func languageDirective(lang string) string {
+	switch strings.ToLower(lang) {
+	case "japanese", "ja", "日本語":
+		return "Respond in: Japanese (日本語)\n" +
+			"重要: 回答は必ず日本語で書いてください。要約・箇条書き・注意書きを含むすべての文を日本語で記述すること。英語で答えてはいけません。\n"
+	default:
+		return "Respond in: " + lang + "\n" +
+			"Important: write every sentence of the response in " + lang + ". Do not switch languages.\n"
+	}
 }
