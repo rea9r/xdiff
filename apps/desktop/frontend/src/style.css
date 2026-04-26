@@ -404,6 +404,43 @@ body.xdiff-tab-dragging * {
   color: var(--mantine-color-text);
 }
 
+.xdiff-tab-end-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.xdiff-tab-end-slot .xdiff-tab-close {
+  position: absolute;
+  inset: 0;
+}
+
+.xdiff-tab-dirty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mantine-color-text);
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.xdiff-tab.is-dirty .xdiff-tab-close {
+  opacity: 0;
+}
+
+.xdiff-tab.is-dirty:hover .xdiff-tab-close,
+.xdiff-tab.is-dirty .xdiff-tab-close:focus-visible {
+  opacity: 1;
+}
+
+.xdiff-tab.is-dirty:hover .xdiff-tab-dirty-dot {
+  opacity: 0;
+}
+
 .xdiff-tab-add {
   width: 24px;
   height: 100%;

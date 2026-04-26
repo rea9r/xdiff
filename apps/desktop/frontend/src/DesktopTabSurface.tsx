@@ -1,7 +1,7 @@
 import { memo, useEffect, useLayoutEffect } from 'react'
 import { useDesktopAppModel } from './useDesktopAppModel'
 import { usePublishDesktopTabSlots } from './useDesktopTabSlotsContext'
-import { useDesktopTabDirtyRegistry } from './useDesktopTabDirtyRegistry'
+import { useTabDirtyMutator } from './useDesktopTabDirtyRegistry'
 import type { useDesktopBridge } from './useDesktopBridge'
 import type { DesktopRecentPairsState } from './useDesktopRecentPairs'
 import type { DesktopTabSession } from './types'
@@ -49,7 +49,7 @@ function DesktopTabSurfaceImpl({
     }
   }, [tabId, slots.tabLabel, onLabelChange])
 
-  const { setTabDirty } = useDesktopTabDirtyRegistry()
+  const { setTabDirty } = useTabDirtyMutator()
   useEffect(() => {
     setTabDirty(tabId, slots.isDirty)
     return () => setTabDirty(tabId, false)

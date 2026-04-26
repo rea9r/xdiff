@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react'
-import { useDesktopTabDirtyRegistry } from './useDesktopTabDirtyRegistry'
+import { useTabDirtySnapshot } from './useDesktopTabDirtyRegistry'
 import type { DesktopTabsManagerState } from './useDesktopTabsManager'
 
 type ConfirmFn = (dirtyCount: number) => Promise<boolean>
@@ -15,7 +15,7 @@ export function useGuardedTabClose(
   tabsManager: DesktopTabsManagerState,
   confirm: ConfirmFn,
 ): GuardedTabClose {
-  const { dirtyTabIdsAmong } = useDesktopTabDirtyRegistry()
+  const { dirtyTabIdsAmong } = useTabDirtySnapshot()
   const managerRef = useRef(tabsManager)
   managerRef.current = tabsManager
 

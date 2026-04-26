@@ -9,6 +9,7 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from 'react'
 import type { DesktopTab } from '../useDesktopTabsManager'
+import { useTabDirtySnapshot } from '../useDesktopTabDirtyRegistry'
 
 const isMac =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform)
@@ -48,6 +49,7 @@ export function TabBar({
   onReorderTab,
 }: TabBarProps) {
   const canClose = tabs.length > 1
+  const { isTabDirty } = useTabDirtySnapshot()
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
   const [menu, setMenu] = useState<{ tabId: string; x: number; y: number } | null>(null)
@@ -161,6 +163,7 @@ export function TabBar({
         const isActive = tab.id === activeTabId
         const isDragging = tab.id === dragId
         const isDragOver = tab.id === overId && dragId !== null && dragId !== tab.id
+        const isDirty = isTabDirty(tab.id)
 
         const handleClose = (event: ReactMouseEvent<HTMLButtonElement>) => {
           event.stopPropagation()
@@ -200,6 +203,7 @@ export function TabBar({
           isActive ? 'is-active' : '',
           isDragging ? 'is-dragging' : '',
           isDragOver ? 'is-drag-over' : '',
+          isDirty ? 'is-dirty' : '',
         ]
           .filter(Boolean)
           .join(' ')
@@ -225,14 +229,23 @@ export function TabBar({
           >
             <span className="xdiff-tab-label">{tab.label}</span>
             {canClose ? (
-              <button
-                type="button"
-                className="xdiff-tab-close"
-                onClick={handleClose}
-                aria-label={`Close ${tab.label}`}
-              >
-                <IconX size={12} />
-              </button>
+              <span className="xdiff-tab-end-slot">
+                <button
+                  type="button"
+                  className="xdiff-tab-close"
+                  onClick={handleClose}
+                  aria-label={`Close ${tab.label}`}
+                >
+                  <IconX size={12} />
+                </button>
+                {isDirty ? (
+                  <span className="xdiff-tab-dirty-dot" aria-hidden="true" />
+                ) : null}
+              </span>
+            ) : isDirty ? (
+              <span className="xdiff-tab-end-slot">
+                <span className="xdiff-tab-dirty-dot" aria-hidden="true" />
+              </span>
             ) : null}
           </div>
         )

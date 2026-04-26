@@ -1,47 +1,58 @@
-import { createContext, useCallback, useContext, useRef } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
-type DirtyRegistry = {
+type DirtyMutator = {
   setTabDirty: (tabId: string, isDirty: boolean) => void
+}
+
+type DirtySnapshot = {
   isTabDirty: (tabId: string) => boolean
   dirtyTabIdsAmong: (ids: string[]) => string[]
 }
 
-const DesktopTabDirtyContext = createContext<DirtyRegistry | null>(null)
+const NO_OP_MUTATOR: DirtyMutator = { setTabDirty: () => {} }
+const EMPTY_SNAPSHOT: DirtySnapshot = {
+  isTabDirty: () => false,
+  dirtyTabIdsAmong: () => [],
+}
+
+const DirtyMutatorContext = createContext<DirtyMutator>(NO_OP_MUTATOR)
+const DirtySnapshotContext = createContext<DirtySnapshot>(EMPTY_SNAPSHOT)
 
 export function DesktopTabDirtyProvider({ children }: { children: ReactNode }) {
-  const dirtyRef = useRef<Set<string>>(new Set())
+  const [dirty, setDirty] = useState<ReadonlySet<string>>(() => new Set())
 
   const setTabDirty = useCallback((tabId: string, isDirty: boolean) => {
-    if (isDirty) {
-      dirtyRef.current.add(tabId)
-    } else {
-      dirtyRef.current.delete(tabId)
-    }
+    setDirty((prev) => {
+      const has = prev.has(tabId)
+      if (isDirty === has) return prev
+      const next = new Set(prev)
+      if (isDirty) next.add(tabId)
+      else next.delete(tabId)
+      return next
+    })
   }, [])
 
-  const isTabDirty = useCallback((tabId: string) => dirtyRef.current.has(tabId), [])
-
-  const dirtyTabIdsAmong = useCallback(
-    (ids: string[]) => ids.filter((id) => dirtyRef.current.has(id)),
-    [],
+  const mutator = useMemo<DirtyMutator>(() => ({ setTabDirty }), [setTabDirty])
+  const snapshot = useMemo<DirtySnapshot>(
+    () => ({
+      isTabDirty: (id) => dirty.has(id),
+      dirtyTabIdsAmong: (ids) => ids.filter((id) => dirty.has(id)),
+    }),
+    [dirty],
   )
 
-  const value = useRef<DirtyRegistry>({ setTabDirty, isTabDirty, dirtyTabIdsAmong }).current
-
   return (
-    <DesktopTabDirtyContext.Provider value={value}>
-      {children}
-    </DesktopTabDirtyContext.Provider>
+    <DirtyMutatorContext.Provider value={mutator}>
+      <DirtySnapshotContext.Provider value={snapshot}>{children}</DirtySnapshotContext.Provider>
+    </DirtyMutatorContext.Provider>
   )
 }
 
-export function useDesktopTabDirtyRegistry(): DirtyRegistry {
-  const ctx = useContext(DesktopTabDirtyContext)
-  if (!ctx) {
-    throw new Error(
-      'useDesktopTabDirtyRegistry must be used within DesktopTabDirtyProvider',
-    )
-  }
-  return ctx
+export function useTabDirtyMutator(): DirtyMutator {
+  return useContext(DirtyMutatorContext)
+}
+
+export function useTabDirtySnapshot(): DirtySnapshot {
+  return useContext(DirtySnapshotContext)
 }
