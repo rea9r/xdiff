@@ -9,34 +9,27 @@ import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 type DesktopTabSurfaceProps = {
   tabId: string
   isActive: boolean
-  isInitialTab: boolean
   api: ReturnType<typeof useDesktopBridge>
   recentPairs: DesktopRecentPairsState
   onLabelChange: (id: string, label: string) => void
   initialSession: DesktopTabSession
-  initialTabId: string
   commit: DesktopStatePersistor['commit']
 }
 
 export function DesktopTabSurface({
   tabId,
   isActive,
-  isInitialTab,
   api,
   recentPairs,
   onLabelChange,
   initialSession,
-  initialTabId,
   commit,
 }: DesktopTabSurfaceProps) {
-  // Persistence is gated to the initial tab: only that tab's session is loaded
-  // on hydration and saved on changes. Other tabs start empty and won't write.
   const slots = useDesktopAppModel({
     api,
     recentPairs,
-    enabled: isInitialTab && isActive,
     initialSession,
-    initialTabId,
+    tabId,
     commit,
   })
   const publish = usePublishDesktopTabSlots()

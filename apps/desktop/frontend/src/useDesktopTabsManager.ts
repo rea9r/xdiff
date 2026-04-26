@@ -22,7 +22,6 @@ export function useDesktopTabsManager({
     initial.tabs.map((t) => ({ id: t.id, label: t.label })),
   )
   const initialActiveTabIdRef = useRef<string>(initial.activeTabId)
-  const initialIdRef = useRef<string>(initial.tabs[0]?.id ?? 'tab-1')
 
   const [tabs, setTabs] = useState<DesktopTab[]>(initialTabsRef.current)
   const [activeTabId, setActiveTabId] = useState<string>(initialActiveTabIdRef.current)
@@ -82,7 +81,6 @@ export function useDesktopTabsManager({
     addTab,
     closeTab,
     updateTabLabel,
-    initialTabId: initialIdRef.current,
   }
 }
 

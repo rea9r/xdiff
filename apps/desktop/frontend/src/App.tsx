@@ -60,12 +60,10 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
             key={tab.id}
             tabId={tab.id}
             isActive={tab.id === tabsManager.activeTabId}
-            isInitialTab={tab.id === tabsManager.initialTabId}
             api={api}
             recentPairs={recentPairs}
             onLabelChange={tabsManager.updateTabLabel}
             initialSession={initialSession}
-            initialTabId={tabsManager.initialTabId}
             commit={persistor.commit}
           />
         )

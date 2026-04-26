@@ -15,9 +15,8 @@ type StateSetter<T> = Dispatch<SetStateAction<T>>
 type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
 
 type UseDesktopPersistenceOptions = {
-  enabled?: boolean
   initialSession: DesktopTabSession
-  initialTabId: string
+  tabId: string
   commit: DesktopStatePersistor['commit']
   loadTextFile?: LoadTextFileFn
   mode: Mode
@@ -66,9 +65,8 @@ function isMode(value: string): value is Mode {
 }
 
 export function useDesktopPersistence({
-  enabled = true,
   initialSession,
-  initialTabId,
+  tabId,
   commit,
   loadTextFile,
   mode,
@@ -118,7 +116,7 @@ export function useDesktopPersistence({
   } = directory
 
   useEffect(() => {
-    if (!enabled || hydratedRef.current) {
+    if (hydratedRef.current) {
       return
     }
 
@@ -193,7 +191,6 @@ export function useDesktopPersistence({
       active = false
     }
   }, [
-    enabled,
     initialSession,
     loadTextFile,
     setDirectoryCurrentPath,
@@ -217,13 +214,13 @@ export function useDesktopPersistence({
   ])
 
   useEffect(() => {
-    if (!enabled || !hydratedRef.current) {
+    if (!hydratedRef.current) {
       return
     }
 
     const timer = window.setTimeout(() => {
       commit((prev) => {
-        const targetIndex = prev.tabs.findIndex((t) => t.id === initialTabId)
+        const targetIndex = prev.tabs.findIndex((t) => t.id === tabId)
         if (targetIndex < 0) {
           return prev
         }
@@ -259,9 +256,8 @@ export function useDesktopPersistence({
       window.clearTimeout(timer)
     }
   }, [
-    enabled,
     commit,
-    initialTabId,
+    tabId,
     mode,
     jsonOldSourcePath,
     jsonNewSourcePath,

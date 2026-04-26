@@ -13,18 +13,16 @@ import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 export type UseDesktopAppModelOptions = {
   api: ReturnType<typeof useDesktopBridge>
   recentPairs: DesktopRecentPairsState
-  enabled?: boolean
   initialSession: DesktopTabSession
-  initialTabId: string
+  tabId: string
   commit: DesktopStatePersistor['commit']
 }
 
 export function useDesktopAppModel({
   api,
   recentPairs,
-  enabled = true,
   initialSession,
-  initialTabId,
+  tabId,
   commit,
 }: UseDesktopAppModelOptions) {
   const tab = useDesktopTabModel({ api, recentPairs })
@@ -33,9 +31,8 @@ export function useDesktopAppModel({
   const { textModel, jsonModel, directoryModel } = tab
 
   useDesktopPersistence({
-    enabled,
     initialSession,
-    initialTabId,
+    tabId,
     commit,
     loadTextFile: api.loadTextFile,
     mode,

@@ -62,7 +62,6 @@ function fallbackDesktopState(): DesktopState {
 export type DesktopStatePersistor = {
   hydrated: boolean
   snapshot: DesktopState | null
-  initialTabId: string
   commit: (updater: (prev: DesktopState) => DesktopState) => void
   fallbackTabSession: (id: string, label: string) => DesktopTabSession
 }
@@ -76,7 +75,6 @@ export function useDesktopStatePersistor({
   const [snapshot, setSnapshot] = useState<DesktopState | null>(null)
   const stateRef = useRef<DesktopState | null>(null)
   const saveTimerRef = useRef<number | null>(null)
-  const initialTabIdRef = useRef<string>(FALLBACK_TAB_ID)
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +84,6 @@ export function useDesktopStatePersistor({
         return
       }
       stateRef.current = loaded
-      initialTabIdRef.current = loaded.tabs[0]?.id ?? FALLBACK_TAB_ID
       setSnapshot(loaded)
       setHydrated(true)
     }
@@ -149,7 +146,6 @@ export function useDesktopStatePersistor({
   return {
     hydrated,
     snapshot,
-    initialTabId: initialTabIdRef.current,
     commit,
     fallbackTabSession,
   }
