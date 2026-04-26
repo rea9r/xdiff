@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconChevronDown } from '@tabler/icons-react'
 import type {
@@ -14,6 +14,10 @@ import { useDirectoryCompareChildDiffActions } from './features/folder/useDirect
 import { useDirectoryCompareInteractions } from './features/folder/useDirectoryCompareInteractions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
+import { applyChangeBlockToNew, applyChangeBlockToOld } from './features/text/textDiff'
+import { showAdoptNotification, showErrorNotification } from './utils/notifications'
+import { formatUnknownError } from './utils/appHelpers'
+import type { AdoptBlockHandler } from './ui/RichDiffViewer'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
 
@@ -23,6 +27,11 @@ type DesktopShellModel = {
   main: ReactNode
   inspector: ReactNode | undefined
   inspectorOpen: boolean
+}
+
+type TextAdoptSnapshot = {
+  oldText: string
+  newText: string
 }
 
 type UseDesktopShellModelArgs = {
@@ -102,6 +111,90 @@ export function useDesktopShellModel({
 
   const sidebar = undefined
 
+  const [textAdoptUndoStack, setTextAdoptUndoStack] = useState<TextAdoptSnapshot[]>([])
+  const [textAdoptRedoStack, setTextAdoptRedoStack] = useState<TextAdoptSnapshot[]>([])
+
+  const restoreTextAdoptSnapshot = (snapshot: TextAdoptSnapshot) => {
+    textWorkflow.setTextOld(snapshot.oldText)
+    textWorkflow.setTextNew(snapshot.newText)
+
+    void textWorkflow
+      .runTextCompareWithValues({
+        oldText: snapshot.oldText,
+        newText: snapshot.newText,
+        oldSourcePath: textWorkflow.textOldSourcePath,
+        newSourcePath: textWorkflow.textNewSourcePath,
+      })
+      .catch((error) => {
+        showErrorNotification(
+          'Failed to restore previous state',
+          `Failed to re-compute diff: ${formatUnknownError(error)}`,
+        )
+      })
+  }
+
+  const onAdoptTextBlock: AdoptBlockHandler = (block, direction) => {
+    const currentOld = textWorkflow.textOld
+    const currentNew = textWorkflow.textNew
+
+    const nextOld =
+      direction === 'to-old' ? applyChangeBlockToOld(block, currentOld) : currentOld
+    const nextNew =
+      direction === 'to-new' ? applyChangeBlockToNew(block, currentNew) : currentNew
+
+    if (nextOld === currentOld && nextNew === currentNew) {
+      return
+    }
+
+    setTextAdoptUndoStack((prev) => [...prev, { oldText: currentOld, newText: currentNew }])
+    setTextAdoptRedoStack([])
+
+    textWorkflow.setTextOld(nextOld)
+    textWorkflow.setTextNew(nextNew)
+
+    void textWorkflow
+      .runTextCompareWithValues({
+        oldText: nextOld,
+        newText: nextNew,
+        oldSourcePath: textWorkflow.textOldSourcePath,
+        newSourcePath: textWorkflow.textNewSourcePath,
+      })
+      .catch((error) => {
+        showErrorNotification(
+          'Failed to apply change',
+          `Failed to re-compute diff: ${formatUnknownError(error)}`,
+        )
+      })
+
+    showAdoptNotification(direction)
+  }
+
+  const onUndoTextAdopt = () => {
+    if (textAdoptUndoStack.length === 0) {
+      return
+    }
+    const snapshot = textAdoptUndoStack[textAdoptUndoStack.length - 1]
+    setTextAdoptUndoStack((prev) => prev.slice(0, -1))
+    setTextAdoptRedoStack((prev) => [
+      ...prev,
+      { oldText: textWorkflow.textOld, newText: textWorkflow.textNew },
+    ])
+    restoreTextAdoptSnapshot(snapshot)
+  }
+
+  const onRedoTextAdopt = () => {
+    if (textAdoptRedoStack.length === 0) {
+      return
+    }
+    const snapshot = textAdoptRedoStack[textAdoptRedoStack.length - 1]
+    setTextAdoptRedoStack((prev) => prev.slice(0, -1))
+    setTextAdoptUndoStack((prev) => [
+      ...prev,
+      { oldText: textWorkflow.textOld, newText: textWorkflow.textNew },
+    ])
+    restoreTextAdoptSnapshot(snapshot)
+  }
+
   const main = (
     <DesktopMainContent
       mode={mode}
@@ -154,9 +247,15 @@ export function useDesktopShellModel({
         isTextSectionExpanded: textViewState.isTextSectionExpanded,
         registerTextSearchRowRef: textViewState.registerTextSearchRowRef,
         textDiffBlocks: textViewState.textDiffBlocks,
+        textChangeBlocks: textViewState.textChangeBlocks,
         textActiveDiffIndex: textViewState.textActiveDiffIndex,
         activeTextDiffBlock: textViewState.activeTextDiffBlock,
         moveTextDiff: textViewState.moveTextDiff,
+        onAdoptBlock: onAdoptTextBlock,
+        canUndoAdopt: textAdoptUndoStack.length > 0,
+        canRedoAdopt: textAdoptRedoStack.length > 0,
+        onUndoAdopt: onUndoTextAdopt,
+        onRedoAdopt: onRedoTextAdopt,
       }}
       jsonSourceProps={{
         oldSourcePath: jsonWorkflow.jsonOldSourcePath,

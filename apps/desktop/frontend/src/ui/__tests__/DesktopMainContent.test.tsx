@@ -55,6 +55,7 @@ const textResultProps = {
   isTextSectionExpanded: () => false,
   registerTextSearchRowRef: () => noop,
   textDiffBlocks: [],
+  textChangeBlocks: [],
   textActiveDiffIndex: 0,
   activeTextDiffBlock: null,
   moveTextDiff: noop,

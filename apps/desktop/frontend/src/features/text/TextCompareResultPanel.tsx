@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { IconCopy } from '@tabler/icons-react'
+import { IconArrowBackUp, IconArrowForwardUp, IconCopy } from '@tabler/icons-react'
 import type { CompareResponse } from '../../types'
 import { renderResult } from '../../utils/appHelpers'
 import { CompareDiffNavControls } from '../../ui/CompareDiffNavControls'
@@ -17,10 +17,12 @@ import { useCompareKeyboardShortcuts } from '../../ui/useCompareKeyboardShortcut
 import {
   summarizeTextDiffCounts,
   type RichDiffItem,
+  type TextChangeBlock,
   type TextDiffBlock,
   type TextSearchMatch,
   type UnifiedDiffRow,
 } from './textDiff'
+import type { AdoptBlockHandler } from '../../ui/RichDiffViewer'
 import type { TextDiffLayout, TextResultView } from './useTextDiffViewState'
 
 export type TextCompareResultPanelProps = {
@@ -49,9 +51,15 @@ export type TextCompareResultPanelProps = {
   isTextSectionExpanded: (sectionId: string) => boolean
   registerTextSearchRowRef: (matchId: string) => (node: HTMLDivElement | null) => void
   textDiffBlocks: TextDiffBlock[]
+  textChangeBlocks: TextChangeBlock[]
   textActiveDiffIndex: number
   activeTextDiffBlock: TextDiffBlock | null
   moveTextDiff: (direction: 1 | -1) => void
+  onAdoptBlock?: AdoptBlockHandler
+  canUndoAdopt?: boolean
+  canRedoAdopt?: boolean
+  onUndoAdopt?: () => void
+  onRedoAdopt?: () => void
 }
 
 function buildTextSummaryBadgeItems(params: {
@@ -109,9 +117,15 @@ export function TextCompareResultPanel({
   isTextSectionExpanded,
   registerTextSearchRowRef,
   textDiffBlocks,
+  textChangeBlocks,
   textActiveDiffIndex,
   activeTextDiffBlock,
   moveTextDiff,
+  onAdoptBlock,
+  canUndoAdopt = false,
+  canRedoAdopt = false,
+  onUndoAdopt,
+  onRedoAdopt,
 }: TextCompareResultPanelProps) {
   const raw = textResult ? renderResult(textResult) : ''
   const hasTextResult = !!textResult
@@ -136,6 +150,12 @@ export function TextCompareResultPanel({
   const activeTextDiffBlockId = activeTextDiffBlock?.id ?? null
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
+  const showAdoptHistoryControls = !!onAdoptBlock && (canUndoAdopt || canRedoAdopt)
+  const isMac =
+    typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform)
+  const undoShortcut = isMac ? '⌘Z' : 'Ctrl+Z'
+  const redoShortcut = isMac ? '⇧⌘Z' : 'Ctrl+Y'
+
   useCompareKeyboardShortcuts({
     enabled: hasTextResult,
     searchInputRef,
@@ -143,6 +163,8 @@ export function TextCompareResultPanel({
     onMoveSearch: textSearchMatches.length > 0 ? moveTextSearch : undefined,
     onMoveDiff:
       canRenderTextRich && textDiffBlocks.length > 0 ? moveTextDiff : undefined,
+    onUndo: canUndoAdopt ? onUndoAdopt : undefined,
+    onRedo: canRedoAdopt ? onRedoAdopt : undefined,
   })
 
   return (
@@ -187,6 +209,36 @@ export function TextCompareResultPanel({
                 onNext={() => moveTextDiff(1)}
                 disabled={!canRenderTextRich}
               />
+              {showAdoptHistoryControls ? (
+                <>
+                  <Tooltip label={`Undo adopt (${undoShortcut})`}>
+                    <ActionIcon
+                      variant={canUndoAdopt ? 'light' : 'default'}
+                      color={canUndoAdopt ? 'blue' : undefined}
+                      size={28}
+                      aria-label="Undo adopt"
+                      className="text-result-action"
+                      onClick={() => onUndoAdopt?.()}
+                      disabled={!canUndoAdopt || !onUndoAdopt}
+                    >
+                      <IconArrowBackUp size={15} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label={`Redo adopt (${redoShortcut})`}>
+                    <ActionIcon
+                      variant={canRedoAdopt ? 'light' : 'default'}
+                      color={canRedoAdopt ? 'blue' : undefined}
+                      size={28}
+                      aria-label="Redo adopt"
+                      className="text-result-action"
+                      onClick={() => onRedoAdopt?.()}
+                      disabled={!canRedoAdopt || !onRedoAdopt}
+                    >
+                      <IconArrowForwardUp size={15} />
+                    </ActionIcon>
+                  </Tooltip>
+                </>
+              ) : null}
             </>
           }
           summary={<CompareStatusBadges items={textSummaryItems} />}
@@ -286,6 +338,8 @@ export function TextCompareResultPanel({
           navMatchIds={textDiffBlockIds}
           activeNavMatchId={activeTextDiffBlockId}
           registerSearchRowRef={registerTextSearchRowRef}
+          changeBlocks={textChangeBlocks}
+          onAdoptBlock={onAdoptBlock}
           omittedSections={{
             isExpanded: isTextSectionExpanded,
             renderAction: (sectionId, expanded) => (

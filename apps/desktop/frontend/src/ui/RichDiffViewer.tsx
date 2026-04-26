@@ -6,8 +6,13 @@ import {
   shouldHideTextRichMetaRow,
   shouldShowTextHunkHeaders,
   type RichDiffItem,
+  type TextChangeBlock,
   type UnifiedDiffRow,
 } from '../features/text/textDiff'
+
+export type AdoptDirection = 'to-new' | 'to-old'
+
+export type AdoptBlockHandler = (block: TextChangeBlock, direction: AdoptDirection) => void
 
 type SearchRowRefRegistrar = (matchId: string) => (node: HTMLDivElement | null) => void
 
@@ -34,6 +39,8 @@ type RichDiffViewerProps = {
   omittedSections?: OmittedSectionConfig
   splitHeaderLabels?: SplitHeaderLabels
   initialVisibleItems?: number
+  changeBlocks?: TextChangeBlock[]
+  onAdoptBlock?: AdoptBlockHandler
 }
 
 const DEFAULT_SPLIT_HEADER_LABELS: SplitHeaderLabels = {
@@ -81,6 +88,41 @@ function getNavClassName(
 
 function combineRowClassNames(...names: string[]): string {
   return names.filter(Boolean).join(' ')
+}
+
+function renderAdoptActionBar(
+  block: TextChangeBlock,
+  layout: 'split' | 'unified',
+  onAdoptBlock: AdoptBlockHandler,
+  keyBase: string,
+) {
+  const adoptLabel = (direction: AdoptDirection) =>
+    direction === 'to-new'
+      ? 'Apply Old → New (overwrite New with Old here)'
+      : 'Apply New → Old (overwrite Old with New here)'
+
+  return (
+    <div key={`${keyBase}-adopt`} className={`text-diff-adopt-bar ${layout}`}>
+      <button
+        type="button"
+        className="text-diff-adopt-button"
+        title={adoptLabel('to-old')}
+        aria-label={adoptLabel('to-old')}
+        onClick={() => onAdoptBlock(block, 'to-old')}
+      >
+        ←
+      </button>
+      <button
+        type="button"
+        className="text-diff-adopt-button"
+        title={adoptLabel('to-new')}
+        aria-label={adoptLabel('to-new')}
+        onClick={() => onAdoptBlock(block, 'to-new')}
+      >
+        →
+      </button>
+    </div>
+  )
 }
 
 function maybeRegisterSearchRowRef(
@@ -153,6 +195,8 @@ function renderUnifiedRows(params: {
   activeNavMatchId?: string | null
   registerSearchRowRef?: SearchRowRefRegistrar
   omittedSections?: OmittedSectionConfig
+  blocksByStart?: Map<number, TextChangeBlock>
+  onAdoptBlock?: AdoptBlockHandler
 }) {
   const {
     items,
@@ -164,6 +208,8 @@ function renderUnifiedRows(params: {
     activeNavMatchId,
     registerSearchRowRef,
     omittedSections,
+    blocksByStart,
+    onAdoptBlock,
   } = params
   const showHunkHeaders = shouldShowTextHunkHeaders(items)
   const isSectionExpanded = omittedSections?.isExpanded ?? (() => true)
@@ -236,8 +282,9 @@ function renderUnifiedRows(params: {
         const matchId = buildTextSearchRowIDForItem(idx)
         const searchClassName = getSearchClassName(searchMatchIds, activeMatchId, matchId)
         const navClassName = getNavClassName(navMatchIds, activeNavMatchId, matchId)
+        const adoptBlock = blocksByStart?.get(idx)
 
-        return (
+        const rowNode = (
           <div
             key={`${keyPrefix}-${idx}-${row.kind}`}
             ref={maybeRegisterSearchRowRef(
@@ -255,6 +302,20 @@ function renderUnifiedRows(params: {
             </pre>
           </div>
         )
+
+        if (adoptBlock && onAdoptBlock) {
+          return [
+            renderAdoptActionBar(
+              adoptBlock,
+              'unified',
+              onAdoptBlock,
+              `${keyPrefix}-${idx}`,
+            ),
+            rowNode,
+          ]
+        }
+
+        return rowNode
       })}
     </div>
   )
@@ -271,6 +332,8 @@ function renderSplitRows(params: {
   registerSearchRowRef?: SearchRowRefRegistrar
   omittedSections?: OmittedSectionConfig
   splitHeaderLabels?: SplitHeaderLabels
+  blocksByStart?: Map<number, TextChangeBlock>
+  onAdoptBlock?: AdoptBlockHandler
 }) {
   const {
     items,
@@ -283,6 +346,8 @@ function renderSplitRows(params: {
     registerSearchRowRef,
     omittedSections,
     splitHeaderLabels,
+    blocksByStart,
+    onAdoptBlock,
   } = params
   const showHunkHeaders = shouldShowTextHunkHeaders(items)
   const labels = splitHeaderLabels ?? DEFAULT_SPLIT_HEADER_LABELS
@@ -398,6 +463,13 @@ function renderSplitRows(params: {
       continue
     }
 
+    const adoptBlock = blocksByStart?.get(index)
+    if (adoptBlock && onAdoptBlock) {
+      splitNodes.push(
+        renderAdoptActionBar(adoptBlock, 'split', onAdoptBlock, `${keyPrefix}-split-${index}`),
+      )
+    }
+
     const removed: Array<{ row: UnifiedDiffRow; matchId: string }> = []
     const added: Array<{ row: UnifiedDiffRow; matchId: string }> = []
     let end = index
@@ -500,6 +572,8 @@ export function RichDiffViewer({
   omittedSections,
   splitHeaderLabels,
   initialVisibleItems = DEFAULT_INITIAL_VISIBLE_ITEMS,
+  changeBlocks,
+  onAdoptBlock,
 }: RichDiffViewerProps) {
   const [visibleItemsCount, setVisibleItemsCount] = useState(() => initialVisibleItems)
 
@@ -516,6 +590,16 @@ export function RichDiffViewer({
     return items.slice(0, visibleItemsCount)
   }, [items, shouldRenderAllItems, visibleItemsCount])
   const hasMoreItems = !shouldRenderAllItems && renderedItems.length < items.length
+  const blocksByStart = useMemo(() => {
+    if (!changeBlocks || changeBlocks.length === 0) {
+      return undefined
+    }
+    const map = new Map<number, TextChangeBlock>()
+    for (const block of changeBlocks) {
+      map.set(block.startItemIndex, block)
+    }
+    return map
+  }, [changeBlocks])
 
   return layout === 'split'
     ? (
@@ -531,6 +615,8 @@ export function RichDiffViewer({
             registerSearchRowRef,
             omittedSections,
             splitHeaderLabels,
+            blocksByStart,
+            onAdoptBlock,
           })}
           {hasMoreItems ? (
             <div className="result-load-more">
@@ -557,6 +643,8 @@ export function RichDiffViewer({
             activeNavMatchId,
             registerSearchRowRef,
             omittedSections,
+            blocksByStart,
+            onAdoptBlock,
           })}
           {hasMoreItems ? (
             <div className="result-load-more">

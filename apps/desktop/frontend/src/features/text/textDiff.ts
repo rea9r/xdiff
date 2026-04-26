@@ -38,6 +38,18 @@ export type TextDiffBlock = {
   id: string
 }
 
+export type TextChangeBlock = {
+  id: string
+  startItemIndex: number
+  endItemIndex: number
+  oldRangeStart: number
+  oldRangeCount: number
+  newRangeStart: number
+  newRangeCount: number
+  oldContent: string[]
+  newContent: string[]
+}
+
 export function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
   return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
 }
@@ -474,6 +486,110 @@ export function buildTextDiffBlocks(items: RichDiffItem[]): TextDiffBlock[] {
 
 export function buildTextSearchRowIDForOmitted(sectionId: string, lineIndex: number): string {
   return `search-omitted-${sectionId}-${lineIndex}`
+}
+
+export function buildTextChangeBlocks(items: RichDiffItem[]): TextChangeBlock[] {
+  const blocks: TextChangeBlock[] = []
+  let prevOldLine = 0
+  let prevNewLine = 0
+  let i = 0
+
+  while (i < items.length) {
+    const item = items[i]
+
+    if (item.kind === 'omitted') {
+      const lastIndex = item.lines.length - 1
+      if (lastIndex >= 0) {
+        prevOldLine = item.startOldLine + lastIndex
+        prevNewLine = item.startNewLine + lastIndex
+      }
+      i++
+      continue
+    }
+
+    if (item.row.kind === 'context') {
+      if (item.row.oldLine !== null) prevOldLine = item.row.oldLine
+      if (item.row.newLine !== null) prevNewLine = item.row.newLine
+      i++
+      continue
+    }
+
+    if (item.row.kind !== 'add' && item.row.kind !== 'remove') {
+      i++
+      continue
+    }
+
+    const startItemIndex = i
+    const oldContent: string[] = []
+    const newContent: string[] = []
+    let oldStart: number | null = null
+    let newStart: number | null = null
+
+    while (i < items.length) {
+      const cur = items[i]
+      if (cur.kind !== 'row') break
+      if (cur.row.kind === 'remove') {
+        if (oldStart === null) oldStart = cur.row.oldLine
+        oldContent.push(cur.row.content)
+      } else if (cur.row.kind === 'add') {
+        if (newStart === null) newStart = cur.row.newLine
+        newContent.push(cur.row.content)
+      } else {
+        break
+      }
+      i++
+    }
+
+    const oldRangeStart = oldStart ?? prevOldLine + 1
+    const newRangeStart = newStart ?? prevNewLine + 1
+
+    blocks.push({
+      id: buildTextSearchRowIDForItem(startItemIndex),
+      startItemIndex,
+      endItemIndex: i,
+      oldRangeStart,
+      oldRangeCount: oldContent.length,
+      newRangeStart,
+      newRangeCount: newContent.length,
+      oldContent,
+      newContent,
+    })
+
+    if (oldContent.length > 0) {
+      prevOldLine = oldRangeStart + oldContent.length - 1
+    }
+    if (newContent.length > 0) {
+      prevNewLine = newRangeStart + newContent.length - 1
+    }
+  }
+
+  return blocks
+}
+
+function spliceLines(
+  source: string,
+  startLine: number,
+  removeCount: number,
+  insert: string[],
+): string {
+  const lines = source.split('\n')
+  const startIndex = Math.max(0, startLine - 1)
+  lines.splice(startIndex, removeCount, ...insert)
+  return lines.join('\n')
+}
+
+export function applyChangeBlockToNew(
+  block: TextChangeBlock,
+  newText: string,
+): string {
+  return spliceLines(newText, block.newRangeStart, block.newRangeCount, block.oldContent)
+}
+
+export function applyChangeBlockToOld(
+  block: TextChangeBlock,
+  oldText: string,
+): string {
+  return spliceLines(oldText, block.oldRangeStart, block.oldRangeCount, block.newContent)
 }
 
 export function normalizeSearchQuery(input: string): string {

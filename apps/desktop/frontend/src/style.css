@@ -1513,6 +1513,49 @@ button {
   align-items: start;
 }
 
+.text-diff-adopt-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--xdiff-space-2);
+  padding: 2px var(--xdiff-space-3);
+  background: var(--xdiff-viewer-surface-subtle);
+  border-top: 1px solid var(--xdiff-viewer-border);
+  border-bottom: 1px solid var(--xdiff-viewer-border);
+}
+
+.text-diff-adopt-bar.split {
+  justify-content: center;
+}
+
+.text-diff-adopt-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--xdiff-viewer-text-dimmed);
+  background: var(--xdiff-viewer-surface);
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: var(--xdiff-radius-sm);
+  cursor: pointer;
+  transition: background-color 80ms ease, color 80ms ease, border-color 80ms ease;
+}
+
+.text-diff-adopt-button:hover {
+  color: var(--xdiff-accent);
+  border-color: var(--xdiff-accent);
+  background: var(--xdiff-viewer-surface-hover);
+}
+
+.text-diff-adopt-button:active {
+  background: color-mix(in srgb, var(--xdiff-accent) 16%, transparent);
+}
+
 .text-diff-row.search-hit,
 .split-diff-cell.search-hit {
   box-shadow: inset 0 0 0 1px var(--xdiff-search-hit-border);
@@ -2174,4 +2217,17 @@ button {
 
 .shortcut-help-label {
   color: var(--xdiff-viewer-text);
+}
+
+.mantine-Notifications-root .mantine-Notification-root {
+  background: var(--xdiff-viewer-surface-muted);
+  border: 1px solid var(--xdiff-viewer-border-strong);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-mantine-color-scheme='dark']
+  .mantine-Notifications-root
+  .mantine-Notification-root {
+  background: #2F3236;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
 }

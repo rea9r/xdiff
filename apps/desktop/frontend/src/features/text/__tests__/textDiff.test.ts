@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyChangeBlockToNew,
+  applyChangeBlockToOld,
   buildRichDiffItems,
+  buildTextChangeBlocks,
   buildTextDiffBlocks,
   buildTextSearchRowIDForItem,
   parseUnifiedDiff,
@@ -99,5 +102,85 @@ describe('buildTextDiffBlocks', () => {
     const rows = parseUnifiedDiff(raw)!
     const items = buildRichDiffItems(rows, oldText, newText)
     expect(buildTextDiffBlocks(items)).toHaveLength(2)
+  })
+
+  it('builds change blocks and applies adopt to NEW (replace pair)', () => {
+    const oldText = 'a\nB\nc\n'
+    const newText = 'a\nb\nc\n'
+    const raw = [
+      '--- a.txt',
+      '+++ b.txt',
+      '@@ -1,3 +1,3 @@',
+      ' a',
+      '-B',
+      '+b',
+      ' c',
+    ].join('\n')
+
+    const rows = parseUnifiedDiff(raw)!
+    const items = buildRichDiffItems(rows, oldText, newText)
+    const blocks = buildTextChangeBlocks(items)
+    expect(blocks).toHaveLength(1)
+
+    const [block] = blocks
+    expect(block.oldRangeStart).toBe(2)
+    expect(block.oldRangeCount).toBe(1)
+    expect(block.newRangeStart).toBe(2)
+    expect(block.newRangeCount).toBe(1)
+
+    expect(applyChangeBlockToNew(block, newText)).toBe('a\nB\nc\n')
+    expect(applyChangeBlockToOld(block, oldText)).toBe('a\nb\nc\n')
+  })
+
+  it('applies adopt for pure deletion (insert into NEW)', () => {
+    const oldText = 'a\nB\nc\n'
+    const newText = 'a\nc\n'
+    const raw = [
+      '--- a.txt',
+      '+++ b.txt',
+      '@@ -1,3 +1,2 @@',
+      ' a',
+      '-B',
+      ' c',
+    ].join('\n')
+
+    const rows = parseUnifiedDiff(raw)!
+    const items = buildRichDiffItems(rows, oldText, newText)
+    const blocks = buildTextChangeBlocks(items)
+    expect(blocks).toHaveLength(1)
+
+    const [block] = blocks
+    expect(block.oldRangeCount).toBe(1)
+    expect(block.newRangeCount).toBe(0)
+    expect(block.newRangeStart).toBe(2)
+
+    expect(applyChangeBlockToNew(block, newText)).toBe('a\nB\nc\n')
+    expect(applyChangeBlockToOld(block, oldText)).toBe('a\nc\n')
+  })
+
+  it('applies adopt for pure insertion (delete from NEW)', () => {
+    const oldText = 'a\nc\n'
+    const newText = 'a\nB\nc\n'
+    const raw = [
+      '--- a.txt',
+      '+++ b.txt',
+      '@@ -1,2 +1,3 @@',
+      ' a',
+      '+B',
+      ' c',
+    ].join('\n')
+
+    const rows = parseUnifiedDiff(raw)!
+    const items = buildRichDiffItems(rows, oldText, newText)
+    const blocks = buildTextChangeBlocks(items)
+    expect(blocks).toHaveLength(1)
+
+    const [block] = blocks
+    expect(block.oldRangeCount).toBe(0)
+    expect(block.oldRangeStart).toBe(2)
+    expect(block.newRangeCount).toBe(1)
+
+    expect(applyChangeBlockToNew(block, newText)).toBe('a\nc\n')
+    expect(applyChangeBlockToOld(block, oldText)).toBe('a\nB\nc\n')
   })
 })

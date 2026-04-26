@@ -6,6 +6,8 @@ type Options = {
   canFocusSearch: boolean
   onMoveSearch?: (direction: 1 | -1) => void
   onMoveDiff?: (direction: 1 | -1) => void
+  onUndo?: () => void
+  onRedo?: () => void
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -31,11 +33,17 @@ export function useCompareKeyboardShortcuts({
   canFocusSearch,
   onMoveSearch,
   onMoveDiff,
+  onUndo,
+  onRedo,
 }: Options) {
   const onMoveSearchRef = useRef(onMoveSearch)
   const onMoveDiffRef = useRef(onMoveDiff)
+  const onUndoRef = useRef(onUndo)
+  const onRedoRef = useRef(onRedo)
   onMoveSearchRef.current = onMoveSearch
   onMoveDiffRef.current = onMoveDiff
+  onUndoRef.current = onUndo
+  onRedoRef.current = onRedo
 
   useEffect(() => {
     if (!enabled) {
@@ -88,6 +96,43 @@ export function useCompareKeyboardShortcuts({
         }
         event.preventDefault()
         onMoveDiffRef.current(event.key === 'ArrowDown' ? 1 : -1)
+        return
+      }
+
+      if (ctrlOrCmd && !event.altKey && event.key.toLowerCase() === 'z') {
+        if (isEditableTarget(event.target) || isInsideCodeMirror(event.target)) {
+          return
+        }
+        if (event.shiftKey) {
+          if (!onRedoRef.current) {
+            return
+          }
+          event.preventDefault()
+          onRedoRef.current()
+          return
+        }
+        if (!onUndoRef.current) {
+          return
+        }
+        event.preventDefault()
+        onUndoRef.current()
+        return
+      }
+
+      if (
+        ctrlOrCmd &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'y'
+      ) {
+        if (isEditableTarget(event.target) || isInsideCodeMirror(event.target)) {
+          return
+        }
+        if (!onRedoRef.current) {
+          return
+        }
+        event.preventDefault()
+        onRedoRef.current()
       }
     }
 

@@ -3,6 +3,7 @@ import type { CompareResponse } from '../../types'
 import { usePersistedState } from '../../usePersistedState'
 import {
   buildRichDiffItems,
+  buildTextChangeBlocks,
   buildTextDiffBlocks,
   buildTextSearchMatches,
   normalizeSearchQuery,
@@ -65,6 +66,10 @@ export function useTextDiffViewState({
   const activeTextSearchMatch = textSearchMatches[textActiveSearchIndex] ?? null
   const textDiffBlocks = useMemo(
     () => (textRichItems ? buildTextDiffBlocks(textRichItems) : []),
+    [textRichItems],
+  )
+  const textChangeBlocks = useMemo(
+    () => (textRichItems ? buildTextChangeBlocks(textRichItems) : []),
     [textRichItems],
   )
   const activeTextDiffBlock = textDiffBlocks[textActiveDiffIndex] ?? null
@@ -255,6 +260,7 @@ export function useTextDiffViewState({
     toggleTextUnchangedSection,
     toggleAllTextUnchangedSections,
     textDiffBlocks,
+    textChangeBlocks,
     textActiveDiffIndex,
     activeTextDiffBlock,
     moveTextDiff,
