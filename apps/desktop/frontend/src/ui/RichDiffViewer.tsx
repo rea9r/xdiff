@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from 'react'
+import { Tooltip } from '@mantine/core'
 import {
   buildExpandedContextRow,
   buildTextSearchRowIDForItem,
@@ -97,30 +98,30 @@ function renderAdoptActionBar(
   keyBase: string,
 ) {
   const adoptLabel = (direction: AdoptDirection) =>
-    direction === 'to-new'
-      ? 'Apply Old → New (overwrite New with Old here)'
-      : 'Apply New → Old (overwrite Old with New here)'
+    direction === 'to-new' ? 'Copy Old to New' : 'Copy New to Old'
 
   return (
     <div key={`${keyBase}-adopt`} className={`text-diff-adopt-bar ${layout}`}>
-      <button
-        type="button"
-        className="text-diff-adopt-button"
-        title={adoptLabel('to-old')}
-        aria-label={adoptLabel('to-old')}
-        onClick={() => onAdoptBlock(block, 'to-old')}
-      >
-        ←
-      </button>
-      <button
-        type="button"
-        className="text-diff-adopt-button"
-        title={adoptLabel('to-new')}
-        aria-label={adoptLabel('to-new')}
-        onClick={() => onAdoptBlock(block, 'to-new')}
-      >
-        →
-      </button>
+      <Tooltip label={adoptLabel('to-old')} withArrow>
+        <button
+          type="button"
+          className="text-diff-adopt-button"
+          aria-label={adoptLabel('to-old')}
+          onClick={() => onAdoptBlock(block, 'to-old')}
+        >
+          ←
+        </button>
+      </Tooltip>
+      <Tooltip label={adoptLabel('to-new')} withArrow>
+        <button
+          type="button"
+          className="text-diff-adopt-button"
+          aria-label={adoptLabel('to-new')}
+          onClick={() => onAdoptBlock(block, 'to-new')}
+        >
+          →
+        </button>
+      </Tooltip>
     </div>
   )
 }
