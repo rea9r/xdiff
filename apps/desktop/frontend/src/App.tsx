@@ -14,6 +14,7 @@ import {
   type DesktopTabsManagerState,
 } from './useDesktopTabsManager'
 import { useDesktopStatePersistor } from './useDesktopStatePersistor'
+import { useDesktopTabHotkeys } from './useDesktopTabHotkeys'
 import type { DesktopState, DesktopTabSession } from './types'
 
 export function App() {
@@ -40,6 +41,7 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
     commit: persistor.commit,
     fallbackTabSession: persistor.fallbackTabSession,
   })
+  useDesktopTabHotkeys(tabsManager)
 
   const initialSessionsById = useMemo(() => {
     const map = new Map<string, DesktopTabSession>()
