@@ -79,6 +79,9 @@
   --xdiff-header-control-height: 28px;
   --xdiff-header-control-radius: var(--xdiff-radius-md);
   --xdiff-header-gap: var(--xdiff-space-2);
+  --xdiff-tab-bar-height: 30px;
+  --xdiff-tab-bar-margin: var(--xdiff-space-3);
+  --xdiff-app-content-offset: calc(92px + var(--xdiff-tab-bar-height) + var(--xdiff-tab-bar-margin));
 
   /* Badge (single unified style) */
   --xdiff-badge-padding-y: 1px;
@@ -282,7 +285,7 @@ body {
   flex-direction: column;
   gap: var(--xdiff-space-4);
   min-height: 0;
-  height: calc(100vh - 92px);
+  height: calc(100vh - var(--xdiff-app-content-offset));
 }
 
 .result-load-more {
@@ -291,13 +294,41 @@ body {
   padding: var(--xdiff-space-4) 0 var(--xdiff-space-2);
 }
 
+.xdiff-tab-bar {
+  display: flex;
+  align-items: stretch;
+  height: var(--xdiff-tab-bar-height);
+  margin-bottom: var(--xdiff-tab-bar-margin);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.xdiff-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--xdiff-space-4);
+  font-size: var(--xdiff-text-sm);
+  color: var(--mantine-color-dimmed);
+  border-bottom: 2px solid transparent;
+  cursor: default;
+  user-select: none;
+}
+
+.xdiff-tab.is-active {
+  color: var(--mantine-color-text);
+  border-bottom-color: var(--xdiff-accent);
+}
+
+.xdiff-tab-label {
+  white-space: nowrap;
+}
+
 .workspace-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   position: relative;
-  height: calc(100vh - 92px);
+  height: calc(100vh - var(--xdiff-app-content-offset));
 }
 
 .workspace-shell.with-inspector {

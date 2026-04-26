@@ -19,6 +19,7 @@ type AppChromeProps = {
   headerActions?: ReactNode
   inspector?: ReactNode
   inspectorOpen?: boolean
+  tabBar?: ReactNode
 }
 
 const MODE_OPTIONS = [
@@ -50,6 +51,7 @@ export function AppChrome({
   headerActions,
   inspector,
   inspectorOpen = false,
+  tabBar,
 }: AppChromeProps) {
   const isSidebarLayout = layoutMode === 'sidebar'
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false)
@@ -196,6 +198,7 @@ export function AppChrome({
       ) : null}
 
       <AppShell.Main>
+        {tabBar}
         {isSidebarLayout ? (
           main
         ) : (

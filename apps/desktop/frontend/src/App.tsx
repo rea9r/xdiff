@@ -1,12 +1,15 @@
 import './style.css'
 import { AppChrome } from './ui/AppChrome'
+import { TabBar } from './ui/TabBar'
 import { useDesktopAppModel } from './useDesktopAppModel'
 import { useDesktopBridge } from './useDesktopBridge'
 import { useDesktopRecentPairs } from './useDesktopRecentPairs'
+import { useDesktopTabsManager } from './useDesktopTabsManager'
 
 export function App() {
   const api = useDesktopBridge()
   const recentPairs = useDesktopRecentPairs()
+  const { tabs, activeTabId } = useDesktopTabsManager()
 
   const {
     mode,
@@ -29,6 +32,7 @@ export function App() {
       main={main}
       inspector={inspector}
       inspectorOpen={inspectorOpen}
+      tabBar={<TabBar tabs={tabs} activeTabId={activeTabId} />}
     />
   )
 }
