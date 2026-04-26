@@ -496,15 +496,20 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   // Auto-explain when a usable provider/model is in place and the diff changed.
   // Do NOT depend on `explanation` here — runExplain calls setExplanation('')
   // at start, which would re-fire this effect and spawn parallel streams.
+  // Wait for `activeModel` to settle: when status first reports availability,
+  // the auto-pick effect schedules setActiveModel in the same render — firing
+  // here too early would send an empty model name and let the backend default
+  // kick in, which 404s if that default isn't installed.
   useEffect(() => {
     if (!opened) return
     if (showReadyFlash) return
     if (!status?.available) return
+    if (!activeModel) return
     if (!diffText.trim()) return
     if (lastDiffRef.current === diffText) return
     lastDiffRef.current = diffText
     void runExplain()
-  }, [opened, status?.available, diffText, runExplain, showReadyFlash])
+  }, [opened, status?.available, activeModel, diffText, runExplain, showReadyFlash])
 
   // Poll setup progress while a setup run is in flight.
   useEffect(() => {
