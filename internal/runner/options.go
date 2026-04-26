@@ -13,10 +13,13 @@ type Options struct {
 }
 
 type CompareOptions struct {
-	Format      string
-	IgnorePaths []string
-	IgnoreOrder bool
-	TextStyle   string
-	ShowPaths   bool
-	UseColor    bool
+	Format           string
+	IgnorePaths      []string
+	IgnoreOrder      bool
+	TextStyle        string
+	ShowPaths        bool
+	UseColor         bool
+	IgnoreWhitespace bool
+	IgnoreCase       bool
+	IgnoreEOL        bool
 }

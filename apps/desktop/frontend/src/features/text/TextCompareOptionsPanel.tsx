@@ -1,14 +1,53 @@
 export type TextCompareOptionsPanelProps = {
   outputFormat: string
   onOutputFormatChange: (value: string) => void
+  ignoreWhitespace: boolean
+  onIgnoreWhitespaceChange: (checked: boolean) => void
+  ignoreCase: boolean
+  onIgnoreCaseChange: (checked: boolean) => void
+  ignoreEOL: boolean
+  onIgnoreEOLChange: (checked: boolean) => void
 }
 
 export function TextCompareOptionsPanel({
   outputFormat,
   onOutputFormatChange,
+  ignoreWhitespace,
+  onIgnoreWhitespaceChange,
+  ignoreCase,
+  onIgnoreCaseChange,
+  ignoreEOL,
+  onIgnoreEOLChange,
 }: TextCompareOptionsPanelProps) {
   return (
     <section className="mode-panel">
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={ignoreWhitespace}
+          onChange={(e) => onIgnoreWhitespaceChange(e.target.checked)}
+        />
+        ignore whitespace
+      </label>
+
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={ignoreCase}
+          onChange={(e) => onIgnoreCaseChange(e.target.checked)}
+        />
+        ignore case
+      </label>
+
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={ignoreEOL}
+          onChange={(e) => onIgnoreEOLChange(e.target.checked)}
+        />
+        ignore EOL (CRLF/CR → LF)
+      </label>
+
       <section className="options-panel">
         <h3>Options</h3>
 

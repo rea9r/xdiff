@@ -1,10 +1,13 @@
 package desktopapi
 
 type CompareCommon struct {
-	OutputFormat string   `json:"outputFormat"`
-	TextStyle    string   `json:"textStyle"`
-	IgnorePaths  []string `json:"ignorePaths"`
-	ShowPaths    bool     `json:"showPaths"`
+	OutputFormat     string   `json:"outputFormat"`
+	TextStyle        string   `json:"textStyle"`
+	IgnorePaths      []string `json:"ignorePaths"`
+	ShowPaths        bool     `json:"showPaths"`
+	IgnoreWhitespace bool     `json:"ignoreWhitespace"`
+	IgnoreCase       bool     `json:"ignoreCase"`
+	IgnoreEOL        bool     `json:"ignoreEOL"`
 }
 
 type CompareJSONRequest struct {

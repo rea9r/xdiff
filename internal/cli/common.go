@@ -13,12 +13,15 @@ type jsonCompareFlagValues struct {
 }
 
 type commonFlagValues struct {
-	outputFormat string
-	ignorePaths  []string
-	textStyle    string
-	showPaths    bool
-	noColor      bool
-	stdout       io.Writer
+	outputFormat     string
+	ignorePaths      []string
+	textStyle        string
+	showPaths        bool
+	noColor          bool
+	ignoreWhitespace bool
+	ignoreCase       bool
+	ignoreEOL        bool
+	stdout           io.Writer
 }
 
 func newCommonFlags(stdout io.Writer) *commonFlagValues {
@@ -35,11 +38,14 @@ func (c *commonFlagValues) useColor() bool {
 
 func (c *commonFlagValues) compareOptions() runner.CompareOptions {
 	return runner.CompareOptions{
-		Format:      c.outputFormat,
-		IgnorePaths: append([]string(nil), c.ignorePaths...),
-		TextStyle:   c.textStyle,
-		ShowPaths:   c.showPaths,
-		UseColor:    c.useColor(),
+		Format:           c.outputFormat,
+		IgnorePaths:      append([]string(nil), c.ignorePaths...),
+		TextStyle:        c.textStyle,
+		ShowPaths:        c.showPaths,
+		UseColor:         c.useColor(),
+		IgnoreWhitespace: c.ignoreWhitespace,
+		IgnoreCase:       c.ignoreCase,
+		IgnoreEOL:        c.ignoreEOL,
 	}
 }
 
@@ -57,6 +63,9 @@ func bindCommonFlags(flags *pflag.FlagSet, common *commonFlagValues) {
 	flags.StringVar(&common.textStyle, "text-style", runner.TextStyleAuto, "text rendering style: auto, patch, semantic")
 	flags.BoolVar(&common.showPaths, "show-paths", false, "print canonical diff paths only (useful with --ignore-path)")
 	flags.BoolVar(&common.noColor, "no-color", false, "disable colored text output")
+	flags.BoolVar(&common.ignoreWhitespace, "ignore-whitespace", false, "collapse runs of whitespace within each line before comparing")
+	flags.BoolVar(&common.ignoreCase, "ignore-case", false, "compare text case-insensitively")
+	flags.BoolVar(&common.ignoreEOL, "ignore-eol", false, "normalize CRLF/CR to LF before comparing")
 }
 
 func bindJSONCompareFlags(flags *pflag.FlagSet, jsonFlags *jsonCompareFlagValues) {

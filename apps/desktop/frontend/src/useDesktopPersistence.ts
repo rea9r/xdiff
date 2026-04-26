@@ -11,6 +11,7 @@ import type {
   Mode,
 } from './types'
 import { ignorePathsToText } from './utils/appHelpers'
+import { defaultJSONCommon, defaultTextCommon } from './useDesktopModeState'
 
 type StateSetter<T> = Dispatch<SetStateAction<T>>
 
@@ -151,12 +152,13 @@ export function useDesktopPersistence({
         }
 
         setIgnoreOrder(!!saved.json.ignoreOrder)
-        setJSONCommon(saved.json.common)
-        setJSONIgnorePathsDraft(ignorePathsToText(saved.json.common.ignorePaths))
+        const mergedJSONCommon = { ...defaultJSONCommon, ...saved.json.common }
+        setJSONCommon(mergedJSONCommon)
+        setJSONIgnorePathsDraft(ignorePathsToText(mergedJSONCommon.ignorePaths))
         setJSONOldSourcePath(saved.json.oldSourcePath || '')
         setJSONNewSourcePath(saved.json.newSourcePath || '')
 
-        setTextCommon(saved.text.common)
+        setTextCommon({ ...defaultTextCommon, ...saved.text.common })
         setTextDiffLayout(saved.text.diffLayout === 'unified' ? 'unified' : 'split')
         setTextOldSourcePath(saved.text.oldSourcePath || '')
         setTextNewSourcePath(saved.text.newSourcePath || '')

@@ -105,6 +105,13 @@ export function useDesktopShellModel({
       textProps={{
         outputFormat: textWorkflow.textCommon.outputFormat,
         onOutputFormatChange: (value) => textWorkflow.updateTextCommon('outputFormat', value),
+        ignoreWhitespace: textWorkflow.textCommon.ignoreWhitespace,
+        onIgnoreWhitespaceChange: (checked) =>
+          textWorkflow.updateTextCommon('ignoreWhitespace', checked),
+        ignoreCase: textWorkflow.textCommon.ignoreCase,
+        onIgnoreCaseChange: (checked) => textWorkflow.updateTextCommon('ignoreCase', checked),
+        ignoreEOL: textWorkflow.textCommon.ignoreEOL,
+        onIgnoreEOLChange: (checked) => textWorkflow.updateTextCommon('ignoreEOL', checked),
       }}
     />
   )

@@ -8,6 +8,30 @@ import (
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
+type NormalizeOptions struct {
+	IgnoreWhitespace bool
+	IgnoreCase       bool
+	IgnoreEOL        bool
+}
+
+func Normalize(text string, opts NormalizeOptions) string {
+	if opts.IgnoreEOL {
+		text = strings.ReplaceAll(text, "\r\n", "\n")
+		text = strings.ReplaceAll(text, "\r", "\n")
+	}
+	if opts.IgnoreWhitespace {
+		lines := strings.Split(text, "\n")
+		for i, line := range lines {
+			lines[i] = strings.Join(strings.Fields(line), " ")
+		}
+		text = strings.Join(lines, "\n")
+	}
+	if opts.IgnoreCase {
+		text = strings.ToLower(text)
+	}
+	return text
+}
+
 func Compare(oldText, newText string) []delta.Diff {
 	oldLines := difflib.SplitLines(oldText)
 	newLines := difflib.SplitLines(newText)

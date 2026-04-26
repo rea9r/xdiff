@@ -38,6 +38,14 @@ func RunTextValuesDetailed(oldText, newText string, opts CompareOptions) RunResu
 		return finalizeRun(nil, "", err)
 	}
 
+	normOpts := textdiff.NormalizeOptions{
+		IgnoreWhitespace: opts.IgnoreWhitespace,
+		IgnoreCase:       opts.IgnoreCase,
+		IgnoreEOL:        opts.IgnoreEOL,
+	}
+	oldText = textdiff.Normalize(oldText, normOpts)
+	newText = textdiff.Normalize(newText, normOpts)
+
 	diffs := textdiff.Compare(oldText, newText)
 	filtered := delta.ApplyOptions(diffs, delta.Options{
 		IgnorePaths: opts.IgnorePaths,
