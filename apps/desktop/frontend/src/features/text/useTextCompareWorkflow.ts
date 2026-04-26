@@ -6,6 +6,7 @@ import type {
   DesktopRecentPair,
   LoadTextFileRequest,
   LoadTextFileResponse,
+  TextEncoding,
 } from '../../types'
 import {
   formatUnknownError,
@@ -57,6 +58,8 @@ export function useTextCompareWorkflow({
   const [textNew, setTextNew] = useState('')
   const [textOldSourcePath, setTextOldSourcePath] = useState('')
   const [textNewSourcePath, setTextNewSourcePath] = useState('')
+  const [textOldEncoding, setTextOldEncoding] = useState<TextEncoding>('utf-8')
+  const [textNewEncoding, setTextNewEncoding] = useState<TextEncoding>('utf-8')
   const [textCommon, setTextCommon] = useState<CompareCommon>(initialCommon)
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
   const [textLastRunOld, setTextLastRunOld] = useState('')
@@ -86,11 +89,13 @@ export function useTextCompareWorkflow({
   const setTextOldInput = useCallback((value: string) => {
     setTextOld(value)
     setTextOldSourcePath('')
+    setTextOldEncoding('utf-8')
   }, [])
 
   const setTextNewInput = useCallback((value: string) => {
     setTextNew(value)
     setTextNewSourcePath('')
+    setTextNewEncoding('utf-8')
   }, [])
 
   const applyComparedTextPair = useCallback(
@@ -173,6 +178,9 @@ export function useTextCompareWorkflow({
         loadTextFile({ path: pair.newPath } satisfies LoadTextFileRequest),
       ])
 
+      setTextOldEncoding(oldLoaded.encoding ?? 'utf-8')
+      setTextNewEncoding(newLoaded.encoding ?? 'utf-8')
+
       await runTextCompareWithValues({
         oldText: oldLoaded.content,
         newText: newLoaded.content,
@@ -202,9 +210,11 @@ export function useTextCompareWorkflow({
       if (target === 'old') {
         setTextOld(pasted)
         setTextOldSourcePath('')
+        setTextOldEncoding('utf-8')
       } else {
         setTextNew(pasted)
         setTextNewSourcePath('')
+        setTextNewEncoding('utf-8')
       }
     } catch (error) {
       showErrorNotification(
@@ -233,16 +243,20 @@ export function useTextCompareWorkflow({
           return
         }
 
+        const encoding = target === 'old' ? textOldEncoding : textNewEncoding
         const loaded = await loadTextFile({
           path: selected,
+          encoding,
         } satisfies LoadTextFileRequest)
 
         if (target === 'old') {
           setTextOld(loaded.content)
           setTextOldSourcePath(loaded.path)
+          setTextOldEncoding(loaded.encoding ?? encoding)
         } else {
           setTextNew(loaded.content)
           setTextNewSourcePath(loaded.path)
+          setTextNewEncoding(loaded.encoding ?? encoding)
         }
       } catch (error) {
         showErrorNotification(
@@ -253,18 +267,60 @@ export function useTextCompareWorkflow({
         setTextFileBusyTarget(null)
       }
     },
-    [getLoadTextFile, getPickTextFile],
+    [getLoadTextFile, getPickTextFile, textNewEncoding, textOldEncoding],
+  )
+
+  const reloadTextWithEncoding = useCallback(
+    async (target: TextInputTarget, encoding: TextEncoding) => {
+      const path = target === 'old' ? textOldSourcePath : textNewSourcePath
+      if (target === 'old') {
+        setTextOldEncoding(encoding)
+      } else {
+        setTextNewEncoding(encoding)
+      }
+      if (!path) {
+        return
+      }
+
+      const loadTextFile = getLoadTextFile()
+      if (!loadTextFile) {
+        showErrorNotification('Text loader unavailable', 'Text file loader is not available.')
+        return
+      }
+
+      setTextFileBusyTarget(target)
+      try {
+        const loaded = await loadTextFile({ path, encoding } satisfies LoadTextFileRequest)
+        if (target === 'old') {
+          setTextOld(loaded.content)
+          setTextOldEncoding(loaded.encoding ?? encoding)
+        } else {
+          setTextNew(loaded.content)
+          setTextNewEncoding(loaded.encoding ?? encoding)
+        }
+      } catch (error) {
+        showErrorNotification(
+          'Failed to reload text file',
+          `Failed to reload as ${encoding}: ${formatUnknownError(error)}`,
+        )
+      } finally {
+        setTextFileBusyTarget(null)
+      }
+    },
+    [getLoadTextFile, textNewSourcePath, textOldSourcePath],
   )
 
   const clearTextInput = useCallback((target: TextInputTarget) => {
     if (target === 'old') {
       setTextOld('')
       setTextOldSourcePath('')
+      setTextOldEncoding('utf-8')
       return
     }
 
     setTextNew('')
     setTextNewSourcePath('')
+    setTextNewEncoding('utf-8')
   }, [])
 
   const copyTextInput = useCallback(
@@ -348,6 +404,11 @@ export function useTextCompareWorkflow({
     setTextOldSourcePath,
     textNewSourcePath,
     setTextNewSourcePath,
+    textOldEncoding,
+    textNewEncoding,
+    setTextOldEncoding,
+    setTextNewEncoding,
+    reloadTextWithEncoding,
     textCommon,
     setTextCommon,
     updateTextCommon,

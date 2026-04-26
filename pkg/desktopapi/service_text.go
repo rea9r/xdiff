@@ -1,10 +1,18 @@
 package desktopapi
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"unicode/utf8"
+
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 
 	"github.com/rea9r/xdiff/internal/runner"
 )
@@ -41,12 +49,66 @@ func (s *Service) LoadTextFile(req LoadTextFileRequest) (*LoadTextFileResponse, 
 		return nil, err
 	}
 
-	if !utf8.Valid(body) {
-		return nil, fmt.Errorf("selected file is not valid UTF-8 text: %s", path)
+	enc := normalizeEncoding(req.Encoding)
+	content, err := decodeBytes(body, enc)
+	if err != nil {
+		return nil, err
 	}
 
 	return &LoadTextFileResponse{
-		Path:    path,
-		Content: string(body),
+		Path:     path,
+		Content:  content,
+		Encoding: enc,
 	}, nil
+}
+
+func normalizeEncoding(value string) string {
+	v := strings.ToLower(strings.TrimSpace(value))
+	switch v {
+	case "", "utf-8", "utf8":
+		return "utf-8"
+	case "shift-jis", "shift_jis", "shiftjis", "sjis":
+		return "shift-jis"
+	case "euc-jp", "eucjp":
+		return "euc-jp"
+	case "utf-16-le", "utf16-le", "utf-16le":
+		return "utf-16-le"
+	case "utf-16-be", "utf16-be", "utf-16be":
+		return "utf-16-be"
+	case "iso-8859-1", "iso8859-1", "latin1":
+		return "iso-8859-1"
+	default:
+		return v
+	}
+}
+
+func decodeBytes(body []byte, enc string) (string, error) {
+	switch enc {
+	case "utf-8":
+		if !utf8.Valid(body) {
+			return "", fmt.Errorf("selected file is not valid UTF-8 text")
+		}
+		return string(body), nil
+	case "shift-jis":
+		return decodeWith(body, japanese.ShiftJIS.NewDecoder(), enc)
+	case "euc-jp":
+		return decodeWith(body, japanese.EUCJP.NewDecoder(), enc)
+	case "utf-16-le":
+		return decodeWith(body, unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder(), enc)
+	case "utf-16-be":
+		return decodeWith(body, unicode.UTF16(unicode.BigEndian, unicode.UseBOM).NewDecoder(), enc)
+	case "iso-8859-1":
+		return decodeWith(body, charmap.ISO8859_1.NewDecoder(), enc)
+	default:
+		return "", fmt.Errorf("unsupported encoding: %s", enc)
+	}
+}
+
+func decodeWith(body []byte, dec *encoding.Decoder, label string) (string, error) {
+	reader := transform.NewReader(bytes.NewReader(body), dec)
+	out, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode as %s: %w", label, err)
+	}
+	return string(out), nil
 }

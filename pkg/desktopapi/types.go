@@ -31,12 +31,14 @@ type CompareTextRequest struct {
 }
 
 type LoadTextFileRequest struct {
-	Path string `json:"path"`
+	Path     string `json:"path"`
+	Encoding string `json:"encoding,omitempty"`
 }
 
 type LoadTextFileResponse struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
+	Path     string `json:"path"`
+	Content  string `json:"content"`
+	Encoding string `json:"encoding"`
 }
 
 type CompareFoldersRequest struct {

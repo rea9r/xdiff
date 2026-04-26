@@ -12,6 +12,8 @@ import {
   ComparePaneAction,
   ComparePaneActions,
 } from '../../ui/CompareSourceActions'
+import { EncodingSelect } from '../../ui/EncodingSelect'
+import type { TextEncoding } from '../../types'
 import { useJSONSuggestion } from './useJSONSuggestion'
 
 type TextInputTarget = 'old' | 'new'
@@ -21,6 +23,8 @@ export type TextCompareSourceWorkspaceProps = {
   newSourcePath: string
   oldValue: string
   newValue: string
+  oldEncoding: TextEncoding
+  newEncoding: TextEncoding
   busy: boolean
   fileBusyTarget: TextInputTarget | null
   clipboardBusyTarget: TextInputTarget | null
@@ -29,6 +33,7 @@ export type TextCompareSourceWorkspaceProps = {
   onPasteClipboard: (target: TextInputTarget) => void
   onCopyInput: (target: TextInputTarget) => void
   onClearInput: (target: TextInputTarget) => void
+  onEncodingChange: (target: TextInputTarget, encoding: TextEncoding) => void
   onOldChange: (value: string) => void
   onNewChange: (value: string) => void
   onSwitchToJSON: (oldValue: string, newValue: string) => void
@@ -39,6 +44,8 @@ export function TextCompareSourceWorkspace({
   newSourcePath,
   oldValue,
   newValue,
+  oldEncoding,
+  newEncoding,
   busy,
   fileBusyTarget,
   clipboardBusyTarget,
@@ -47,6 +54,7 @@ export function TextCompareSourceWorkspace({
   onPasteClipboard,
   onCopyInput,
   onClearInput,
+  onEncodingChange,
   onOldChange,
   onNewChange,
   onSwitchToJSON,
@@ -62,6 +70,12 @@ export function TextCompareSourceWorkspace({
             sourcePath={oldSourcePath}
             actions={
               <ComparePaneActions>
+                <EncodingSelect
+                  value={oldEncoding}
+                  onChange={(value) => onEncodingChange('old', value)}
+                  disabled={busy}
+                  ariaLabel="Old file encoding"
+                />
                 <ComparePaneAction
                   label="Open file into Old text"
                   onClick={() => void onOpenFile('old')}
@@ -106,6 +120,12 @@ export function TextCompareSourceWorkspace({
             sourcePath={newSourcePath}
             actions={
               <ComparePaneActions>
+                <EncodingSelect
+                  value={newEncoding}
+                  onChange={(value) => onEncodingChange('new', value)}
+                  disabled={busy}
+                  ariaLabel="New file encoding"
+                />
                 <ComparePaneAction
                   label="Open file into New text"
                   onClick={() => void onOpenFile('new')}

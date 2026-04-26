@@ -212,6 +212,8 @@ export function useDesktopShellModel({
         newSourcePath: textWorkflow.textNewSourcePath,
         oldValue: textWorkflow.textOld,
         newValue: textWorkflow.textNew,
+        oldEncoding: textWorkflow.textOldEncoding,
+        newEncoding: textWorkflow.textNewEncoding,
         busy: textWorkflow.textEditorBusy,
         fileBusyTarget: textWorkflow.textFileBusyTarget,
         clipboardBusyTarget: textWorkflow.textClipboardBusyTarget,
@@ -220,6 +222,8 @@ export function useDesktopShellModel({
         onPasteClipboard: (target) => void textWorkflow.pasteTextFromClipboard(target),
         onCopyInput: (target) => void textWorkflow.copyTextInput(target),
         onClearInput: textWorkflow.clearTextInput,
+        onEncodingChange: (target, encoding) =>
+          void textWorkflow.reloadTextWithEncoding(target, encoding),
         onOldChange: textWorkflow.setTextOldInput,
         onNewChange: textWorkflow.setTextNewInput,
         onSwitchToJSON: (oldText, newText) => {

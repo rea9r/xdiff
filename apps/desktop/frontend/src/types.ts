@@ -46,13 +46,23 @@ export type CompareJSONValuesRequest = {
   ignoreOrder: boolean
 }
 
+export type TextEncoding =
+  | 'utf-8'
+  | 'shift-jis'
+  | 'euc-jp'
+  | 'utf-16-le'
+  | 'utf-16-be'
+  | 'iso-8859-1'
+
 export type LoadTextFileRequest = {
   path: string
+  encoding?: TextEncoding
 }
 
 export type LoadTextFileResponse = {
   path: string
   content: string
+  encoding: TextEncoding
 }
 
 export type CompareFoldersRequest = {

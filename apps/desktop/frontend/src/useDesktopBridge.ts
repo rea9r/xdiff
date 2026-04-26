@@ -42,7 +42,7 @@ export function useDesktopBridge() {
       pickFolderRoot: App.PickFolderRoot,
 
       loadTextFile: (req: LoadTextFileRequest): Promise<LoadTextFileResponse> =>
-        App.LoadTextFile(req as any),
+        App.LoadTextFile(req as any) as unknown as Promise<LoadTextFileResponse>,
 
       loadDesktopState: (): Promise<DesktopState> =>
         App.LoadDesktopState() as Promise<DesktopState>,

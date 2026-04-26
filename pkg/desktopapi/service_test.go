@@ -368,6 +368,66 @@ func TestLoadTextFileRejectsNonUTF8(t *testing.T) {
 	}
 }
 
+func TestLoadTextFileShiftJIS(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sjis.txt")
+
+	// "こんにちは" encoded as Shift_JIS.
+	body := []byte{0x82, 0xb1, 0x82, 0xf1, 0x82, 0xc9, 0x82, 0xbf, 0x82, 0xcd}
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	svc := NewService()
+	got, err := svc.LoadTextFile(LoadTextFileRequest{Path: path, Encoding: "shift-jis"})
+	if err != nil {
+		t.Fatalf("LoadTextFile() error = %v", err)
+	}
+	if got.Content != "こんにちは" {
+		t.Fatalf("LoadTextFile() content = %q, want %q", got.Content, "こんにちは")
+	}
+	if got.Encoding != "shift-jis" {
+		t.Fatalf("LoadTextFile() encoding = %q, want shift-jis", got.Encoding)
+	}
+}
+
+func TestLoadTextFileUTF16LE(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "utf16le.txt")
+
+	// "abc" as UTF-16 LE with BOM.
+	body := []byte{0xff, 0xfe, 'a', 0x00, 'b', 0x00, 'c', 0x00}
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	svc := NewService()
+	got, err := svc.LoadTextFile(LoadTextFileRequest{Path: path, Encoding: "utf-16-le"})
+	if err != nil {
+		t.Fatalf("LoadTextFile() error = %v", err)
+	}
+	if got.Content != "abc" {
+		t.Fatalf("LoadTextFile() content = %q, want %q", got.Content, "abc")
+	}
+	if got.Encoding != "utf-16-le" {
+		t.Fatalf("LoadTextFile() encoding = %q, want utf-16-le", got.Encoding)
+	}
+}
+
+func TestLoadTextFileUnsupportedEncoding(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sample.txt")
+	if err := os.WriteFile(path, []byte("hi"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	svc := NewService()
+	_, err := svc.LoadTextFile(LoadTextFileRequest{Path: path, Encoding: "klingon"})
+	if err == nil {
+		t.Fatal("LoadTextFile() error = nil, want non-nil")
+	}
+}
+
 func TestCompareFolders_NavigateRootListing(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
