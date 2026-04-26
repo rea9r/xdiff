@@ -1,63 +1,74 @@
-import { Tooltip, useMantineColorScheme } from '@mantine/core'
-import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react'
 import {
-  HEADER_RAIL_ICON_SIZE,
-  HeaderRailToggleIcon,
-} from './HeaderRail'
+  ActionIcon,
+  Menu,
+  Tooltip,
+  useMantineColorScheme,
+  type MantineColorScheme,
+} from '@mantine/core'
+import {
+  IconCheck,
+  IconDeviceDesktop,
+  IconMoon,
+  IconSun,
+} from '@tabler/icons-react'
+import { HEADER_RAIL_HEIGHT, HEADER_RAIL_ICON_SIZE } from './HeaderRail'
+
+type ThemeOption = {
+  value: MantineColorScheme
+  label: string
+  Icon: typeof IconSun
+}
+
+const THEME_OPTIONS: ThemeOption[] = [
+  { value: 'auto', label: 'System', Icon: IconDeviceDesktop },
+  { value: 'light', label: 'Light', Icon: IconSun },
+  { value: 'dark', label: 'Dark', Icon: IconMoon },
+]
+
+function renderMenuCheck(active: boolean) {
+  return active ? (
+    <IconCheck size={14} className="menu-check-icon is-active" />
+  ) : (
+    <span className="menu-check-slot" aria-hidden="true" />
+  )
+}
 
 export function ThemeModeControl() {
   const { colorScheme, setColorScheme } = useMantineColorScheme()
+  const current = THEME_OPTIONS.find((option) => option.value === colorScheme) ?? THEME_OPTIONS[0]
+  const CurrentIcon = current.Icon
 
   return (
-    <div className="xdiff-theme-toggle-shell">
-      <Tooltip label="Follow system theme">
-        <div>
-          <HeaderRailToggleIcon
-            active={colorScheme === 'auto'}
-            onClick={() => setColorScheme('auto')}
-            label="Follow system theme"
-            activeVariant="light"
-            activeColor="gray"
-            className="xdiff-theme-toggle-button"
+    <Menu position="bottom-end" withinPortal>
+      <Menu.Target>
+        <Tooltip label={`Theme: ${current.label}`}>
+          <ActionIcon
+            variant="default"
+            size={HEADER_RAIL_HEIGHT}
+            radius="md"
+            aria-label="Change theme"
           >
-            <IconDeviceDesktop size={HEADER_RAIL_ICON_SIZE} />
-          </HeaderRailToggleIcon>
-        </div>
-      </Tooltip>
+            <CurrentIcon size={HEADER_RAIL_ICON_SIZE} />
+          </ActionIcon>
+        </Tooltip>
+      </Menu.Target>
 
-      <span className="xdiff-theme-toggle-divider" aria-hidden="true" />
-
-      <Tooltip label="Light theme">
-        <div>
-          <HeaderRailToggleIcon
-            active={colorScheme === 'light'}
-            onClick={() => setColorScheme('light')}
-            label="Light theme"
-            activeVariant="light"
-            activeColor="gray"
-            className="xdiff-theme-toggle-button"
-          >
-            <IconSun size={HEADER_RAIL_ICON_SIZE} />
-          </HeaderRailToggleIcon>
-        </div>
-      </Tooltip>
-
-      <span className="xdiff-theme-toggle-divider" aria-hidden="true" />
-
-      <Tooltip label="Dark theme">
-        <div>
-          <HeaderRailToggleIcon
-            active={colorScheme === 'dark'}
-            onClick={() => setColorScheme('dark')}
-            label="Dark theme"
-            activeVariant="light"
-            activeColor="gray"
-            className="xdiff-theme-toggle-button"
-          >
-            <IconMoon size={HEADER_RAIL_ICON_SIZE} />
-          </HeaderRailToggleIcon>
-        </div>
-      </Tooltip>
-    </div>
+      <Menu.Dropdown>
+        <Menu.Label>Theme</Menu.Label>
+        {THEME_OPTIONS.map((option) => {
+          const OptionIcon = option.Icon
+          return (
+            <Menu.Item
+              key={option.value}
+              leftSection={renderMenuCheck(option.value === colorScheme)}
+              rightSection={<OptionIcon size={14} />}
+              onClick={() => setColorScheme(option.value)}
+            >
+              {option.label}
+            </Menu.Item>
+          )
+        })}
+      </Menu.Dropdown>
+    </Menu>
   )
 }

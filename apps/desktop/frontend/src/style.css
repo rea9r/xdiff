@@ -191,49 +191,6 @@ body {
   min-width: 220px;
 }
 
-.xdiff-theme-toggle-shell {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  padding: 1px;
-  border: 1px solid var(--xdiff-viewer-border);
-  border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-surface-subtle);
-}
-
-.xdiff-theme-toggle-button {
-  border-radius: var(--xdiff-radius-sm);
-  transition: background-color 120ms ease, box-shadow 120ms ease, color 120ms ease;
-}
-
-.xdiff-theme-toggle-button:hover {
-  background: color-mix(in srgb, var(--mantine-primary-color-filled) 10%, transparent);
-}
-
-.xdiff-theme-toggle-button:active {
-  background: color-mix(in srgb, var(--mantine-primary-color-filled) 16%, transparent);
-}
-
-.xdiff-theme-toggle-button.is-active {
-  box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
-  background: color-mix(in srgb, var(--mantine-primary-color-filled) 14%, transparent);
-}
-
-.xdiff-theme-toggle-button.is-active:hover {
-  background: color-mix(in srgb, var(--mantine-primary-color-filled) 18%, transparent);
-}
-
-.xdiff-theme-toggle-button.is-active svg {
-  color: var(--mantine-primary-color-filled);
-}
-
-.xdiff-theme-toggle-divider {
-  width: 1px;
-  align-self: stretch;
-  background: var(--xdiff-viewer-border);
-  opacity: 0.8;
-}
-
 .menu-check-icon {
   display: block;
   color: var(--mantine-color-green-6);
