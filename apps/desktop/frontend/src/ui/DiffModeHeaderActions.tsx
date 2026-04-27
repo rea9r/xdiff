@@ -6,7 +6,6 @@ import { HeaderRailAction, HeaderRailGroup, HeaderRailPrimaryButton } from './He
 type DiffModeHeaderActionsProps = {
   loading?: boolean
   diffDisabled?: boolean
-  diffLabel?: string
   onDiff: () => void
   optionsOpen?: boolean
   onToggleOptions: () => void
@@ -16,7 +15,6 @@ type DiffModeHeaderActionsProps = {
 export function DiffModeHeaderActions({
   loading = false,
   diffDisabled = false,
-  diffLabel = 'Compare',
   onDiff,
   optionsOpen = false,
   onToggleOptions,
@@ -32,7 +30,7 @@ export function DiffModeHeaderActions({
         disabled={diffDisabled}
         leftSection={<IconArrowsDiff size={14} />}
       >
-        {diffLabel}
+        Compare
       </HeaderRailPrimaryButton>
       <Tooltip label={optionsLabel}>
         <HeaderRailAction

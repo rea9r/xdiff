@@ -54,7 +54,7 @@ export function DesktopModeHeaderActions(props: DesktopModeHeaderActionsProps) {
         disabled={props.diffDisabled}
         leftSection={<IconArrowsDiff size={14} />}
       >
-        Diff
+        Compare
       </HeaderRailPrimaryButton>
       <RecentTargetsMenu
         buttonLabel="Recent roots"
