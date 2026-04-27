@@ -99,7 +99,7 @@ func (c *Client) ping(ctx context.Context, url string) bool {
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return resp.StatusCode == http.StatusOK
 }
 
@@ -112,7 +112,7 @@ func (c *Client) ListOllamaModels(ctx context.Context, baseURL string) ([]string
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("ollama /api/tags returned %d", resp.StatusCode)
 	}
@@ -175,7 +175,7 @@ func (c *Client) chatStreamOllama(ctx context.Context, baseURL string, req ChatR
 		log.Printf("[aiclient] /api/chat Do error: %v", err)
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	log.Printf("[aiclient] /api/chat status=%d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
@@ -273,7 +273,7 @@ func (c *Client) chatOllama(ctx context.Context, baseURL string, req ChatRequest
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		msg, _ := io.ReadAll(resp.Body)
@@ -310,7 +310,7 @@ func (c *Client) chatOpenAI(ctx context.Context, baseURL string, req ChatRequest
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		msg, _ := io.ReadAll(resp.Body)
@@ -353,7 +353,7 @@ func (c *Client) DeleteOllamaModel(ctx context.Context, baseURL, name string) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		msg, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("ollama /api/delete returned %d: %s", resp.StatusCode, string(msg))
@@ -376,7 +376,7 @@ func (c *Client) PullOllamaModel(ctx context.Context, baseURL, name string, onPr
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		msg, _ := io.ReadAll(resp.Body)

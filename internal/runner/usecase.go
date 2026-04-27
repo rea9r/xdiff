@@ -116,8 +116,8 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 	})
 
 	var out string
-	switch {
-	case opts.Format == output.TextFormat:
+	switch opts.Format {
+	case output.TextFormat:
 		style, err := resolveJSONTextStyle(opts)
 		if err != nil {
 			return finalizeRun(diffs, "", err)
@@ -134,7 +134,7 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 			break
 		}
 		out = output.RenderUnifiedJSONWithColor(oldValue, newValue, opts.UseColor)
-	case opts.Format == output.JSONFormat:
+	case output.JSONFormat:
 		rendered, err := output.RenderJSON(diffs)
 		if err != nil {
 			return finalizeRun(diffs, "", err)

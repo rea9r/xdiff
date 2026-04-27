@@ -191,7 +191,8 @@ func (s *Service) StartAISetup(req AISetupRequest) error {
 	if model == "" {
 		model = aiDefaultModel
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	// cancel is stored on state and invoked by CancelAISetup or runSetup teardown.
+	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // cancel lifecycle managed by setupState
 	state.cancel = cancel
 	state.progress = AISetupProgress{Phase: aiPhaseStarting, Model: model, Message: "Preparing local AI"}
 	state.mu.Unlock()
