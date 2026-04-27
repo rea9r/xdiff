@@ -22,7 +22,6 @@ func (s *Service) DiffText(req DiffTextRequest) (*DiffResponse, error) {
 		Format:           normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths:      append([]string(nil), req.Common.IgnorePaths...),
 		TextStyle:        req.Common.TextStyle,
-		UseColor:         guiUseColor(),
 		IgnoreWhitespace: req.Common.IgnoreWhitespace,
 		IgnoreCase:       req.Common.IgnoreCase,
 		IgnoreEOL:        req.Common.IgnoreEOL,

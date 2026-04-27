@@ -16,12 +16,12 @@ func TestFormatText_Golden(t *testing.T) {
 	}
 }
 
-func TestRenderSemanticTextWithColor_UsesRawPath(t *testing.T) {
+func TestRenderSemanticText_UsesRawPath(t *testing.T) {
 	diffs := []delta.Diff{
 		{Type: delta.Added, Path: "paths./users.post", NewValue: "operation"},
 	}
 
-	got := RenderSemanticTextWithColor(diffs, false)
+	got := RenderSemanticText(diffs)
 
 	if got != "+ paths./users.post: \"operation\"\n" {
 		t.Fatalf("expected raw path output, got: %q", got)

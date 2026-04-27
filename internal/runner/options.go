@@ -17,7 +17,6 @@ type DiffOptions struct {
 	IgnorePaths      []string
 	IgnoreOrder      bool
 	TextStyle        string
-	UseColor         bool
 	IgnoreWhitespace bool
 	IgnoreCase       bool
 	IgnoreEOL        bool

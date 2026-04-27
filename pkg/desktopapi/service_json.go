@@ -27,7 +27,6 @@ func (s *Service) DiffJSONFiles(req DiffJSONRequest) (*DiffResponse, error) {
 			IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
 			TextStyle:   req.Common.TextStyle,
 			IgnoreOrder: req.IgnoreOrder,
-			UseColor:    guiUseColor(),
 		},
 		OldPath: req.OldPath,
 		NewPath: req.NewPath,
@@ -93,7 +92,6 @@ func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichRe
 		IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
 		TextStyle:   req.Common.TextStyle,
 		IgnoreOrder: req.IgnoreOrder,
-		UseColor:    guiUseColor(),
 	}
 	rawRun := runner.RunJSONValuesDetailed(oldValue, newValue, rawOpts)
 	rawResult := DiffResponse{
@@ -105,13 +103,11 @@ func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichRe
 
 	structuredOpts := rawOpts
 	structuredOpts.Format = output.JSONFormat
-	structuredOpts.UseColor = false
 	structuredRun := runner.RunJSONValuesDetailed(oldValue, newValue, structuredOpts)
 
 	diffOpts := rawOpts
 	diffOpts.Format = output.TextFormat
 	diffOpts.TextStyle = "patch"
-	diffOpts.UseColor = false
 	diffRun := runner.RunJSONValuesDetailed(oldValue, newValue, diffOpts)
 
 	diffs, err := parseJSONMachineDiffs(structuredRun.Output)

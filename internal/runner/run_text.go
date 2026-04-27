@@ -42,11 +42,9 @@ func RunTextValuesDetailed(oldText, newText string, opts DiffOptions) RunResult 
 		}
 
 		if style == TextStyleSemantic {
-			out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
-				UseColor: opts.UseColor,
-			})
+			out = output.RenderSemanticText(filtered)
 		} else {
-			out = output.RenderUnifiedTextWithColor(oldText, newText, opts.UseColor)
+			out = output.RenderUnifiedText(oldText, newText)
 		}
 	case output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)

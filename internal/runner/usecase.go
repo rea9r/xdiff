@@ -128,12 +128,10 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts DiffOptions) RunResult {
 			break
 		}
 		if style == TextStyleSemantic {
-			out = output.RenderSemanticText(diffs, output.SemanticTextOptions{
-				UseColor: opts.UseColor,
-			})
+			out = output.RenderSemanticText(diffs)
 			break
 		}
-		out = output.RenderUnifiedJSONWithColor(oldValue, newValue, opts.UseColor)
+		out = output.RenderUnifiedJSON(oldValue, newValue)
 	case output.JSONFormat:
 		rendered, err := output.RenderJSON(diffs)
 		if err != nil {

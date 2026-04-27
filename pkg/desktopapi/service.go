@@ -55,10 +55,6 @@ func (s *Service) SaveDesktopState(req DesktopState) error {
 	return s.stateStore.Save(req)
 }
 
-func guiUseColor() bool {
-	return false
-}
-
 func errString(err error) string {
 	if err == nil {
 		return ""

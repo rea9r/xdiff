@@ -9,60 +9,34 @@ import (
 	"github.com/rea9r/xdiff/internal/delta"
 )
 
-type SemanticTextOptions struct {
-	UseColor bool
-}
-
 func FormatText(diffs []delta.Diff) string {
-	return RenderSemanticText(diffs, SemanticTextOptions{})
+	return RenderSemanticText(diffs)
 }
 
-func RenderSemanticText(diffs []delta.Diff, opts SemanticTextOptions) string {
-	return renderSemanticDiffSection(diffs, opts)
-}
-
-func RenderSemanticTextWithColor(diffs []delta.Diff, color bool) string {
-	return RenderSemanticText(diffs, SemanticTextOptions{
-		UseColor: color,
-	})
-}
-
-func renderSemanticDiffSection(diffs []delta.Diff, opts SemanticTextOptions) string {
+func RenderSemanticText(diffs []delta.Diff) string {
 	var b strings.Builder
 
 	if len(diffs) == 0 {
 		b.WriteString("No differences.\n")
 	} else {
 		for _, d := range diffs {
-			marker := colorizeAction(diffMarker(d.Type), d.Type, opts.UseColor)
 			path := d.Path
 			if path == "" {
 				path = "(root)"
 			}
 
 			detail := formatDetail(d)
-			fmt.Fprintf(&b, "%s %s: %s\n", marker, path, detail)
+			fmt.Fprintf(&b, "%s %s: %s\n", diffMarker(d.Type), path, detail)
 		}
 	}
 	return b.String()
 }
 
-func RenderUnifiedJSONWithColor(oldValue, newValue any, color bool) string {
-	oldText := prettyJSON(oldValue)
-	newText := prettyJSON(newValue)
-	return renderUnifiedText(oldText, newText, color)
+func RenderUnifiedJSON(oldValue, newValue any) string {
+	return RenderUnifiedText(prettyJSON(oldValue), prettyJSON(newValue))
 }
 
 func RenderUnifiedText(oldText, newText string) string {
-	return RenderUnifiedTextWithColor(oldText, newText, false)
-}
-
-func RenderUnifiedTextWithColor(oldText, newText string, color bool) string {
-	return renderUnifiedText(oldText, newText, color)
-}
-
-func renderUnifiedText(oldText, newText string, color bool) string {
-
 	ud := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(oldText),
 		B:        difflib.SplitLines(newText),
@@ -74,8 +48,7 @@ func renderUnifiedText(oldText, newText string, color bool) string {
 	if err != nil {
 		return "failed to render unified diff\n"
 	}
-
-	return colorizeUnified(unified, color)
+	return unified
 }
 
 func formatDetail(d delta.Diff) string {
