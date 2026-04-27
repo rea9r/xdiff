@@ -44,6 +44,14 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'View',
+    items: [
+      { keys: ['⌘/Ctrl', '+'], label: 'Increase code font size' },
+      { keys: ['⌘/Ctrl', '-'], label: 'Decrease code font size' },
+      { keys: ['⌘/Ctrl', '0'], label: 'Reset code font size' },
+    ],
+  },
+  {
     title: 'Help',
     items: [{ keys: ['?'], label: 'Show this help' }],
   },

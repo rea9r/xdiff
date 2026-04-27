@@ -91,7 +91,8 @@
   --xdiff-badge-line-height: 1.4;
 
   /* Mono */
-  --xdiff-mono-font-size: 13px;
+  --xdiff-code-scale: 1;
+  --xdiff-mono-font-size: calc(13px * var(--xdiff-code-scale));
   --xdiff-mono-line-height: 1.4;
 
   /* Compare pane */

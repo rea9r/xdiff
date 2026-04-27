@@ -4,6 +4,7 @@ import { IconCheck } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { Mode } from '../types'
+import { CodeFontScaleControl } from './CodeFontScaleControl'
 import { HeaderRailGroup, HeaderRailSelect } from './HeaderRail'
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp'
 import { ThemeModeControl } from './ThemeModeControl'
@@ -176,6 +177,7 @@ export function AppChrome({
           </HeaderRailGroup>
           <HeaderRailGroup>
             {headerActions}
+            <CodeFontScaleControl />
             <ThemeModeControl />
           </HeaderRailGroup>
         </Group>
