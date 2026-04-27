@@ -8,10 +8,6 @@ import (
 	"github.com/rea9r/xdiff/internal/output"
 )
 
-func RunJSONValues(oldValue, newValue any, opts DiffOptions) (int, string, error) {
-	return RunJSONValuesDetailed(oldValue, newValue, opts).Triple()
-}
-
 func RunJSONValuesDetailed(oldValue, newValue any, opts DiffOptions) RunResult {
 	if err := validateDiffOptions(opts); err != nil {
 		return finalizeRun(nil, "", err)

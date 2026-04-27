@@ -6,10 +6,6 @@ import (
 	"github.com/rea9r/xdiff/internal/textdiff"
 )
 
-func RunTextValues(oldText, newText string, opts DiffOptions) (int, string, error) {
-	return RunTextValuesDetailed(oldText, newText, opts).Triple()
-}
-
 func RunTextValuesDetailed(oldText, newText string, opts DiffOptions) RunResult {
 	if err := validateDiffOptions(opts); err != nil {
 		return finalizeRun(nil, "", err)
