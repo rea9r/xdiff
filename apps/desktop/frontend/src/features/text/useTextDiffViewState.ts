@@ -13,6 +13,17 @@ import {
 export type TextResultView = 'diff' | 'raw'
 export type TextDiffLayout = 'split' | 'unified'
 
+export type SectionExpansion = { top: number; bottom: number }
+export type SectionExpansionMap = Record<string, SectionExpansion>
+
+export const SECTION_EXPANSION_STEP = 20
+const EMPTY_EXPANSION: SectionExpansion = { top: 0, bottom: 0 }
+
+function clampNonNegative(value: number, max: number): number {
+  if (value < 0) return 0
+  return value > max ? max : value
+}
+
 type UseTextDiffViewStateParams = {
   textResult: DiffResponse | null
   textLastRunOld: string
@@ -37,9 +48,8 @@ export function useTextDiffViewState({
     true,
     (value): value is boolean => typeof value === 'boolean',
   )
-  const [textExpandedUnchangedSectionIds, setTextExpandedUnchangedSectionIds] = useState<
-    string[]
-  >([])
+  const [textSectionExpansions, setTextSectionExpansions] =
+    useState<SectionExpansionMap>({})
   const [textSearchQuery, setTextSearchQuery] = useState('')
   const [textActiveSearchIndex, setTextActiveSearchIndex] = useState(0)
   const [textActiveDiffIndex, setTextActiveDiffIndex] = useState(0)
@@ -78,16 +88,49 @@ export function useTextDiffViewState({
       textRichItems?.flatMap((item) => (item.kind === 'omitted' ? [item.sectionId] : [])) ?? [],
     [textRichItems],
   )
+  const sectionTotalsById = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const item of textRichItems ?? []) {
+      if (item.kind === 'omitted') {
+        map.set(item.sectionId, item.lines.length)
+      }
+    }
+    return map
+  }, [textRichItems])
+  const isSectionFullyExpanded = (
+    expansion: SectionExpansion,
+    total: number,
+  ): boolean => total === 0 || expansion.top + expansion.bottom >= total
   const allOmittedSectionsExpanded =
     omittedSectionIds.length > 0 &&
-    omittedSectionIds.every((id) => textExpandedUnchangedSectionIds.includes(id))
-  const effectiveExpandedSectionIds = useMemo(() => {
-    const ids = new Set(textExpandedUnchangedSectionIds)
-    if (activeTextSearchMatch?.sectionId) {
-      ids.add(activeTextSearchMatch.sectionId)
+    omittedSectionIds.every((id) => {
+      const total = sectionTotalsById.get(id) ?? 0
+      const exp = textSectionExpansions[id] ?? EMPTY_EXPANSION
+      return isSectionFullyExpanded(exp, total)
+    })
+  const effectiveSectionExpansions = useMemo<SectionExpansionMap>(() => {
+    const sectionId = activeTextSearchMatch?.sectionId
+    if (!sectionId) {
+      return textSectionExpansions
     }
-    return [...ids]
-  }, [textExpandedUnchangedSectionIds, activeTextSearchMatch?.sectionId])
+    const total = sectionTotalsById.get(sectionId) ?? 0
+    if (total === 0) {
+      return textSectionExpansions
+    }
+    const current = textSectionExpansions[sectionId] ?? EMPTY_EXPANSION
+    if (isSectionFullyExpanded(current, total)) {
+      return textSectionExpansions
+    }
+    return { ...textSectionExpansions, [sectionId]: { top: total, bottom: 0 } }
+  }, [textSectionExpansions, activeTextSearchMatch?.sectionId, sectionTotalsById])
+  const effectiveExpansionsSignature = useMemo(
+    () =>
+      Object.entries(effectiveSectionExpansions)
+        .map(([id, exp]) => `${id}:${exp.top}/${exp.bottom}`)
+        .sort()
+        .join('|'),
+    [effectiveSectionExpansions],
+  )
   const canRenderTextRich =
     textLastRunOutputFormat === 'text' &&
     !!textResult &&
@@ -135,7 +178,7 @@ export function useTextDiffViewState({
     canRenderTextRich,
     textDiffLayout,
     textResultView,
-    effectiveExpandedSectionIds.join('|'),
+    effectiveExpansionsSignature,
   ])
 
   useEffect(() => {
@@ -167,13 +210,23 @@ export function useTextDiffViewState({
   }, [activeTextDiffBlock?.id, canRenderTextRich, textDiffLayout, textResultView])
 
   useEffect(() => {
-    setTextExpandedUnchangedSectionIds((prev) =>
-      prev.filter((id) => omittedSectionIds.includes(id)),
-    )
+    setTextSectionExpansions((prev) => {
+      const validIds = new Set(omittedSectionIds)
+      let changed = false
+      const next: SectionExpansionMap = {}
+      for (const [id, expansion] of Object.entries(prev)) {
+        if (validIds.has(id)) {
+          next[id] = expansion
+        } else {
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
   }, [omittedSectionIds])
 
   const clearTextExpandedSections = () => {
-    setTextExpandedUnchangedSectionIds([])
+    setTextSectionExpansions({})
   }
 
   const resetTextSearch = () => {
@@ -181,8 +234,30 @@ export function useTextDiffViewState({
     setTextActiveSearchIndex(0)
   }
 
-  const isTextSectionExpanded = (sectionId: string) =>
-    effectiveExpandedSectionIds.includes(sectionId)
+  const getTextSectionExpansion = (sectionId: string): SectionExpansion =>
+    effectiveSectionExpansions[sectionId] ?? EMPTY_EXPANSION
+
+  const expandTextSection = (sectionId: string, side: 'top' | 'bottom' | 'all') => {
+    const total = sectionTotalsById.get(sectionId) ?? 0
+    if (total === 0) return
+
+    setTextSectionExpansions((prev) => {
+      const current = prev[sectionId] ?? EMPTY_EXPANSION
+      if (side === 'all') {
+        return { ...prev, [sectionId]: { top: total, bottom: 0 } }
+      }
+      if (side === 'top') {
+        const remaining = total - current.bottom
+        const nextTop = clampNonNegative(current.top + SECTION_EXPANSION_STEP, remaining)
+        if (nextTop === current.top) return prev
+        return { ...prev, [sectionId]: { top: nextTop, bottom: current.bottom } }
+      }
+      const remaining = total - current.top
+      const nextBottom = clampNonNegative(current.bottom + SECTION_EXPANSION_STEP, remaining)
+      if (nextBottom === current.bottom) return prev
+      return { ...prev, [sectionId]: { top: current.top, bottom: nextBottom } }
+    })
+  }
 
   const registerTextSearchRowRef = (matchId: string) => (node: HTMLDivElement | null) => {
     if (node) {
@@ -225,14 +300,17 @@ export function useTextDiffViewState({
     )
   }
 
-  const toggleTextUnchangedSection = (sectionId: string) => {
-    setTextExpandedUnchangedSectionIds((prev) =>
-      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
-    )
-  }
-
   const toggleAllTextUnchangedSections = () => {
-    setTextExpandedUnchangedSectionIds(allOmittedSectionsExpanded ? [] : omittedSectionIds)
+    if (allOmittedSectionsExpanded) {
+      setTextSectionExpansions({})
+      return
+    }
+    const next: SectionExpansionMap = {}
+    for (const id of omittedSectionIds) {
+      const total = sectionTotalsById.get(id) ?? 0
+      next[id] = { top: total, bottom: 0 }
+    }
+    setTextSectionExpansions(next)
   }
 
   return {
@@ -254,10 +332,10 @@ export function useTextDiffViewState({
     canRenderTextRich,
     clearTextExpandedSections,
     resetTextSearch,
-    isTextSectionExpanded,
+    getTextSectionExpansion,
+    expandTextSection,
     registerTextSearchRowRef,
     moveTextSearch,
-    toggleTextUnchangedSection,
     toggleAllTextUnchangedSections,
     textDiffBlocks,
     textChangeBlocks,

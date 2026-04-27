@@ -52,9 +52,9 @@ export type TextDiffResultPanelProps = {
   textCopyBusy: boolean
   copyTextResultRawOutput: () => void | Promise<void>
   moveTextSearch: (direction: 1 | -1) => void
-  toggleTextUnchangedSection: (sectionId: string) => void
   toggleAllTextUnchangedSections: () => void
-  isTextSectionExpanded: (sectionId: string) => boolean
+  getTextSectionExpansion: (sectionId: string) => { top: number; bottom: number }
+  expandTextSection: (sectionId: string, side: 'top' | 'bottom' | 'all') => void
   registerTextSearchRowRef: (matchId: string) => (node: HTMLDivElement | null) => void
   textDiffBlocks: TextDiffBlock[]
   textChangeBlocks: TextChangeBlock[]
@@ -118,9 +118,9 @@ export function TextDiffResultPanel({
   textCopyBusy,
   copyTextResultRawOutput,
   moveTextSearch,
-  toggleTextUnchangedSection,
   toggleAllTextUnchangedSections,
-  isTextSectionExpanded,
+  getTextSectionExpansion,
+  expandTextSection,
   registerTextSearchRowRef,
   textDiffBlocks,
   textChangeBlocks,
@@ -361,16 +361,10 @@ export function TextDiffResultPanel({
           changeBlocks={textChangeBlocks}
           onAdoptBlock={onAdoptBlock}
           omittedSections={{
-            isExpanded: isTextSectionExpanded,
-            renderAction: (sectionId, expanded) => (
-              <button
-                type="button"
-                className="text-omitted-action button-secondary button-compact"
-                onClick={() => toggleTextUnchangedSection(sectionId)}
-              >
-                {expanded ? 'Collapse unchanged' : 'Show hidden lines'}
-              </button>
-            ),
+            getExpansion: getTextSectionExpansion,
+            onExpandTop: (sectionId) => expandTextSection(sectionId, 'top'),
+            onExpandBottom: (sectionId) => expandTextSection(sectionId, 'bottom'),
+            onExpandAll: (sectionId) => expandTextSection(sectionId, 'all'),
           }}
         />
       ) : (
