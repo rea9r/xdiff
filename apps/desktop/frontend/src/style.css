@@ -2144,7 +2144,11 @@ button {
 }
 
 .directory-action-reason {
-  font-size: var(--xdiff-directory-small-font-size);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--xdiff-space-2) 0;
+  border: 1px solid transparent;
+  font-size: var(--xdiff-text-sm);
   line-height: 1.25;
 }
 
@@ -2167,6 +2171,8 @@ button {
 .directory-name-filter-input {
   min-width: 220px;
   max-width: 320px;
+  padding: var(--xdiff-space-2) var(--xdiff-control-padding-x-tight);
+  font-size: var(--xdiff-text-sm);
 }
 
 .directory-view-mode-toggle {
@@ -2353,10 +2359,6 @@ button {
 .directory-detail-action {
   padding-top: var(--xdiff-space-3);
   border-top: 1px solid var(--xdiff-viewer-border);
-}
-
-.directory-action-reason {
-  font-size: var(--xdiff-text-sm);
 }
 
 @media (max-width: 900px) {
