@@ -1664,6 +1664,8 @@ button {
   padding: var(--xdiff-space-2) var(--xdiff-space-4);
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .split-diff-row {
@@ -1724,6 +1726,8 @@ button {
   justify-content: center;
   gap: var(--xdiff-space-3);
   padding: 0 var(--xdiff-space-4);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .text-diff-row {
@@ -1847,6 +1851,8 @@ button {
   background: var(--xdiff-viewer-surface-muted);
   border-top: 1px dashed var(--xdiff-viewer-border-strong);
   border-bottom: 1px dashed var(--xdiff-viewer-border-strong);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .text-omitted-banner.expanded {
@@ -1855,6 +1861,8 @@ button {
 
 .text-omitted-action {
   flex: 0 0 auto;
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .text-inline-add,
