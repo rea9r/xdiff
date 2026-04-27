@@ -35,7 +35,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
-    title: 'Directory compare',
+    title: 'Directory diff',
     items: [
       { keys: ['↓'], label: 'Select next entry' },
       { keys: ['↑'], label: 'Select previous entry' },

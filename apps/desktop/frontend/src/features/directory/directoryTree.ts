@@ -85,7 +85,7 @@ export function getDirectoryItemActionReason(entry: DirectoryCompareItem): strin
   if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
   if (entry.isDir) return 'Directory item'
   if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
-  if (entry.compareModeHint === 'none') return 'No compare mode'
+  if (entry.compareModeHint === 'none') return 'No diff mode'
   return 'Not comparable'
 }
 

@@ -22,7 +22,7 @@ export function CompareModeHeaderActions({
   onToggleOptions,
   extraActions,
 }: CompareModeHeaderActionsProps) {
-  const optionsLabel = optionsOpen ? 'Hide compare options' : 'Show compare options'
+  const optionsLabel = optionsOpen ? 'Hide diff options' : 'Show diff options'
 
   return (
     <HeaderRailGroup className="compare-mode-header-actions">

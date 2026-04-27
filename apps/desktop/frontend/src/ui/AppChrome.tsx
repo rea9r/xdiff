@@ -25,11 +25,11 @@ type AppChromeProps = {
 
 const MODE_OPTIONS = [
   {
-    group: 'Compare',
+    group: 'Diff',
     items: [
-      { value: 'text', label: 'Text compare' },
-      { value: 'json', label: 'JSON compare' },
-      { value: 'directory', label: 'Directory compare' },
+      { value: 'text', label: 'Text diff' },
+      { value: 'json', label: 'JSON diff' },
+      { value: 'directory', label: 'Directory diff' },
     ],
   },
 ]

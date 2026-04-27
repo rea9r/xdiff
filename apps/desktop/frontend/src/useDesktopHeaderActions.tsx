@@ -83,14 +83,14 @@ export function useDesktopHeaderActions({
             key: `${pair.oldPath}::${pair.newPath}`,
             label: `${pair.oldPath} -> ${pair.newPath}`,
             onClick: () =>
-              void runRecentAction('Recent JSON compare', () => runJSONFromRecentWithViewReset(pair)),
+              void runRecentAction('Recent JSON diff', () => runJSONFromRecentWithViewReset(pair)),
           }))
         : mode === 'text'
           ? textRecentPairs.map((pair) => ({
               key: `${pair.oldPath}::${pair.newPath}`,
               label: `${pair.oldPath} -> ${pair.newPath}`,
               onClick: () =>
-                void runRecentAction('Recent Text compare', () => runTextFromRecentWithViewReset(pair)),
+                void runRecentAction('Recent Text diff', () => runTextFromRecentWithViewReset(pair)),
             }))
           : [],
     [
@@ -109,7 +109,7 @@ export function useDesktopHeaderActions({
         key: `${entry.leftRoot}::${entry.rightRoot}::${entry.currentPath}::${entry.viewMode}`,
         label: `${entry.leftRoot} <> ${entry.rightRoot}`,
         onClick: () =>
-          void runRecentAction('Recent directory compare', () => runDirectoryFromRecent(entry)),
+          void runRecentAction('Recent directory diff', () => runDirectoryFromRecent(entry)),
       })),
     [directoryRecentPairs, runDirectoryFromRecent, runRecentAction],
   )

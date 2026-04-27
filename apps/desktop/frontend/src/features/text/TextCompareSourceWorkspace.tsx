@@ -210,12 +210,12 @@ export function TextCompareSourceWorkspace({
             className="text-json-suggestion-action"
             onClick={() => onSwitchToJSON(oldValue, newValue)}
           >
-            Switch to JSON compare
+            Switch to JSON diff
           </button>
           <button
             type="button"
             className="text-json-suggestion-dismiss"
-            aria-label="Dismiss JSON compare suggestion"
+            aria-label="Dismiss JSON diff suggestion"
             onClick={jsonSuggestion.dismiss}
           >
             <IconX size={12} />

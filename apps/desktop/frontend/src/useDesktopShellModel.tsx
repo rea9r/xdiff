@@ -83,7 +83,7 @@ export function useDesktopShellModel({
   const isCompareCentricMode = mode === 'text' || mode === 'json'
 
   const compareOptionsTitle =
-    mode === 'text' ? 'Text compare options' : 'JSON compare options'
+    mode === 'text' ? 'Text diff options' : 'JSON diff options'
 
   const compareOptionsContent = (
     <DesktopCompareOptionsContent
