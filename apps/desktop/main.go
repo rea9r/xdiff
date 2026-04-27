@@ -57,6 +57,10 @@ func (a *App) AIProviderStatus() (*desktopapi.AIProviderStatus, error) {
 	return a.api.AIProviderStatus()
 }
 
+func (a *App) BuildDirectorySummaryContext(req desktopapi.DirectorySummaryRequest) (*desktopapi.DirectorySummaryResponse, error) {
+	return a.api.BuildDirectorySummaryContext(req)
+}
+
 func (a *App) ExplainDiff(req desktopapi.ExplainDiffRequest) (*desktopapi.ExplainDiffResponse, error) {
 	return a.api.ExplainDiff(req)
 }

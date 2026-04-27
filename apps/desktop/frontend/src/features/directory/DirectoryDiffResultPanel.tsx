@@ -12,7 +12,6 @@ import type { DiffDirectoriesResponse, DirectoryDiffItem } from '../../types'
 import { SectionCard } from '../../ui/SectionCard'
 import { StatusBadge } from '../../ui/StatusBadge'
 import { DirectoryAISummaryCard } from './DirectoryAISummaryCard'
-import { formatDirectoryDiffForAI } from './formatDirectoryDiffForAI'
 import {
   canOpenDirectoryItem,
   directoryQuickFilterLabel,
@@ -122,8 +121,8 @@ export function DirectoryDiffResultPanel({
 }: DirectoryDiffResultPanelProps) {
   const [visibleListRows, setVisibleListRows] = useState(DEFAULT_DIRECTORY_VISIBLE_ROWS)
   const [visibleTreeRows, setVisibleTreeRows] = useState(DEFAULT_DIRECTORY_VISIBLE_ROWS)
-  const aiDiffText = useMemo(
-    () => (directoryResult && !directoryResult.error ? formatDirectoryDiffForAI(directoryResult) : ''),
+  const aiItems = useMemo<DirectoryDiffItem[]>(
+    () => (directoryResult && !directoryResult.error ? directoryResult.items : []),
     [directoryResult],
   )
   const aiChangedCount = useMemo(() => {
@@ -131,7 +130,7 @@ export function DirectoryDiffResultPanel({
     const s = directoryResult.scannedSummary
     return s.changed + s.leftOnly + s.rightOnly + s.typeMismatch + s.error
   }, [directoryResult])
-  const canExplain = aiDiffText.length > 0
+  const canExplain = aiChangedCount > 0 && aiItems.length > 0
 
   useEffect(() => {
     setVisibleListRows(DEFAULT_DIRECTORY_VISIBLE_ROWS)
@@ -347,7 +346,7 @@ export function DirectoryDiffResultPanel({
 
         <div className="directory-list-tree-viewport">
           {canExplain ? (
-            <DirectoryAISummaryCard diffText={aiDiffText} changedCount={aiChangedCount} />
+            <DirectoryAISummaryCard items={aiItems} changedCount={aiChangedCount} />
           ) : null}
           {directoryResult?.error ? (
             <pre className="result-output">{directoryResult.error}</pre>

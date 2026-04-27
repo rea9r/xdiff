@@ -220,3 +220,35 @@ type AISetupProgress struct {
 	PullTotal     int64   `json:"pullTotal,omitempty"`
 	PullPercent   float64 `json:"pullPercent,omitempty"`
 }
+
+type DirectorySummaryItem struct {
+	RelativePath string `json:"relativePath"`
+	Status       string `json:"status"` // changed | left-only | right-only | type-mismatch | error
+	LeftPath     string `json:"leftPath,omitempty"`
+	RightPath    string `json:"rightPath,omitempty"`
+	IsDir        bool   `json:"isDir"`
+}
+
+type DirectorySummaryRequest struct {
+	Items       []DirectorySummaryItem `json:"items"`
+	TotalBudget int                    `json:"totalBudget,omitempty"` // chars; default 12000
+	PerFileCap  int                    `json:"perFileCap,omitempty"`  // chars; default 2000
+	MaxFileSize int64                  `json:"maxFileSize,omitempty"` // bytes; default 256KiB
+}
+
+type DirectorySummarySkipped struct {
+	Path   string `json:"path"`
+	Reason string `json:"reason"` // too-large | binary | read-error | dir | type-mismatch
+}
+
+type DirectorySummaryResponse struct {
+	Context        string                    `json:"context"`
+	FilesIncluded  []string                  `json:"filesIncluded"`
+	FilesOmitted   []string                  `json:"filesOmitted"` // changed but didn't fit budget
+	FilesSkipped   []DirectorySummarySkipped `json:"filesSkipped"`
+	TotalChanged   int                       `json:"totalChanged"`
+	TotalLeftOnly  int                       `json:"totalLeftOnly"`
+	TotalRightOnly int                       `json:"totalRightOnly"`
+	BudgetUsed     int                       `json:"budgetUsed"`
+	BudgetTotal    int                       `json:"budgetTotal"`
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -14,7 +14,12 @@ import {
 import { IconChevronDown, IconRefresh, IconSparkles } from '@tabler/icons-react'
 import { useDesktopBridge } from '../../useDesktopBridge'
 import { EventsOff, EventsOn } from '../../../wailsjs/runtime/runtime'
-import type { AIProviderStatus } from '../../types'
+import type {
+  AIProviderStatus,
+  DirectoryDiffItem,
+  DirectorySummaryItem,
+  DirectorySummaryResponse,
+} from '../../types'
 import { formatUnknownError } from '../../utils/appHelpers'
 import { ExplanationMarkdown } from '../ai/ExplanationMarkdown'
 import { AIExplainDrawer } from '../ai/AIExplainDrawer'
@@ -35,13 +40,51 @@ function loadStoredLanguage(): string {
   return 'English'
 }
 
+const SKIP_REASON_LABEL: Record<string, string> = {
+  binary: 'binary',
+  'too-large': 'too large',
+  'type-mismatch': 'type mismatch',
+  'directory-scan-error': 'scan error',
+  'missing-path': 'missing path',
+}
+
+function describeSkipReason(reason: string): string {
+  if (SKIP_REASON_LABEL[reason]) return SKIP_REASON_LABEL[reason]
+  if (reason.startsWith('read-error')) return 'read error'
+  return reason
+}
+
+function formatCoverage(ctx: DirectorySummaryResponse): string {
+  const parts: string[] = []
+  parts.push(
+    `Covers ${ctx.filesIncluded.length} of ${ctx.totalChanged} changed file${
+      ctx.totalChanged === 1 ? '' : 's'
+    }`,
+  )
+  const extras: string[] = []
+  if (ctx.totalRightOnly > 0) extras.push(`${ctx.totalRightOnly} added listed`)
+  if (ctx.totalLeftOnly > 0) extras.push(`${ctx.totalLeftOnly} removed listed`)
+  if (ctx.filesOmitted.length > 0) extras.push(`${ctx.filesOmitted.length} omitted by budget`)
+  if (ctx.filesSkipped.length > 0) {
+    const grouped: Record<string, number> = {}
+    for (const s of ctx.filesSkipped) {
+      grouped[s.reason] = (grouped[s.reason] || 0) + 1
+    }
+    for (const [reason, n] of Object.entries(grouped)) {
+      extras.push(`${n} skipped (${describeSkipReason(reason)})`)
+    }
+  }
+  if (extras.length) parts.push(extras.join(', '))
+  return parts.join(' • ')
+}
+
 export type DirectoryAISummaryCardProps = {
-  diffText: string
+  items: DirectoryDiffItem[]
   changedCount: number
 }
 
-export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISummaryCardProps) {
-  const { aiProviderStatus, explainDiffStream } = useDesktopBridge()
+export function DirectoryAISummaryCard({ items, changedCount }: DirectoryAISummaryCardProps) {
+  const { aiProviderStatus, buildDirectorySummaryContext, explainDiffStream } = useDesktopBridge()
 
   const [opened, setOpened] = useState(false)
   const [status, setStatus] = useState<AIProviderStatus | null>(null)
@@ -50,13 +93,46 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
   const [thinking, setThinking] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isBuildingCtx, setIsBuildingCtx] = useState(false)
+  const [summaryCtx, setSummaryCtx] = useState<DirectorySummaryResponse | null>(null)
   const [usedProvider, setUsedProvider] = useState<string | null>(null)
   const [usedModel, setUsedModel] = useState<string | null>(null)
   const [language, setLanguage] = useState<string>(loadStoredLanguage)
   const [setupDrawerOpen, setSetupDrawerOpen] = useState(false)
 
   const activeStreamIdRef = useRef<string | null>(null)
-  const lastDiffRef = useRef<string>('')
+  const lastItemsKeyRef = useRef<string>('')
+
+  const summaryItems: DirectorySummaryItem[] = useMemo(
+    () =>
+      items
+        .filter((i) => !i.isDir && i.status !== 'same')
+        .map((i) => ({
+          relativePath: i.relativePath,
+          status: i.status,
+          leftPath: i.leftPath,
+          rightPath: i.rightPath,
+          isDir: i.isDir,
+        })),
+    [items],
+  )
+
+  const changedFileCount = useMemo(
+    () => summaryItems.filter((i) => i.status === 'changed').length,
+    [summaryItems],
+  )
+
+  const itemsKey = useMemo(
+    () =>
+      items
+        .filter((i) => !i.isDir && i.status !== 'same')
+        .map(
+          (i) =>
+            `${i.relativePath}|${i.status}|${i.leftSize}|${i.rightSize}|${i.leftPath}|${i.rightPath}`,
+        )
+        .join(';'),
+    [items],
+  )
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -72,7 +148,7 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
 
   const runExplain = useCallback(
     async (modelOverride?: string) => {
-      if (!diffText.trim()) return
+      if (summaryItems.length === 0) return
       const s = status ?? (await refreshStatus())
       if (!s?.available) return
       const model = modelOverride ?? s.models?.[0] ?? ''
@@ -87,9 +163,34 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
       activeStreamIdRef.current = streamId
 
       setIsLoading(true)
+      setIsBuildingCtx(true)
       setError(null)
       setExplanation('')
       setThinking('')
+      setSummaryCtx(null)
+
+      let ctx: DirectorySummaryResponse
+      try {
+        ctx = await buildDirectorySummaryContext({ items: summaryItems })
+      } catch (e) {
+        if (activeStreamIdRef.current === streamId) {
+          setError(formatUnknownError(e))
+          setIsLoading(false)
+          setIsBuildingCtx(false)
+          activeStreamIdRef.current = null
+        }
+        return
+      }
+      if (activeStreamIdRef.current !== streamId) return
+      setSummaryCtx(ctx)
+      setIsBuildingCtx(false)
+
+      if (!ctx.context.trim()) {
+        setError('No diffable content found in this directory.')
+        setIsLoading(false)
+        activeStreamIdRef.current = null
+        return
+      }
 
       EventsOn(`ai-explain-chunk-${streamId}`, (chunk: string) => {
         if (activeStreamIdRef.current !== streamId) return
@@ -102,7 +203,7 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
 
       try {
         const res = await explainDiffStream({
-          diffText,
+          diffText: ctx.context,
           mode: 'directory',
           model,
           language,
@@ -128,27 +229,34 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
         EventsOff(`ai-explain-thinking-${streamId}`)
       }
     },
-    [diffText, explainDiffStream, language, refreshStatus, status],
+    [
+      buildDirectorySummaryContext,
+      explainDiffStream,
+      language,
+      refreshStatus,
+      status,
+      summaryItems,
+    ],
   )
 
   // When the user expands the card, check status and auto-generate if ready
-  // and we haven't generated for this diff yet.
+  // and we haven't generated for this items signature yet.
   useEffect(() => {
     if (!opened) return
-    if (!diffText.trim()) return
+    if (summaryItems.length === 0) return
     let cancelled = false
     void (async () => {
       const s = await refreshStatus()
       if (cancelled) return
-      if (s?.available && lastDiffRef.current !== diffText) {
-        lastDiffRef.current = diffText
+      if (s?.available && lastItemsKeyRef.current !== itemsKey) {
+        lastItemsKeyRef.current = itemsKey
         void runExplain()
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [opened, diffText, refreshStatus, runExplain])
+  }, [opened, summaryItems, itemsKey, refreshStatus, runExplain])
 
   // Cleanup any pending stream listeners on unmount
   useEffect(() => {
@@ -162,15 +270,16 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
     }
   }, [])
 
-  // Diff content changed (e.g. user reran directory diff) — invalidate stale summary
+  // Items changed (e.g. user reran directory diff) — invalidate stale summary
   useEffect(() => {
-    if (lastDiffRef.current && lastDiffRef.current !== diffText) {
+    if (lastItemsKeyRef.current && lastItemsKeyRef.current !== itemsKey) {
       setExplanation('')
       setThinking('')
       setError(null)
-      lastDiffRef.current = ''
+      setSummaryCtx(null)
+      lastItemsKeyRef.current = ''
     }
-  }, [diffText])
+  }, [itemsKey])
 
   const handleLanguageChange = useCallback((value: string | null) => {
     const next = value ?? 'English'
@@ -180,19 +289,19 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
     } catch {
       /* noop */
     }
-    lastDiffRef.current = ''
+    lastItemsKeyRef.current = ''
   }, [])
 
   const handleSetupDrawerClose = useCallback(() => {
     setSetupDrawerOpen(false)
     void (async () => {
       const s = await refreshStatus()
-      if (s?.available && diffText.trim() && lastDiffRef.current !== diffText) {
-        lastDiffRef.current = diffText
+      if (s?.available && summaryItems.length > 0 && lastItemsKeyRef.current !== itemsKey) {
+        lastItemsKeyRef.current = itemsKey
         void runExplain()
       }
     })()
-  }, [diffText, refreshStatus, runExplain])
+  }, [summaryItems, itemsKey, refreshStatus, runExplain])
 
   if (!opened) {
     return (
@@ -210,6 +319,14 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
       </button>
     )
   }
+
+  const loadingLabel = isBuildingCtx
+    ? changedFileCount > 0
+      ? `Reading ${changedFileCount} file diff${changedFileCount === 1 ? '' : 's'}…`
+      : 'Reading file diffs…'
+    : thinking
+      ? 'Thinking…'
+      : 'Generating summary…'
 
   return (
     <>
@@ -254,7 +371,7 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
                 variant="default"
                 size={26}
                 onClick={() => void runExplain()}
-                disabled={isLoading || !status?.available || !diffText.trim()}
+                disabled={isLoading || !status?.available || summaryItems.length === 0}
                 aria-label="Regenerate"
               >
                 <IconRefresh size={13} />
@@ -307,7 +424,7 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
               <Group gap="xs">
                 <Loader size="xs" />
                 <Text size="sm" c="dimmed">
-                  {thinking ? 'Thinking…' : 'Generating summary…'}
+                  {loadingLabel}
                 </Text>
               </Group>
               {thinking ? (
@@ -334,6 +451,12 @@ export function DirectoryAISummaryCard({ diffText, changedCount }: DirectoryAISu
                 </Group>
               </Stack>
             </Alert>
+          ) : null}
+
+          {summaryCtx ? (
+            <Text size="xs" c="dimmed">
+              {formatCoverage(summaryCtx)}
+            </Text>
           ) : null}
 
           {explanation ? (

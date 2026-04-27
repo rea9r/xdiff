@@ -12,6 +12,8 @@ import type {
   DiffDirectoriesResponse,
   DeleteOllamaModelRequest,
   DesktopState,
+  DirectorySummaryRequest,
+  DirectorySummaryResponse,
   ExplainDiffRequest,
   ExplainDiffResponse,
   ExplainDiffStreamRequest,
@@ -66,6 +68,11 @@ export function useDesktopBridge() {
 
       aiProviderStatus: (): Promise<AIProviderStatus> =>
         App.AIProviderStatus() as unknown as Promise<AIProviderStatus>,
+
+      buildDirectorySummaryContext: (
+        req: DirectorySummaryRequest,
+      ): Promise<DirectorySummaryResponse> =>
+        App.BuildDirectorySummaryContext(req as any) as unknown as Promise<DirectorySummaryResponse>,
 
       explainDiff: (req: ExplainDiffRequest): Promise<ExplainDiffResponse> =>
         App.ExplainDiff(req as any) as unknown as Promise<ExplainDiffResponse>,

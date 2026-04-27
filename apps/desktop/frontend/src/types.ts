@@ -164,6 +164,38 @@ export type DesktopTabSession = {
 
 export type ExplainDiffMode = 'text' | 'json' | 'directory'
 
+export type DirectorySummaryItem = {
+  relativePath: string
+  status: string
+  leftPath?: string
+  rightPath?: string
+  isDir: boolean
+}
+
+export type DirectorySummaryRequest = {
+  items: DirectorySummaryItem[]
+  totalBudget?: number
+  perFileCap?: number
+  maxFileSize?: number
+}
+
+export type DirectorySummarySkipped = {
+  path: string
+  reason: string
+}
+
+export type DirectorySummaryResponse = {
+  context: string
+  filesIncluded: string[]
+  filesOmitted: string[]
+  filesSkipped: DirectorySummarySkipped[]
+  totalChanged: number
+  totalLeftOnly: number
+  totalRightOnly: number
+  budgetUsed: number
+  budgetTotal: number
+}
+
 export type ExplainDiffRequest = {
   diffText: string
   mode: ExplainDiffMode
