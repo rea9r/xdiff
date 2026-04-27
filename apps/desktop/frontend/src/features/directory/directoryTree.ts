@@ -1,4 +1,4 @@
-import type { DirectoryCompareItem } from '../../types'
+import type { DirectoryDiffItem } from '../../types'
 
 export type DirectoryQuickFilter =
   | 'all'
@@ -19,8 +19,8 @@ export type DirectoryTreeNode = {
   path: string
   name: string
   isDir: boolean
-  status: DirectoryCompareItem['status']
-  item: DirectoryCompareItem
+  status: DirectoryDiffItem['status']
+  item: DirectoryDiffItem
   children?: DirectoryTreeNode[]
   loaded?: boolean
   expanded?: boolean
@@ -37,7 +37,7 @@ export type DirectoryTreeBreadcrumb = {
 }
 
 export function toneForDirectoryStatus(
-  status: DirectoryCompareItem['status'],
+  status: DirectoryDiffItem['status'],
 ): 'default' | 'success' | 'warning' | 'danger' | 'accent' {
   if (status === 'same') return 'success'
   if (status === 'changed') return 'warning'
@@ -46,7 +46,7 @@ export function toneForDirectoryStatus(
   return 'default'
 }
 
-export function formatDirectoryStatusLabel(status: DirectoryCompareItem['status']): string {
+export function formatDirectoryStatusLabel(status: DirectoryDiffItem['status']): string {
   switch (status) {
     case 'same':
       return 'same'
@@ -65,9 +65,9 @@ export function formatDirectoryStatusLabel(status: DirectoryCompareItem['status'
   }
 }
 
-export function canOpenDirectoryItem(entry: DirectoryCompareItem): boolean {
+export function canOpenDirectoryItem(entry: DirectoryDiffItem): boolean {
   return (
-    entry.compareModeHint !== 'none' &&
+    entry.diffModeHint !== 'none' &&
     entry.leftExists &&
     entry.rightExists &&
     entry.leftKind === 'file' &&
@@ -75,7 +75,7 @@ export function canOpenDirectoryItem(entry: DirectoryCompareItem): boolean {
   )
 }
 
-export function getDirectoryItemActionReason(entry: DirectoryCompareItem): string | null {
+export function getDirectoryItemActionReason(entry: DirectoryDiffItem): string | null {
   if (canOpenDirectoryItem(entry)) {
     return null
   }
@@ -85,7 +85,7 @@ export function getDirectoryItemActionReason(entry: DirectoryCompareItem): strin
   if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
   if (entry.isDir) return 'Directory item'
   if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
-  if (entry.compareModeHint === 'none') return 'No diff mode'
+  if (entry.diffModeHint === 'none') return 'No diff mode'
   return 'Not comparable'
 }
 
@@ -111,9 +111,9 @@ export function directoryQuickFilterLabel(filter: DirectoryQuickFilter): string 
 }
 
 export function filterDirectoryItemsByQuickFilter(
-  items: DirectoryCompareItem[],
+  items: DirectoryDiffItem[],
   quickFilter: DirectoryQuickFilter,
-): DirectoryCompareItem[] {
+): DirectoryDiffItem[] {
   if (quickFilter === 'all') {
     return items
   }
@@ -155,14 +155,14 @@ export function formatDirectorySide(exists: boolean, kind: string, size: number)
   return kind
 }
 
-export function formatDirectoryKindLabel(kind: DirectoryCompareItem['leftKind']): string {
+export function formatDirectoryKindLabel(kind: DirectoryDiffItem['leftKind']): string {
   if (kind === 'dir') {
     return 'directory'
   }
   return kind
 }
 
-export function directoryStatusSortRank(status: DirectoryCompareItem['status']): number {
+export function directoryStatusSortRank(status: DirectoryDiffItem['status']): number {
   switch (status) {
     case 'changed':
       return 0
@@ -181,7 +181,7 @@ export function directoryStatusSortRank(status: DirectoryCompareItem['status']):
   }
 }
 
-function sortDirectoryItemsForTree(items: DirectoryCompareItem[]): DirectoryCompareItem[] {
+function sortDirectoryItemsForTree(items: DirectoryDiffItem[]): DirectoryDiffItem[] {
   return [...items].sort((left, right) => {
     if (left.isDir !== right.isDir) {
       return left.isDir ? -1 : 1
@@ -190,7 +190,7 @@ function sortDirectoryItemsForTree(items: DirectoryCompareItem[]): DirectoryComp
   })
 }
 
-export function directoryItemsToTreeNodes(items: DirectoryCompareItem[]): DirectoryTreeNode[] {
+export function directoryItemsToTreeNodes(items: DirectoryDiffItem[]): DirectoryTreeNode[] {
   return sortDirectoryItemsForTree(items).map((item) => ({
     path: item.relativePath,
     name: item.name,

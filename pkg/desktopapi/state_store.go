@@ -178,10 +178,10 @@ func defaultDesktopTabSession(id, label string) DesktopTabSession {
 		Label:        label,
 		LastUsedMode: "json",
 		JSON: DesktopJSONSession{
-			Common: defaultJSONCompareCommon(),
+			Common: defaultJSONDiffCommon(),
 		},
 		Text: DesktopTextSession{
-			Common:     defaultTextCompareCommon(),
+			Common:     defaultTextDiffCommon(),
 			DiffLayout: "split",
 		},
 		Directory: DesktopDirectorySession{
@@ -241,11 +241,11 @@ func normalizeTabSession(tab DesktopTabSession, index int) DesktopTabSession {
 
 	tab.JSON.OldSourcePath = strings.TrimSpace(tab.JSON.OldSourcePath)
 	tab.JSON.NewSourcePath = strings.TrimSpace(tab.JSON.NewSourcePath)
-	tab.JSON.Common = normalizeCompareCommon(tab.JSON.Common, defaultJSONCompareCommon())
+	tab.JSON.Common = normalizeDiffCommon(tab.JSON.Common, defaultJSONDiffCommon())
 
 	tab.Text.OldSourcePath = strings.TrimSpace(tab.Text.OldSourcePath)
 	tab.Text.NewSourcePath = strings.TrimSpace(tab.Text.NewSourcePath)
-	tab.Text.Common = normalizeCompareCommon(tab.Text.Common, defaultTextCompareCommon())
+	tab.Text.Common = normalizeDiffCommon(tab.Text.Common, defaultTextDiffCommon())
 	if tab.Text.DiffLayout != "split" && tab.Text.DiffLayout != "unified" {
 		tab.Text.DiffLayout = "split"
 	}
@@ -272,7 +272,7 @@ func tabIDExists(tabs []DesktopTabSession, id string) bool {
 	return false
 }
 
-func normalizeCompareCommon(common CompareCommon, defaults CompareCommon) CompareCommon {
+func normalizeDiffCommon(common DiffCommon, defaults DiffCommon) DiffCommon {
 	switch common.OutputFormat {
 	case "text", "json":
 	default:
@@ -345,16 +345,16 @@ func normalizeRecentDirectoryPairs(input []DesktopRecentDirectoryPair) []Desktop
 	return output
 }
 
-func defaultJSONCompareCommon() CompareCommon {
-	return CompareCommon{
+func defaultJSONDiffCommon() DiffCommon {
+	return DiffCommon{
 		OutputFormat: "text",
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
 	}
 }
 
-func defaultTextCompareCommon() CompareCommon {
-	return CompareCommon{
+func defaultTextDiffCommon() DiffCommon {
+	return DiffCommon{
 		OutputFormat: "text",
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},

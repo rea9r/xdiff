@@ -3,7 +3,7 @@ import { MantineProvider } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { DesktopMainContent } from '../DesktopMainContent'
-import type { DirectoryCompareItem } from '../../types'
+import type { DirectoryDiffItem } from '../../types'
 
 const noop = vi.fn()
 
@@ -124,7 +124,7 @@ const jsonResultProps = {
   registerJSONSemanticDiffRowRef: () => noop,
 }
 
-const directoryItem: DirectoryCompareItem = {
+const directoryItem: DirectoryDiffItem = {
   name: 'file.txt',
   relativePath: 'file.txt',
   isDir: false,
@@ -137,7 +137,7 @@ const directoryItem: DirectoryCompareItem = {
   rightKind: 'file',
   leftSize: 1,
   rightSize: 2,
-  compareModeHint: 'text',
+  diffModeHint: 'text',
 }
 
 const directoryResultProps = {
@@ -205,13 +205,13 @@ const directoryResultProps = {
 
 describe('DesktopMainContent', () => {
   it('renders text mode content and return banner action', async () => {
-    const onReturnToDirectoryCompare = vi.fn()
+    const onReturnToDirectoryDiff = vi.fn()
 
     renderWithProvider(
       <DesktopMainContent
         mode="text"
         showDirectoryReturnBanner
-        onReturnToDirectoryCompare={onReturnToDirectoryCompare}
+        onReturnToDirectoryDiff={onReturnToDirectoryDiff}
         textSourceProps={textSourceProps}
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}
@@ -220,8 +220,8 @@ describe('DesktopMainContent', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /back to directory compare/i }))
-    expect(onReturnToDirectoryCompare).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /back to directory diff/i }))
+    expect(onReturnToDirectoryDiff).toHaveBeenCalled()
 
     expect(await screen.findByText('Old text')).toBeInTheDocument()
   })
@@ -231,7 +231,7 @@ describe('DesktopMainContent', () => {
       <DesktopMainContent
         mode="directory"
         showDirectoryReturnBanner={false}
-        onReturnToDirectoryCompare={noop}
+        onReturnToDirectoryDiff={noop}
         textSourceProps={textSourceProps}
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}

@@ -4,12 +4,12 @@ import type {
   AIProviderStatus,
   AISetupProgress,
   AISetupRequest,
-  CompareCommon,
-  CompareResponse,
-  CompareJSONValuesRequest,
-  CompareJSONRichResponse,
-  CompareDirectoriesRequest,
-  CompareDirectoriesResponse,
+  DiffCommon,
+  DiffResponse,
+  DiffJSONValuesRequest,
+  DiffJSONRichResponse,
+  DiffDirectoriesRequest,
+  DiffDirectoriesResponse,
   DeleteOllamaModelRequest,
   DesktopState,
   ExplainDiffRequest,
@@ -28,23 +28,23 @@ import type {
 // We cast at this boundary so the rest of the app stays fully typed.
 // ---------------------------------------------------------------------------
 
-type CompareTextReq = { oldText: string; newText: string; common: CompareCommon }
+type DiffTextReq = { oldText: string; newText: string; common: DiffCommon }
 
 export function useDesktopBridge() {
   return useMemo(
     () => ({
-      compareText: (req: CompareTextReq): Promise<CompareResponse> =>
-        App.CompareText(req as any),
+      diffText: (req: DiffTextReq): Promise<DiffResponse> =>
+        App.DiffText(req as any),
 
-      compareJSONValuesRich: (
-        req: CompareJSONValuesRequest,
-      ): Promise<CompareJSONRichResponse> =>
-        App.CompareJSONValuesRich(req as any) as Promise<CompareJSONRichResponse>,
+      diffJSONValuesRich: (
+        req: DiffJSONValuesRequest,
+      ): Promise<DiffJSONRichResponse> =>
+        App.DiffJSONValuesRich(req as any) as Promise<DiffJSONRichResponse>,
 
-      compareDirectories: (
-        req: CompareDirectoriesRequest,
-      ): Promise<CompareDirectoriesResponse> =>
-        App.CompareDirectories(req as any) as Promise<CompareDirectoriesResponse>,
+      diffDirectories: (
+        req: DiffDirectoriesRequest,
+      ): Promise<DiffDirectoriesResponse> =>
+        App.DiffDirectories(req as any) as Promise<DiffDirectoriesResponse>,
 
       pickJSONFile: App.PickJSONFile,
       pickTextFile: App.PickTextFile,

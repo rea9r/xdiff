@@ -5,13 +5,13 @@ import {
   toggleDirectorySort,
   type DirectoryTreeNode,
 } from '../directoryTree'
-import type { DirectoryCompareItem } from '../../../types'
+import type { DirectoryDiffItem } from '../../../types'
 
 function makeItem(
   relativePath: string,
-  status: DirectoryCompareItem['status'],
+  status: DirectoryDiffItem['status'],
   isDir: boolean,
-): DirectoryCompareItem {
+): DirectoryDiffItem {
   return {
     name: relativePath.split('/').pop() ?? relativePath,
     relativePath,
@@ -25,11 +25,11 @@ function makeItem(
     rightKind: isDir ? 'dir' : 'file',
     leftSize: isDir ? 0 : 10,
     rightSize: isDir ? 0 : 20,
-    compareModeHint: isDir ? 'none' : 'text',
+    diffModeHint: isDir ? 'none' : 'text',
   }
 }
 
-function makeNode(path: string, status: DirectoryCompareItem['status'], children: DirectoryTreeNode[] = []): DirectoryTreeNode {
+function makeNode(path: string, status: DirectoryDiffItem['status'], children: DirectoryTreeNode[] = []): DirectoryTreeNode {
   const isDir = children.length > 0
   return {
     path,

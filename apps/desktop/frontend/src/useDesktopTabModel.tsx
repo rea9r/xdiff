@@ -2,9 +2,9 @@ import { useDesktopBridge } from './useDesktopBridge'
 import { useDesktopModeState } from './useDesktopModeState'
 import { useDesktopRunUiState } from './useDesktopRunUiState'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
-import { useJSONCompareModel } from './features/json/useJSONCompareModel'
-import { useTextCompareModel } from './features/text/useTextCompareModel'
-import { useDirectoryCompareModel } from './features/directory/useDirectoryCompareModel'
+import { useJSONDiffModel } from './features/json/useJSONDiffModel'
+import { useTextDiffModel } from './features/text/useTextDiffModel'
+import { useDirectoryDiffModel } from './features/directory/useDirectoryDiffModel'
 import { useFileDrop } from './features/dragdrop/useFileDrop'
 import type { DesktopRecentPairsState } from './useDesktopRecentPairs'
 
@@ -14,7 +14,7 @@ export type UseDesktopTabModelOptions = {
 }
 
 export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptions) {
-  const { mode, setMode, compareOptionsOpened, setCompareOptionsOpened, onModeChange } =
+  const { mode, setMode, diffOptionsOpened, setDiffOptionsOpened, onModeChange } =
     useDesktopModeState()
   const { setSummaryLine, setOutput, loading, setLoading } = useDesktopRunUiState()
 
@@ -22,33 +22,33 @@ export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptio
   // NOTE: onXxxCompleted callbacks are closures that capture `setResult`.
   // They fire asynchronously (never during render), so the forward reference is safe.
 
-  const textModel = useTextCompareModel({
-    getCompareText: () => api.compareText,
+  const textModel = useTextDiffModel({
+    getDiffText: () => api.diffText,
     getPickTextFile: () => api.pickTextFile,
     getPickSaveTextFile: () => api.pickSaveTextFile,
     getLoadTextFile: () => api.loadTextFile,
     getSaveTextFile: () => api.saveTextFile,
-    onTextCompareCompleted: (res) => setResult(res),
+    onTextDiffCompleted: (res) => setResult(res),
     setTextRecentPairs: recentPairs.setTextRecentPairs,
   })
 
-  const jsonModel = useJSONCompareModel({
-    getCompareJSONValuesRich: () => api.compareJSONValuesRich,
+  const jsonModel = useJSONDiffModel({
+    getDiffJSONValuesRich: () => api.diffJSONValuesRich,
     getPickJSONFile: () => api.pickJSONFile,
     getLoadTextFile: () => api.loadTextFile,
-    onJSONCompareCompleted: (res) => setResult(res),
+    onJSONDiffCompleted: (res) => setResult(res),
     textDiffLayout: textModel.viewState.textDiffLayout,
     setJSONRecentPairs: recentPairs.setJSONRecentPairs,
   })
 
-  const directoryModel = useDirectoryCompareModel({
+  const directoryModel = useDirectoryDiffModel({
     mode,
     setMode,
     loadTextFile: api.loadTextFile,
-    compareDirectories: api.compareDirectories,
+    diffDirectories: api.diffDirectories,
     pickDirectoryRoot: api.pickDirectoryRoot,
-    runJSONCompareFromPaths: jsonModel.workflow.runJSONCompareFromPaths,
-    runTextCompareWithValues: textModel.workflow.runTextCompareWithValues,
+    runJSONDiffFromPaths: jsonModel.workflow.runJSONDiffFromPaths,
+    runTextDiffWithValues: textModel.workflow.runTextDiffWithValues,
     resetJSONSearch: jsonModel.viewState.resetJSONSearch,
     setJSONResultView: jsonModel.viewState.setJSONResultView,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
@@ -72,7 +72,7 @@ export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptio
     setTextLastRunNew: textModel.workflow.setTextLastRunNew,
     setTextLastRunOutputFormat: textModel.workflow.setTextLastRunOutputFormat,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
-    runDirectoryCompare: directoryModel.workflow.runDirectoryCompare,
+    runDirectoryDiff: directoryModel.workflow.runDirectoryDiff,
   })
 
   // --- Drag & drop ---
@@ -111,8 +111,8 @@ export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptio
     mode,
     setMode,
     onModeChange,
-    compareOptionsOpened,
-    setCompareOptionsOpened,
+    diffOptionsOpened,
+    setDiffOptionsOpened,
     loading,
     setLoading,
     setSummaryLine,

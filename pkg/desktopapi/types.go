@@ -1,6 +1,6 @@
 package desktopapi
 
-type CompareCommon struct {
+type DiffCommon struct {
 	OutputFormat     string   `json:"outputFormat"`
 	TextStyle        string   `json:"textStyle"`
 	IgnorePaths      []string `json:"ignorePaths"`
@@ -9,24 +9,24 @@ type CompareCommon struct {
 	IgnoreEOL        bool     `json:"ignoreEOL"`
 }
 
-type CompareJSONRequest struct {
-	OldPath     string        `json:"oldPath"`
-	NewPath     string        `json:"newPath"`
-	Common      CompareCommon `json:"common"`
-	IgnoreOrder bool          `json:"ignoreOrder"`
+type DiffJSONRequest struct {
+	OldPath     string     `json:"oldPath"`
+	NewPath     string     `json:"newPath"`
+	Common      DiffCommon `json:"common"`
+	IgnoreOrder bool       `json:"ignoreOrder"`
 }
 
-type CompareJSONValuesRequest struct {
-	OldValue    string        `json:"oldValue"`
-	NewValue    string        `json:"newValue"`
-	Common      CompareCommon `json:"common"`
-	IgnoreOrder bool          `json:"ignoreOrder"`
+type DiffJSONValuesRequest struct {
+	OldValue    string     `json:"oldValue"`
+	NewValue    string     `json:"newValue"`
+	Common      DiffCommon `json:"common"`
+	IgnoreOrder bool       `json:"ignoreOrder"`
 }
 
-type CompareTextRequest struct {
-	OldText string        `json:"oldText"`
-	NewText string        `json:"newText"`
-	Common  CompareCommon `json:"common"`
+type DiffTextRequest struct {
+	OldText string     `json:"oldText"`
+	NewText string     `json:"newText"`
+	Common  DiffCommon `json:"common"`
 }
 
 type LoadTextFileRequest struct {
@@ -51,7 +51,7 @@ type SaveTextFileResponse struct {
 	Encoding string `json:"encoding"`
 }
 
-type CompareDirectoriesRequest struct {
+type DiffDirectoriesRequest struct {
 	LeftRoot    string `json:"leftRoot"`
 	RightRoot   string `json:"rightRoot"`
 	CurrentPath string `json:"currentPath"`
@@ -60,7 +60,7 @@ type CompareDirectoriesRequest struct {
 	NameFilter  string `json:"nameFilter"`
 }
 
-type DirectoryCompareSummary struct {
+type DirectoryDiffSummary struct {
 	Total        int `json:"total"`
 	Same         int `json:"same"`
 	Changed      int `json:"changed"`
@@ -70,33 +70,33 @@ type DirectoryCompareSummary struct {
 	Error        int `json:"error"`
 }
 
-type DirectoryCompareItem struct {
-	Name            string `json:"name"`
-	RelativePath    string `json:"relativePath"`
-	IsDir           bool   `json:"isDir"`
-	Status          string `json:"status"`
-	LeftPath        string `json:"leftPath"`
-	RightPath       string `json:"rightPath"`
-	LeftExists      bool   `json:"leftExists"`
-	RightExists     bool   `json:"rightExists"`
-	LeftKind        string `json:"leftKind"`
-	RightKind       string `json:"rightKind"`
-	LeftSize        int64  `json:"leftSize"`
-	RightSize       int64  `json:"rightSize"`
-	CompareModeHint string `json:"compareModeHint"`
-	Message         string `json:"message,omitempty"`
+type DirectoryDiffItem struct {
+	Name         string `json:"name"`
+	RelativePath string `json:"relativePath"`
+	IsDir        bool   `json:"isDir"`
+	Status       string `json:"status"`
+	LeftPath     string `json:"leftPath"`
+	RightPath    string `json:"rightPath"`
+	LeftExists   bool   `json:"leftExists"`
+	RightExists  bool   `json:"rightExists"`
+	LeftKind     string `json:"leftKind"`
+	RightKind    string `json:"rightKind"`
+	LeftSize     int64  `json:"leftSize"`
+	RightSize    int64  `json:"rightSize"`
+	DiffModeHint string `json:"diffModeHint"`
+	Message      string `json:"message,omitempty"`
 }
 
-type CompareDirectoriesResponse struct {
-	CurrentPath    string                  `json:"currentPath"`
-	ParentPath     string                  `json:"parentPath,omitempty"`
-	ScannedSummary DirectoryCompareSummary `json:"scannedSummary"`
-	CurrentSummary DirectoryCompareSummary `json:"currentSummary"`
-	Items          []DirectoryCompareItem  `json:"items"`
-	Error          string                  `json:"error,omitempty"`
+type DiffDirectoriesResponse struct {
+	CurrentPath    string               `json:"currentPath"`
+	ParentPath     string               `json:"parentPath,omitempty"`
+	ScannedSummary DirectoryDiffSummary `json:"scannedSummary"`
+	CurrentSummary DirectoryDiffSummary `json:"currentSummary"`
+	Items          []DirectoryDiffItem  `json:"items"`
+	Error          string               `json:"error,omitempty"`
 }
 
-type CompareResponse struct {
+type DiffResponse struct {
 	ExitCode  int    `json:"exitCode"`
 	DiffFound bool   `json:"diffFound"`
 	Output    string `json:"output"`
@@ -117,25 +117,25 @@ type JSONRichSummary struct {
 	TypeChanged int `json:"typeChanged"`
 }
 
-type CompareJSONRichResponse struct {
-	Result   CompareResponse    `json:"result"`
+type DiffJSONRichResponse struct {
+	Result   DiffResponse       `json:"result"`
 	DiffText string             `json:"diffText"`
 	Summary  JSONRichSummary    `json:"summary"`
 	Diffs    []JSONRichDiffItem `json:"diffs"`
 }
 
 type DesktopJSONSession struct {
-	OldSourcePath string        `json:"oldSourcePath"`
-	NewSourcePath string        `json:"newSourcePath"`
-	IgnoreOrder   bool          `json:"ignoreOrder"`
-	Common        CompareCommon `json:"common"`
+	OldSourcePath string     `json:"oldSourcePath"`
+	NewSourcePath string     `json:"newSourcePath"`
+	IgnoreOrder   bool       `json:"ignoreOrder"`
+	Common        DiffCommon `json:"common"`
 }
 
 type DesktopTextSession struct {
-	OldSourcePath string        `json:"oldSourcePath"`
-	NewSourcePath string        `json:"newSourcePath"`
-	Common        CompareCommon `json:"common"`
-	DiffLayout    string        `json:"diffLayout"`
+	OldSourcePath string     `json:"oldSourcePath"`
+	NewSourcePath string     `json:"newSourcePath"`
+	Common        DiffCommon `json:"common"`
+	DiffLayout    string     `json:"diffLayout"`
 }
 
 type DesktopDirectorySession struct {

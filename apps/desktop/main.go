@@ -24,20 +24,20 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) CompareJSONFiles(req desktopapi.CompareJSONRequest) (*desktopapi.CompareResponse, error) {
-	return a.api.CompareJSONFiles(req)
+func (a *App) DiffJSONFiles(req desktopapi.DiffJSONRequest) (*desktopapi.DiffResponse, error) {
+	return a.api.DiffJSONFiles(req)
 }
 
-func (a *App) CompareJSONRich(req desktopapi.CompareJSONRequest) (*desktopapi.CompareJSONRichResponse, error) {
-	return a.api.CompareJSONRich(req)
+func (a *App) DiffJSONRich(req desktopapi.DiffJSONRequest) (*desktopapi.DiffJSONRichResponse, error) {
+	return a.api.DiffJSONRich(req)
 }
 
-func (a *App) CompareJSONValuesRich(req desktopapi.CompareJSONValuesRequest) (*desktopapi.CompareJSONRichResponse, error) {
-	return a.api.CompareJSONValuesRich(req)
+func (a *App) DiffJSONValuesRich(req desktopapi.DiffJSONValuesRequest) (*desktopapi.DiffJSONRichResponse, error) {
+	return a.api.DiffJSONValuesRich(req)
 }
 
-func (a *App) CompareText(req desktopapi.CompareTextRequest) (*desktopapi.CompareResponse, error) {
-	return a.api.CompareText(req)
+func (a *App) DiffText(req desktopapi.DiffTextRequest) (*desktopapi.DiffResponse, error) {
+	return a.api.DiffText(req)
 }
 
 func (a *App) LoadTextFile(req desktopapi.LoadTextFileRequest) (*desktopapi.LoadTextFileResponse, error) {
@@ -48,8 +48,8 @@ func (a *App) SaveTextFile(req desktopapi.SaveTextFileRequest) (*desktopapi.Save
 	return a.api.SaveTextFile(req)
 }
 
-func (a *App) CompareDirectories(req desktopapi.CompareDirectoriesRequest) (*desktopapi.CompareDirectoriesResponse, error) {
-	return a.api.CompareDirectories(req)
+func (a *App) DiffDirectories(req desktopapi.DiffDirectoriesRequest) (*desktopapi.DiffDirectoriesResponse, error) {
+	return a.api.DiffDirectories(req)
 }
 
 func (a *App) LoadDesktopState() (*desktopapi.DesktopState, error) {

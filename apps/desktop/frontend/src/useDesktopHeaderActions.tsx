@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import type {
-  CompareJSONRichResponse,
+  DiffJSONRichResponse,
   DesktopRecentDirectoryPair,
   DesktopRecentPair,
   Mode,
@@ -9,15 +9,15 @@ import { DesktopModeHeaderActions } from './ui/DesktopModeHeaderActions'
 
 type RecentActionRunner = (label: string, action: () => Promise<void>) => Promise<void>
 
-type StructuredResultView = Pick<CompareJSONRichResponse, 'result' | 'diffText'>
+type StructuredResultView = Pick<DiffJSONRichResponse, 'result' | 'diffText'>
 
 type UseDesktopHeaderActionsOptions = {
   mode: Mode
   loading: boolean
-  compareOptionsOpened: boolean
-  onToggleCompareOptions: () => void
-  jsonCompareDisabled: boolean
-  directoryCompareDisabled: boolean
+  diffOptionsOpened: boolean
+  onToggleDiffOptions: () => void
+  jsonDiffDisabled: boolean
+  directoryDiffDisabled: boolean
   onRun: () => void
   jsonRecentPairs: DesktopRecentPair[]
   onClearJSONRecent: () => void
@@ -29,7 +29,7 @@ type UseDesktopHeaderActionsOptions = {
   runTextFromRecent: (pair: DesktopRecentPair) => Promise<void>
   clearTextExpandedSections: () => void
   resetTextSearch: () => void
-  runJSONFromRecent: (pair: DesktopRecentPair) => Promise<CompareJSONRichResponse>
+  runJSONFromRecent: (pair: DesktopRecentPair) => Promise<DiffJSONRichResponse>
   applyJSONResultView: (result: StructuredResultView) => void
   runDirectoryFromRecent: (entry: DesktopRecentDirectoryPair) => Promise<void>
   setMode: (value: Mode) => void
@@ -38,10 +38,10 @@ type UseDesktopHeaderActionsOptions = {
 export function useDesktopHeaderActions({
   mode,
   loading,
-  compareOptionsOpened,
-  onToggleCompareOptions,
-  jsonCompareDisabled,
-  directoryCompareDisabled,
+  diffOptionsOpened,
+  onToggleDiffOptions,
+  jsonDiffDisabled,
+  directoryDiffDisabled,
   onRun,
   jsonRecentPairs,
   onClearJSONRecent,
@@ -76,7 +76,7 @@ export function useDesktopHeaderActions({
     [applyJSONResultView, runJSONFromRecent, setMode],
   )
 
-  const compareRecentItems = useMemo(
+  const diffRecentItems = useMemo(
     () =>
       mode === 'json'
         ? jsonRecentPairs.map((pair) => ({
@@ -118,13 +118,13 @@ export function useDesktopHeaderActions({
     if (mode === 'json' || mode === 'text') {
       return (
         <DesktopModeHeaderActions
-          kind="compare"
+          kind="diff"
           loading={loading}
-          compareDisabled={mode === 'json' ? jsonCompareDisabled : false}
-          onCompare={() => void onRun()}
-          optionsOpen={compareOptionsOpened}
-          onToggleOptions={onToggleCompareOptions}
-          recentItems={compareRecentItems}
+          diffDisabled={mode === 'json' ? jsonDiffDisabled : false}
+          onDiff={() => void onRun()}
+          optionsOpen={diffOptionsOpened}
+          onToggleOptions={onToggleDiffOptions}
+          recentItems={diffRecentItems}
           onClearRecent={mode === 'json' ? onClearJSONRecent : onClearTextRecent}
         />
       )
@@ -135,8 +135,8 @@ export function useDesktopHeaderActions({
         <DesktopModeHeaderActions
           kind="directory"
           loading={loading}
-          compareDisabled={directoryCompareDisabled}
-          onCompare={() => void onRun()}
+          diffDisabled={directoryDiffDisabled}
+          onDiff={() => void onRun()}
           recentItems={directoryRecentItems}
           onClearRecent={onClearDirectoryRecent}
         />
@@ -145,18 +145,18 @@ export function useDesktopHeaderActions({
 
     return undefined
   }, [
-    compareOptionsOpened,
-    compareRecentItems,
-    directoryCompareDisabled,
+    diffOptionsOpened,
+    diffRecentItems,
+    directoryDiffDisabled,
     directoryRecentItems,
-    jsonCompareDisabled,
+    jsonDiffDisabled,
     loading,
     mode,
     onClearDirectoryRecent,
     onClearJSONRecent,
     onClearTextRecent,
     onRun,
-    onToggleCompareOptions,
+    onToggleDiffOptions,
   ])
 
   return {

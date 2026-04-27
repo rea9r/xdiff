@@ -1,13 +1,13 @@
 import { IconArrowsDiff } from '@tabler/icons-react'
-import { CompareModeHeaderActions } from './CompareModeHeaderActions'
+import { DiffModeHeaderActions } from './DiffModeHeaderActions'
 import { HeaderRailGroup, HeaderRailPrimaryButton } from './HeaderRail'
 import { RecentTargetsMenu, type RecentTargetsMenuItem } from './RecentTargetsMenu'
 
-type CompareHeaderActionsProps = {
-  kind: 'compare'
+type DiffHeaderActionsProps = {
+  kind: 'diff'
   loading?: boolean
-  compareDisabled?: boolean
-  onCompare: () => void
+  diffDisabled?: boolean
+  onDiff: () => void
   optionsOpen: boolean
   onToggleOptions: () => void
   recentItems: RecentTargetsMenuItem[]
@@ -17,21 +17,21 @@ type CompareHeaderActionsProps = {
 type DirectoryHeaderActionsProps = {
   kind: 'directory'
   loading?: boolean
-  compareDisabled?: boolean
-  onCompare: () => void
+  diffDisabled?: boolean
+  onDiff: () => void
   recentItems: RecentTargetsMenuItem[]
   onClearRecent: () => void
 }
 
-type DesktopModeHeaderActionsProps = CompareHeaderActionsProps | DirectoryHeaderActionsProps
+type DesktopModeHeaderActionsProps = DiffHeaderActionsProps | DirectoryHeaderActionsProps
 
 export function DesktopModeHeaderActions(props: DesktopModeHeaderActionsProps) {
-  if (props.kind === 'compare') {
+  if (props.kind === 'diff') {
     return (
-      <CompareModeHeaderActions
+      <DiffModeHeaderActions
         loading={props.loading}
-        compareDisabled={props.compareDisabled}
-        onCompare={props.onCompare}
+        diffDisabled={props.diffDisabled}
+        onDiff={props.onDiff}
         optionsOpen={props.optionsOpen}
         onToggleOptions={props.onToggleOptions}
         extraActions={
@@ -47,14 +47,14 @@ export function DesktopModeHeaderActions(props: DesktopModeHeaderActionsProps) {
   }
 
   return (
-    <HeaderRailGroup className="compare-mode-header-actions">
+    <HeaderRailGroup className="diff-mode-header-actions">
       <HeaderRailPrimaryButton
-        onClick={props.onCompare}
+        onClick={props.onDiff}
         loading={props.loading}
-        disabled={props.compareDisabled}
+        disabled={props.diffDisabled}
         leftSection={<IconArrowsDiff size={14} />}
       >
-        Compare
+        Diff
       </HeaderRailPrimaryButton>
       <RecentTargetsMenu
         buttonLabel="Recent roots"

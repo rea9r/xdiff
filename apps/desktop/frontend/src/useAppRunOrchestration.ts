@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type {
-  CompareJSONRichResponse,
-  CompareResponse,
+  DiffJSONRichResponse,
+  DiffResponse,
   Mode,
 } from './types'
 import { renderResult, summarizeResponse } from './utils/appHelpers'
@@ -11,19 +11,19 @@ type UseAppRunOrchestrationOptions = {
   setLoading: (value: boolean) => void
   setSummaryLine: (value: string) => void
   setOutput: (value: string) => void
-  runJSON: () => Promise<CompareJSONRichResponse>
-  applyJSONResultView: (richResult: CompareJSONRichResponse) => void
-  setJSONRichResult: (value: CompareJSONRichResponse | null) => void
+  runJSON: () => Promise<DiffJSONRichResponse>
+  applyJSONResultView: (richResult: DiffJSONRichResponse) => void
+  setJSONRichResult: (value: DiffJSONRichResponse | null) => void
   runText: () => Promise<void>
-  setTextResult: (value: CompareResponse | null) => void
+  setTextResult: (value: DiffResponse | null) => void
   setTextLastRunOld: (value: string) => void
   setTextLastRunNew: (value: string) => void
   setTextLastRunOutputFormat: (value: 'text' | 'json' | null) => void
   clearTextExpandedSections: () => void
-  runDirectoryCompare: () => Promise<void>
+  runDirectoryDiff: () => Promise<void>
 }
 
-function buildCompareErrorResult(errorText: string): CompareResponse {
+function buildDiffErrorResult(errorText: string): DiffResponse {
   return {
     exitCode: 2,
     diffFound: false,
@@ -32,9 +32,9 @@ function buildCompareErrorResult(errorText: string): CompareResponse {
   }
 }
 
-function buildJSONErrorResult(errorText: string): CompareJSONRichResponse {
+function buildJSONErrorResult(errorText: string): DiffJSONRichResponse {
   return {
-    result: buildCompareErrorResult(errorText),
+    result: buildDiffErrorResult(errorText),
     diffText: '',
     summary: {
       added: 0,
@@ -60,7 +60,7 @@ export function useAppRunOrchestration({
   setTextLastRunNew,
   setTextLastRunOutputFormat,
   clearTextExpandedSections,
-  runDirectoryCompare,
+  runDirectoryDiff,
 }: UseAppRunOrchestrationOptions) {
   const setResult = useCallback(
     (res: unknown) => {
@@ -84,8 +84,8 @@ export function useAppRunOrchestration({
       await runText()
       return
     }
-    await runDirectoryCompare()
-  }, [mode, runDirectoryCompare, runJSONWithViewReset, runText])
+    await runDirectoryDiff()
+  }, [mode, runDirectoryDiff, runJSONWithViewReset, runText])
 
   const onRun = useCallback(async () => {
     setLoading(true)
@@ -106,7 +106,7 @@ export function useAppRunOrchestration({
       const errorText = String(error)
 
       if (mode === 'text') {
-        setTextResult(buildCompareErrorResult(errorText))
+        setTextResult(buildDiffErrorResult(errorText))
       } else if (mode === 'json') {
         setJSONRichResult(buildJSONErrorResult(errorText))
       }

@@ -17,7 +17,7 @@ import (
 	"github.com/rea9r/xdiff/internal/runner"
 )
 
-func (s *Service) CompareText(req CompareTextRequest) (*CompareResponse, error) {
+func (s *Service) DiffText(req DiffTextRequest) (*DiffResponse, error) {
 	opts := runner.CompareOptions{
 		Format:           normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths:      append([]string(nil), req.Common.IgnorePaths...),
@@ -29,7 +29,7 @@ func (s *Service) CompareText(req CompareTextRequest) (*CompareResponse, error) 
 	}
 
 	res := runner.RunTextValuesDetailed(req.OldText, req.NewText, opts)
-	return &CompareResponse{
+	return &DiffResponse{
 		ExitCode:  res.ExitCode,
 		DiffFound: res.DiffFound,
 		Output:    res.Output,

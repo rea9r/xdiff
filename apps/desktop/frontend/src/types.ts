@@ -1,6 +1,6 @@
 export type Mode = 'json' | 'text' | 'directory'
 
-export type CompareCommon = {
+export type DiffCommon = {
   outputFormat: string
   textStyle: string
   ignorePaths: string[]
@@ -9,7 +9,7 @@ export type CompareCommon = {
   ignoreEOL: boolean
 }
 
-export type CompareResponse = {
+export type DiffResponse = {
   exitCode: number
   diffFound: boolean
   output: string
@@ -31,17 +31,17 @@ export type JSONRichSummary = {
   typeChanged: number
 }
 
-export type CompareJSONRichResponse = {
-  result: CompareResponse
+export type DiffJSONRichResponse = {
+  result: DiffResponse
   diffText: string
   summary: JSONRichSummary
   diffs: JSONRichDiffItem[]
 }
 
-export type CompareJSONValuesRequest = {
+export type DiffJSONValuesRequest = {
   oldValue: string
   newValue: string
-  common: CompareCommon
+  common: DiffCommon
   ignoreOrder: boolean
 }
 
@@ -75,7 +75,7 @@ export type SaveTextFileResponse = {
   encoding: TextEncoding
 }
 
-export type CompareDirectoriesRequest = {
+export type DiffDirectoriesRequest = {
   leftRoot: string
   rightRoot: string
   currentPath: string
@@ -84,7 +84,7 @@ export type CompareDirectoriesRequest = {
   nameFilter: string
 }
 
-export type DirectoryCompareSummary = {
+export type DirectoryDiffSummary = {
   total: number
   same: number
   changed: number
@@ -94,7 +94,7 @@ export type DirectoryCompareSummary = {
   error: number
 }
 
-export type DirectoryCompareItem = {
+export type DirectoryDiffItem = {
   name: string
   relativePath: string
   isDir: boolean
@@ -107,16 +107,16 @@ export type DirectoryCompareItem = {
   rightKind: 'file' | 'dir' | 'missing' | 'unknown'
   leftSize: number
   rightSize: number
-  compareModeHint: 'text' | 'json' | 'none'
+  diffModeHint: 'text' | 'json' | 'none'
   message?: string
 }
 
-export type CompareDirectoriesResponse = {
+export type DiffDirectoriesResponse = {
   currentPath: string
   parentPath?: string
-  scannedSummary: DirectoryCompareSummary
-  currentSummary: DirectoryCompareSummary
-  items: DirectoryCompareItem[]
+  scannedSummary: DirectoryDiffSummary
+  currentSummary: DirectoryDiffSummary
+  items: DirectoryDiffItem[]
   error?: string
 }
 
@@ -124,13 +124,13 @@ export type DesktopJSONSession = {
   oldSourcePath: string
   newSourcePath: string
   ignoreOrder: boolean
-  common: CompareCommon
+  common: DiffCommon
 }
 
 export type DesktopTextSession = {
   oldSourcePath: string
   newSourcePath: string
-  common: CompareCommon
+  common: DiffCommon
   diffLayout: 'split' | 'unified'
 }
 

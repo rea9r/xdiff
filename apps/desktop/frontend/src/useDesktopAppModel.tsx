@@ -26,7 +26,7 @@ export function useDesktopAppModel({
   commit,
 }: UseDesktopAppModelOptions) {
   const tab = useDesktopTabModel({ api, recentPairs })
-  const { mode, setMode, onModeChange, compareOptionsOpened, setCompareOptionsOpened, loading } =
+  const { mode, setMode, onModeChange, diffOptionsOpened, setDiffOptionsOpened, loading } =
     tab
   const { textModel, jsonModel, directoryModel } = tab
 
@@ -80,10 +80,10 @@ export function useDesktopAppModel({
   const { headerActions } = useDesktopHeaderActions({
     mode,
     loading,
-    compareOptionsOpened,
-    onToggleCompareOptions: () => setCompareOptionsOpened((prev) => !prev),
-    jsonCompareDisabled: jsonModel.compareDisabled,
-    directoryCompareDisabled: directoryModel.compareDisabled,
+    diffOptionsOpened,
+    onToggleDiffOptions: () => setDiffOptionsOpened((prev) => !prev),
+    jsonDiffDisabled: jsonModel.diffDisabled,
+    directoryDiffDisabled: directoryModel.diffDisabled,
     onRun: tab.onRun,
     jsonRecentPairs: recentPairs.jsonRecentPairs,
     onClearJSONRecent: () => recentPairs.setJSONRecentPairs([]),
@@ -105,8 +105,8 @@ export function useDesktopAppModel({
     mode,
     setMode,
     loading,
-    compareOptionsOpened,
-    onCloseCompareOptions: () => setCompareOptionsOpened(false),
+    diffOptionsOpened,
+    onCloseDiffOptions: () => setDiffOptionsOpened(false),
     jsonWorkflow: jsonModel.workflow,
     jsonViewState: jsonModel.viewState,
     textWorkflow: textModel.workflow,

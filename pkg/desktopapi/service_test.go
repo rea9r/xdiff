@@ -17,7 +17,7 @@ func writeFile(t *testing.T, path, body string) {
 	}
 }
 
-func findDirectoryItem(t *testing.T, items []DirectoryCompareItem, relativePath string) DirectoryCompareItem {
+func findDirectoryItem(t *testing.T, items []DirectoryDiffItem, relativePath string) DirectoryDiffItem {
 	t.Helper()
 	for _, item := range items {
 		if item.RelativePath == relativePath {
@@ -25,10 +25,10 @@ func findDirectoryItem(t *testing.T, items []DirectoryCompareItem, relativePath 
 		}
 	}
 	t.Fatalf("item %q not found", relativePath)
-	return DirectoryCompareItem{}
+	return DirectoryDiffItem{}
 }
 
-func TestCompareJSONFiles(t *testing.T) {
+func TestDiffJSONFiles(t *testing.T) {
 	tmp := t.TempDir()
 	oldPath := filepath.Join(tmp, "old.json")
 	newPath := filepath.Join(tmp, "new.json")
@@ -37,16 +37,16 @@ func TestCompareJSONFiles(t *testing.T) {
 	writeFile(t, newPath, `{"user":{"name":"Hanako"}}`)
 
 	svc := NewService()
-	res, err := svc.CompareJSONFiles(CompareJSONRequest{
+	res, err := svc.DiffJSONFiles(DiffJSONRequest{
 		OldPath: oldPath,
 		NewPath: newPath,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "auto",
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONFiles returned error: %v", err)
+		t.Fatalf("DiffJSONFiles returned error: %v", err)
 	}
 	if res == nil {
 		t.Fatal("expected response")
@@ -62,7 +62,7 @@ func TestCompareJSONFiles(t *testing.T) {
 	}
 }
 
-func TestCompareJSONRich_Basic(t *testing.T) {
+func TestDiffJSONRich_Basic(t *testing.T) {
 	tmp := t.TempDir()
 	oldPath := filepath.Join(tmp, "old.json")
 	newPath := filepath.Join(tmp, "new.json")
@@ -71,28 +71,28 @@ func TestCompareJSONRich_Basic(t *testing.T) {
 	writeFile(t, newPath, `{"name":"Hanako","age":20,"phone":"090-xxxx-xxxx"}`)
 
 	svc := NewService()
-	rawRes, err := svc.CompareJSONFiles(CompareJSONRequest{
+	rawRes, err := svc.DiffJSONFiles(DiffJSONRequest{
 		OldPath: oldPath,
 		NewPath: newPath,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONFiles returned error: %v", err)
+		t.Fatalf("DiffJSONFiles returned error: %v", err)
 	}
 
-	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+	richRes, err := svc.DiffJSONRich(DiffJSONRequest{
 		OldPath: oldPath,
 		NewPath: newPath,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONRich returned error: %v", err)
+		t.Fatalf("DiffJSONRich returned error: %v", err)
 	}
 	if richRes == nil {
 		t.Fatal("expected response")
@@ -125,7 +125,7 @@ func TestCompareJSONRich_Basic(t *testing.T) {
 	}
 }
 
-func TestCompareJSONRich_IgnorePaths(t *testing.T) {
+func TestDiffJSONRich_IgnorePaths(t *testing.T) {
 	tmp := t.TempDir()
 	oldPath := filepath.Join(tmp, "old.json")
 	newPath := filepath.Join(tmp, "new.json")
@@ -134,17 +134,17 @@ func TestCompareJSONRich_IgnorePaths(t *testing.T) {
 	writeFile(t, newPath, `{"name":"Hanako","age":20,"email":"new@example.com"}`)
 
 	svc := NewService()
-	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+	richRes, err := svc.DiffJSONRich(DiffJSONRequest{
 		OldPath: oldPath,
 		NewPath: newPath,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 			IgnorePaths:  []string{"name"},
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONRich returned error: %v", err)
+		t.Fatalf("DiffJSONRich returned error: %v", err)
 	}
 
 	for _, item := range richRes.Diffs {
@@ -154,7 +154,7 @@ func TestCompareJSONRich_IgnorePaths(t *testing.T) {
 	}
 }
 
-func TestCompareJSONRich_IgnoreOrder(t *testing.T) {
+func TestDiffJSONRich_IgnoreOrder(t *testing.T) {
 	tmp := t.TempDir()
 	oldPath := filepath.Join(tmp, "old.json")
 	newPath := filepath.Join(tmp, "new.json")
@@ -163,17 +163,17 @@ func TestCompareJSONRich_IgnoreOrder(t *testing.T) {
 	writeFile(t, newPath, `{"items":[3,2,1]}`)
 
 	svc := NewService()
-	richRes, err := svc.CompareJSONRich(CompareJSONRequest{
+	richRes, err := svc.DiffJSONRich(DiffJSONRequest{
 		OldPath: oldPath,
 		NewPath: newPath,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
 		IgnoreOrder: true,
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONRich returned error: %v", err)
+		t.Fatalf("DiffJSONRich returned error: %v", err)
 	}
 
 	if richRes.Result.DiffFound {
@@ -187,19 +187,19 @@ func TestCompareJSONRich_IgnoreOrder(t *testing.T) {
 	}
 }
 
-func TestCompareJSONValuesRich_Basic(t *testing.T) {
+func TestDiffJSONValuesRich_Basic(t *testing.T) {
 	svc := NewService()
 
-	res, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+	res, err := svc.DiffJSONValuesRich(DiffJSONValuesRequest{
 		OldValue: `{"name":"Taro","age":"20","email":"old@example.com"}`,
 		NewValue: `{"name":"Hanako","age":20,"phone":"090-xxxx-xxxx"}`,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONValuesRich returned error: %v", err)
+		t.Fatalf("DiffJSONValuesRich returned error: %v", err)
 	}
 	if res == nil {
 		t.Fatal("expected response")
@@ -218,13 +218,13 @@ func TestCompareJSONValuesRich_Basic(t *testing.T) {
 	}
 }
 
-func TestCompareJSONValuesRich_InvalidOldJSON(t *testing.T) {
+func TestDiffJSONValuesRich_InvalidOldJSON(t *testing.T) {
 	svc := NewService()
 
-	_, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+	_, err := svc.DiffJSONValuesRich(DiffJSONValuesRequest{
 		OldValue: `{`,
 		NewValue: `{"name":"Hanako"}`,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
@@ -237,13 +237,13 @@ func TestCompareJSONValuesRich_InvalidOldJSON(t *testing.T) {
 	}
 }
 
-func TestCompareJSONValuesRich_InvalidNewJSON(t *testing.T) {
+func TestDiffJSONValuesRich_InvalidNewJSON(t *testing.T) {
 	svc := NewService()
 
-	_, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+	_, err := svc.DiffJSONValuesRich(DiffJSONValuesRequest{
 		OldValue: `{"name":"Taro"}`,
 		NewValue: `{`,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
@@ -256,20 +256,20 @@ func TestCompareJSONValuesRich_InvalidNewJSON(t *testing.T) {
 	}
 }
 
-func TestCompareJSONValuesRich_IgnoreOrder(t *testing.T) {
+func TestDiffJSONValuesRich_IgnoreOrder(t *testing.T) {
 	svc := NewService()
 
-	res, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+	res, err := svc.DiffJSONValuesRich(DiffJSONValuesRequest{
 		OldValue: `{"items":[1,2,3]}`,
 		NewValue: `{"items":[3,2,1]}`,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 		},
 		IgnoreOrder: true,
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONValuesRich returned error: %v", err)
+		t.Fatalf("DiffJSONValuesRich returned error: %v", err)
 	}
 	if res.Result.DiffFound {
 		t.Fatalf("expected no diff when ignoreOrder=true, got %+v", res.Result)
@@ -279,20 +279,20 @@ func TestCompareJSONValuesRich_IgnoreOrder(t *testing.T) {
 	}
 }
 
-func TestCompareJSONValuesRich_IgnorePaths(t *testing.T) {
+func TestDiffJSONValuesRich_IgnorePaths(t *testing.T) {
 	svc := NewService()
 
-	res, err := svc.CompareJSONValuesRich(CompareJSONValuesRequest{
+	res, err := svc.DiffJSONValuesRich(DiffJSONValuesRequest{
 		OldValue: `{"name":"Taro","age":20}`,
 		NewValue: `{"name":"Hanako","age":20}`,
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "semantic",
 			IgnorePaths:  []string{"name"},
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareJSONValuesRich returned error: %v", err)
+		t.Fatalf("DiffJSONValuesRich returned error: %v", err)
 	}
 	if res.Result.DiffFound {
 		t.Fatalf("expected no diff when ignorePaths suppresses all, got %+v", res.Result)
@@ -302,18 +302,18 @@ func TestCompareJSONValuesRich_IgnorePaths(t *testing.T) {
 	}
 }
 
-func TestCompareText(t *testing.T) {
+func TestDiffText(t *testing.T) {
 	svc := NewService()
-	res, err := svc.CompareText(CompareTextRequest{
+	res, err := svc.DiffText(DiffTextRequest{
 		OldText: "hello\nworld\n",
 		NewText: "hello\nxdiff\n",
-		Common: CompareCommon{
+		Common: DiffCommon{
 			OutputFormat: "text",
 			TextStyle:    "auto",
 		},
 	})
 	if err != nil {
-		t.Fatalf("CompareText returned error: %v", err)
+		t.Fatalf("DiffText returned error: %v", err)
 	}
 	if res == nil {
 		t.Fatal("expected response")
@@ -492,7 +492,7 @@ func TestSaveTextFileUnsupportedEncoding(t *testing.T) {
 	}
 }
 
-func TestCompareDirectories_NavigateRootListing(t *testing.T) {
+func TestDiffDirectories_NavigateRootListing(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -502,7 +502,7 @@ func TestCompareDirectories_NavigateRootListing(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "beta.txt"), "new\n")
 
 	svc := NewService()
-	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
+	res, err := svc.DiffDirectories(DiffDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -510,10 +510,10 @@ func TestCompareDirectories_NavigateRootListing(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareDirectories() error = %v", err)
+		t.Fatalf("DiffDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareDirectories() response error = %s", res.Error)
+		t.Fatalf("DiffDirectories() response error = %s", res.Error)
 	}
 	if res.CurrentPath != "" {
 		t.Fatalf("expected currentPath root, got %q", res.CurrentPath)
@@ -529,7 +529,7 @@ func TestCompareDirectories_NavigateRootListing(t *testing.T) {
 	}
 }
 
-func TestCompareDirectories_NavigateChildDirectory(t *testing.T) {
+func TestDiffDirectories_NavigateChildDirectory(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -539,7 +539,7 @@ func TestCompareDirectories_NavigateChildDirectory(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "src", "diff.txt"), "right\n")
 
 	svc := NewService()
-	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
+	res, err := svc.DiffDirectories(DiffDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "src",
@@ -547,10 +547,10 @@ func TestCompareDirectories_NavigateChildDirectory(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareDirectories() error = %v", err)
+		t.Fatalf("DiffDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareDirectories() response error = %s", res.Error)
+		t.Fatalf("DiffDirectories() response error = %s", res.Error)
 	}
 	if res.CurrentPath != "src" {
 		t.Fatalf("expected currentPath src, got %q", res.CurrentPath)
@@ -563,7 +563,7 @@ func TestCompareDirectories_NavigateChildDirectory(t *testing.T) {
 	}
 }
 
-func TestCompareDirectories_DirectoryAggregateStatus(t *testing.T) {
+func TestDiffDirectories_DirectoryAggregateStatus(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -571,7 +571,7 @@ func TestCompareDirectories_DirectoryAggregateStatus(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "svc", "config.txt"), "right\n")
 
 	svc := NewService()
-	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
+	res, err := svc.DiffDirectories(DiffDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -579,10 +579,10 @@ func TestCompareDirectories_DirectoryAggregateStatus(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareDirectories() error = %v", err)
+		t.Fatalf("DiffDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareDirectories() response error = %s", res.Error)
+		t.Fatalf("DiffDirectories() response error = %s", res.Error)
 	}
 	if len(res.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(res.Items))
@@ -592,7 +592,7 @@ func TestCompareDirectories_DirectoryAggregateStatus(t *testing.T) {
 	}
 }
 
-func TestCompareDirectories_CurrentSummaryVsScannedSummary(t *testing.T) {
+func TestDiffDirectories_CurrentSummaryVsScannedSummary(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -602,7 +602,7 @@ func TestCompareDirectories_CurrentSummaryVsScannedSummary(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "sub", "diff.txt"), "new\n")
 
 	svc := NewService()
-	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
+	res, err := svc.DiffDirectories(DiffDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -610,17 +610,17 @@ func TestCompareDirectories_CurrentSummaryVsScannedSummary(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareDirectories() error = %v", err)
+		t.Fatalf("DiffDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareDirectories() response error = %s", res.Error)
+		t.Fatalf("DiffDirectories() response error = %s", res.Error)
 	}
 	if res.ScannedSummary.Total <= res.CurrentSummary.Total {
 		t.Fatalf("expected scanned summary to include more entries, got scanned=%+v current=%+v", res.ScannedSummary, res.CurrentSummary)
 	}
 }
 
-func TestCompareDirectories_NameFilterOnCurrentDirectory(t *testing.T) {
+func TestDiffDirectories_NameFilterOnCurrentDirectory(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -630,7 +630,7 @@ func TestCompareDirectories_NameFilterOnCurrentDirectory(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "beta.txt"), "new\n")
 
 	svc := NewService()
-	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
+	res, err := svc.DiffDirectories(DiffDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -639,10 +639,10 @@ func TestCompareDirectories_NameFilterOnCurrentDirectory(t *testing.T) {
 		NameFilter:  "BETA",
 	})
 	if err != nil {
-		t.Fatalf("CompareDirectories() error = %v", err)
+		t.Fatalf("DiffDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareDirectories() response error = %s", res.Error)
+		t.Fatalf("DiffDirectories() response error = %s", res.Error)
 	}
 
 	if len(res.Items) != 1 {
@@ -653,7 +653,7 @@ func TestCompareDirectories_NameFilterOnCurrentDirectory(t *testing.T) {
 	}
 }
 
-func TestCompareDirectories_OpenableHints(t *testing.T) {
+func TestDiffDirectories_OpenableHints(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -664,7 +664,7 @@ func TestCompareDirectories_OpenableHints(t *testing.T) {
 	writeFile(t, filepath.Join(leftRoot, "left-only.txt"), "left only\n")
 
 	svc := NewService()
-	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
+	res, err := svc.DiffDirectories(DiffDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -672,22 +672,22 @@ func TestCompareDirectories_OpenableHints(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareDirectories() error = %v", err)
+		t.Fatalf("DiffDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareDirectories() response error = %s", res.Error)
+		t.Fatalf("DiffDirectories() response error = %s", res.Error)
 	}
 
 	jsonItem := findDirectoryItem(t, res.Items, "payload.json")
-	if jsonItem.CompareModeHint != "json" {
-		t.Fatalf("payload.json hint = %s, want json", jsonItem.CompareModeHint)
+	if jsonItem.DiffModeHint != "json" {
+		t.Fatalf("payload.json hint = %s, want json", jsonItem.DiffModeHint)
 	}
 	textItem := findDirectoryItem(t, res.Items, "note.txt")
-	if textItem.CompareModeHint != "text" {
-		t.Fatalf("note.txt hint = %s, want text", textItem.CompareModeHint)
+	if textItem.DiffModeHint != "text" {
+		t.Fatalf("note.txt hint = %s, want text", textItem.DiffModeHint)
 	}
 	leftOnlyItem := findDirectoryItem(t, res.Items, "left-only.txt")
-	if leftOnlyItem.CompareModeHint != "none" {
-		t.Fatalf("left-only.txt hint = %s, want none", leftOnlyItem.CompareModeHint)
+	if leftOnlyItem.DiffModeHint != "none" {
+		t.Fatalf("left-only.txt hint = %s, want none", leftOnlyItem.DiffModeHint)
 	}
 }

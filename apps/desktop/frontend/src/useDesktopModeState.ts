@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { CompareCommon, Mode } from './types'
+import type { DiffCommon, Mode } from './types'
 
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
 const APP_MODES: Mode[] = ['text', 'json', 'directory']
 
-export const defaultJSONCommon: CompareCommon = {
+export const defaultJSONCommon: DiffCommon = {
   outputFormat: 'text',
   textStyle: 'auto',
   ignorePaths: [],
@@ -13,7 +13,7 @@ export const defaultJSONCommon: CompareCommon = {
   ignoreEOL: false,
 }
 
-export const defaultTextCommon: CompareCommon = {
+export const defaultTextCommon: DiffCommon = {
   outputFormat: 'text',
   textStyle: 'auto',
   ignorePaths: [],
@@ -43,7 +43,7 @@ function getInitialMode(): Mode {
 
 export function useDesktopModeState() {
   const [mode, setMode] = useState<Mode>(() => getInitialMode())
-  const [compareOptionsOpened, setCompareOptionsOpened] = useState(false)
+  const [diffOptionsOpened, setDiffOptionsOpened] = useState(false)
 
   useEffect(() => {
     try {
@@ -56,15 +56,15 @@ export function useDesktopModeState() {
   const onModeChange = (nextMode: Mode) => {
     setMode(nextMode)
     if (nextMode === 'directory') {
-      setCompareOptionsOpened(false)
+      setDiffOptionsOpened(false)
     }
   }
 
   return {
     mode,
     setMode,
-    compareOptionsOpened,
-    setCompareOptionsOpened,
+    diffOptionsOpened,
+    setDiffOptionsOpened,
     onModeChange,
   }
 }

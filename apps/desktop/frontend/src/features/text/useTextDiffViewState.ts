@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CompareResponse } from '../../types'
+import type { DiffResponse } from '../../types'
 import { usePersistedState } from '../../usePersistedState'
 import {
   buildRichDiffItems,
@@ -14,7 +14,7 @@ export type TextResultView = 'diff' | 'raw'
 export type TextDiffLayout = 'split' | 'unified'
 
 type UseTextDiffViewStateParams = {
-  textResult: CompareResponse | null
+  textResult: DiffResponse | null
   textLastRunOld: string
   textLastRunNew: string
   textLastRunOutputFormat: 'text' | 'json' | null

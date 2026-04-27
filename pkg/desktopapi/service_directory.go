@@ -12,58 +12,58 @@ import (
 	"strings"
 )
 
-func (s *Service) CompareDirectories(req CompareDirectoriesRequest) (*CompareDirectoriesResponse, error) {
+func (s *Service) DiffDirectories(req DiffDirectoriesRequest) (*DiffDirectoriesResponse, error) {
 	leftRoot := strings.TrimSpace(req.LeftRoot)
 	rightRoot := strings.TrimSpace(req.RightRoot)
 	currentPath, currentPathErr := normalizeDirectoryCurrentPath(req.CurrentPath)
 	if currentPathErr != nil {
-		return &CompareDirectoriesResponse{
+		return &DiffDirectoriesResponse{
 			Error: fmt.Sprintf("invalid currentPath: %v", currentPathErr),
 		}, nil
 	}
 
 	if leftRoot == "" || rightRoot == "" {
-		return &CompareDirectoriesResponse{
+		return &DiffDirectoriesResponse{
 			Error: "leftRoot and rightRoot are required",
 		}, nil
 	}
 
 	leftInfo, err := os.Stat(leftRoot)
 	if err != nil {
-		return &CompareDirectoriesResponse{Error: fmt.Sprintf("left root error: %v", err)}, nil
+		return &DiffDirectoriesResponse{Error: fmt.Sprintf("left root error: %v", err)}, nil
 	}
 	rightInfo, err := os.Stat(rightRoot)
 	if err != nil {
-		return &CompareDirectoriesResponse{Error: fmt.Sprintf("right root error: %v", err)}, nil
+		return &DiffDirectoriesResponse{Error: fmt.Sprintf("right root error: %v", err)}, nil
 	}
 	if !leftInfo.IsDir() || !rightInfo.IsDir() {
-		return &CompareDirectoriesResponse{
+		return &DiffDirectoriesResponse{
 			Error: "both leftRoot and rightRoot must be directories",
 		}, nil
 	}
 
 	leftEntries, err := collectDirectoryEntries(leftRoot, req.Recursive)
 	if err != nil {
-		return &CompareDirectoriesResponse{Error: fmt.Sprintf("left root walk error: %v", err)}, nil
+		return &DiffDirectoriesResponse{Error: fmt.Sprintf("left root walk error: %v", err)}, nil
 	}
 	rightEntries, err := collectDirectoryEntries(rightRoot, req.Recursive)
 	if err != nil {
-		return &CompareDirectoriesResponse{Error: fmt.Sprintf("right root walk error: %v", err)}, nil
+		return &DiffDirectoriesResponse{Error: fmt.Sprintf("right root walk error: %v", err)}, nil
 	}
 
 	scannedKeys := collectDirectoryKeys(leftEntries, rightEntries)
 	nameFilter := strings.ToLower(strings.TrimSpace(req.NameFilter))
 
-	resp := &CompareDirectoriesResponse{
+	resp := &DiffDirectoriesResponse{
 		CurrentPath:    currentPath,
 		ParentPath:     parentDirectoryPath(currentPath),
-		ScannedSummary: DirectoryCompareSummary{},
-		CurrentSummary: DirectoryCompareSummary{},
-		Items:          make([]DirectoryCompareItem, 0),
+		ScannedSummary: DirectoryDiffSummary{},
+		CurrentSummary: DirectoryDiffSummary{},
+		Items:          make([]DirectoryDiffItem, 0),
 	}
 
 	for _, rel := range scannedKeys {
-		item := buildDirectoryCompareItem(rel, leftRoot, rightRoot, req.Recursive, leftEntries, rightEntries)
+		item := buildDirectoryDiffItem(rel, leftRoot, rightRoot, req.Recursive, leftEntries, rightEntries)
 		addDirectorySummary(&resp.ScannedSummary, item.Status)
 	}
 
@@ -73,14 +73,14 @@ func (s *Service) CompareDirectories(req CompareDirectoriesRequest) (*CompareDir
 		return resp, nil
 	}
 
-	resp.Items = make([]DirectoryCompareItem, 0, len(childNames))
+	resp.Items = make([]DirectoryDiffItem, 0, len(childNames))
 	for _, name := range childNames {
 		relativePath := name
 		if currentPath != "" {
 			relativePath = currentPath + "/" + name
 		}
 
-		item := buildDirectoryCompareItem(
+		item := buildDirectoryDiffItem(
 			relativePath,
 			leftRoot,
 			rightRoot,
@@ -199,7 +199,7 @@ func classifyDirectoryPath(path string) (string, int64, error) {
 	return "unknown", 0, nil
 }
 
-func compareFileContents(leftPath, rightPath string) (_ bool, err error) {
+func diffFileContents(leftPath, rightPath string) (_ bool, err error) {
 	left, err := os.Open(leftPath) //nolint:gosec // G304: path from user-selected directory
 	if err != nil {
 		return false, err
@@ -246,7 +246,7 @@ func compareFileContents(leftPath, rightPath string) (_ bool, err error) {
 	}
 }
 
-func inferCompareModeHint(relativePath, status, leftKind, rightKind string) string {
+func inferDiffModeHint(relativePath, status, leftKind, rightKind string) string {
 	if status != "same" && status != "changed" {
 		return "none"
 	}
@@ -354,15 +354,15 @@ func listCurrentDirectoryChildNames(root, currentPath string) ([]string, error) 
 	return names, nil
 }
 
-func buildDirectoryCompareItem(
+func buildDirectoryDiffItem(
 	relativePath, leftRoot, rightRoot string,
 	recursive bool,
 	leftEntries, rightEntries map[string]directoryEntrySnapshot,
-) DirectoryCompareItem {
+) DirectoryDiffItem {
 	left, leftOK := resolveDirectorySnapshot(leftRoot, relativePath, leftEntries)
 	right, rightOK := resolveDirectorySnapshot(rightRoot, relativePath, rightEntries)
 
-	item := DirectoryCompareItem{
+	item := DirectoryDiffItem{
 		Name:         filepath.Base(relativePath),
 		RelativePath: relativePath,
 		LeftExists:   leftOK,
@@ -409,7 +409,7 @@ func buildDirectoryCompareItem(
 		if left.Size != right.Size {
 			item.Status = "changed"
 		} else {
-			equal, cmpErr := compareFileContents(left.Path, right.Path)
+			equal, cmpErr := diffFileContents(left.Path, right.Path)
 			if cmpErr != nil {
 				item.Status = "error"
 				item.Message = cmpErr.Error()
@@ -424,7 +424,7 @@ func buildDirectoryCompareItem(
 		item.Message = "unsupported file kind"
 	}
 
-	item.CompareModeHint = inferCompareModeHint(
+	item.DiffModeHint = inferDiffModeHint(
 		item.RelativePath,
 		item.Status,
 		item.LeftKind,
@@ -446,7 +446,7 @@ func aggregateDirectoryStatus(
 			continue
 		}
 		hasDescendant = true
-		item := buildDirectoryCompareItem(key, "", "", false, leftEntries, rightEntries)
+		item := buildDirectoryDiffItem(key, "", "", false, leftEntries, rightEntries)
 		if item.Status != "same" {
 			return "changed"
 		}
@@ -457,7 +457,7 @@ func aggregateDirectoryStatus(
 			continue
 		}
 		hasDescendant = true
-		item := buildDirectoryCompareItem(key, "", "", false, leftEntries, rightEntries)
+		item := buildDirectoryDiffItem(key, "", "", false, leftEntries, rightEntries)
 		if item.Status != "same" {
 			return "changed"
 		}
@@ -502,7 +502,7 @@ func resolveDirectorySnapshot(
 	}, true
 }
 
-func addDirectorySummary(summary *DirectoryCompareSummary, status string) {
+func addDirectorySummary(summary *DirectoryDiffSummary, status string) {
 	summary.Total++
 	switch status {
 	case "same":

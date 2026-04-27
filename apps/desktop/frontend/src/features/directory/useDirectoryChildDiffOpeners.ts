@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type {
-  CompareJSONRichResponse,
-  DirectoryCompareItem,
+  DiffJSONRichResponse,
+  DirectoryDiffItem,
   LoadTextFileRequest,
   LoadTextFileResponse,
   Mode,
@@ -9,12 +9,12 @@ import type {
 
 type StructuredResultView = 'diff' | 'semantic' | 'raw'
 
-type RunJSONCompareFromPathsOptions = {
+type RunJSONDiffFromPathsOptions = {
   oldPath: string
   newPath: string
 }
 
-type RunTextCompareWithValuesOptions = {
+type RunTextDiffWithValuesOptions = {
   oldText: string
   newText: string
   oldSourcePath?: string
@@ -25,8 +25,8 @@ type SetStructuredResultView = (value: StructuredResultView) => void
 
 type UseDirectoryChildDiffOpenersOptions = {
   loadTextFile: ((req: LoadTextFileRequest) => Promise<LoadTextFileResponse>) | undefined
-  runJSONCompareFromPaths: (options: RunJSONCompareFromPathsOptions) => Promise<CompareJSONRichResponse>
-  runTextCompareWithValues: (options: RunTextCompareWithValuesOptions) => Promise<unknown>
+  runJSONDiffFromPaths: (options: RunJSONDiffFromPathsOptions) => Promise<DiffJSONRichResponse>
+  runTextDiffWithValues: (options: RunTextDiffWithValuesOptions) => Promise<unknown>
   resetJSONSearch: () => void
   setJSONResultView: SetStructuredResultView
   clearTextExpandedSections: () => void
@@ -49,15 +49,15 @@ function chooseDefaultJSONDisplayMode(options: {
 
 export function useDirectoryChildDiffOpeners({
   loadTextFile,
-  runJSONCompareFromPaths,
-  runTextCompareWithValues,
+  runJSONDiffFromPaths,
+  runTextDiffWithValues,
   resetJSONSearch,
   setJSONResultView,
   clearTextExpandedSections,
   resetTextSearch,
   setMode,
 }: UseDirectoryChildDiffOpenersOptions) {
-  const applyJSONResultView = useCallback((richResult: Pick<CompareJSONRichResponse, 'diffText' | 'result'>) => {
+  const applyJSONResultView = useCallback((richResult: Pick<DiffJSONRichResponse, 'diffText' | 'result'>) => {
     resetJSONSearch()
     setJSONResultView(
       chooseDefaultJSONDisplayMode({
@@ -67,16 +67,16 @@ export function useDirectoryChildDiffOpeners({
     )
   }, [resetJSONSearch, setJSONResultView])
 
-  const openDirectoryJSONDiff = useCallback(async (entry: DirectoryCompareItem) => {
-    const richResult = await runJSONCompareFromPaths({
+  const openDirectoryJSONDiff = useCallback(async (entry: DirectoryDiffItem) => {
+    const richResult = await runJSONDiffFromPaths({
       oldPath: entry.leftPath,
       newPath: entry.rightPath,
     })
     applyJSONResultView(richResult)
     setMode('json')
-  }, [applyJSONResultView, runJSONCompareFromPaths, setMode])
+  }, [applyJSONResultView, runJSONDiffFromPaths, setMode])
 
-  const openDirectoryTextDiff = useCallback(async (entry: DirectoryCompareItem) => {
+  const openDirectoryTextDiff = useCallback(async (entry: DirectoryDiffItem) => {
     if (!loadTextFile) {
       throw new Error('Wails bridge not available (LoadTextFile)')
     }
@@ -86,7 +86,7 @@ export function useDirectoryChildDiffOpeners({
       loadTextFile({ path: entry.rightPath } satisfies LoadTextFileRequest),
     ])
 
-    await runTextCompareWithValues({
+    await runTextDiffWithValues({
       oldText: leftLoaded.content,
       newText: rightLoaded.content,
       oldSourcePath: leftLoaded.path,
@@ -95,7 +95,7 @@ export function useDirectoryChildDiffOpeners({
     clearTextExpandedSections()
     resetTextSearch()
     setMode('text')
-  }, [clearTextExpandedSections, loadTextFile, resetTextSearch, runTextCompareWithValues, setMode])
+  }, [clearTextExpandedSections, loadTextFile, resetTextSearch, runTextDiffWithValues, setMode])
 
   return {
     applyJSONResultView,

@@ -2,24 +2,24 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconChevronDown } from '@tabler/icons-react'
 import type {
-  CompareDirectoriesResponse,
+  DiffDirectoriesResponse,
   Mode,
 } from './types'
 import { parseIgnorePaths } from './utils/appHelpers'
-import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
+import { DesktopDiffOptionsContent } from './ui/DesktopDiffOptionsContent'
 import { DesktopMainContent } from './ui/DesktopMainContent'
-import { useDirectoryCompareViewState } from './features/directory/useDirectoryCompareViewState'
-import { useDirectoryCompareWorkflow } from './features/directory/useDirectoryCompareWorkflow'
-import { useDirectoryCompareChildDiffActions } from './features/directory/useDirectoryCompareChildDiffActions'
-import { useDirectoryCompareInteractions } from './features/directory/useDirectoryCompareInteractions'
+import { useDirectoryDiffViewState } from './features/directory/useDirectoryDiffViewState'
+import { useDirectoryDiffWorkflow } from './features/directory/useDirectoryDiffWorkflow'
+import { useDirectoryDiffChildActions } from './features/directory/useDirectoryDiffChildActions'
+import { useDirectoryDiffInteractions } from './features/directory/useDirectoryDiffInteractions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
-import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
+import { useTextDiffWorkflow } from './features/text/useTextDiffWorkflow'
 import { applyChangeBlockToNew, applyChangeBlockToOld } from './features/text/textDiff'
 import { showAdoptNotification, showErrorNotification } from './utils/notifications'
 import { formatUnknownError } from './utils/appHelpers'
 import type { AdoptBlockHandler } from './ui/RichDiffViewer'
-import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
-import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
+import { useJSONDiffViewState } from './features/json/useJSONDiffViewState'
+import { useJSONDiffWorkflow } from './features/json/useJSONDiffWorkflow'
 
 type DesktopShellModel = {
   layoutMode: 'workspace' | 'sidebar'
@@ -39,31 +39,31 @@ type UseDesktopShellModelArgs = {
   mode: Mode
   setMode: (mode: Mode) => void
   loading: boolean
-  compareOptionsOpened: boolean
-  onCloseCompareOptions: () => void
-  jsonWorkflow: ReturnType<typeof useJSONCompareWorkflow>
-  jsonViewState: ReturnType<typeof useJSONCompareViewState>
-  textWorkflow: ReturnType<typeof useTextCompareWorkflow>
+  diffOptionsOpened: boolean
+  onCloseDiffOptions: () => void
+  jsonWorkflow: ReturnType<typeof useJSONDiffWorkflow>
+  jsonViewState: ReturnType<typeof useJSONDiffViewState>
+  textWorkflow: ReturnType<typeof useTextDiffWorkflow>
   textViewState: ReturnType<typeof useTextDiffViewState>
   directoryLeftRoot: string
   directoryRightRoot: string
   directoryNameFilter: string
   setDirectoryNameFilter: (value: string) => void
   directoryCurrentPath: string
-  directoryResult: CompareDirectoriesResponse | null
+  directoryResult: DiffDirectoriesResponse | null
   directoryStatus: string
-  directoryViewState: ReturnType<typeof useDirectoryCompareViewState>
-  directoryWorkflow: ReturnType<typeof useDirectoryCompareWorkflow>
-  directoryChildDiffActions: ReturnType<typeof useDirectoryCompareChildDiffActions>
-  directoryInteractions: ReturnType<typeof useDirectoryCompareInteractions>
+  directoryViewState: ReturnType<typeof useDirectoryDiffViewState>
+  directoryWorkflow: ReturnType<typeof useDirectoryDiffWorkflow>
+  directoryChildDiffActions: ReturnType<typeof useDirectoryDiffChildActions>
+  directoryInteractions: ReturnType<typeof useDirectoryDiffInteractions>
 }
 
 export function useDesktopShellModel({
   mode,
   setMode,
   loading,
-  compareOptionsOpened,
-  onCloseCompareOptions,
+  diffOptionsOpened,
+  onCloseDiffOptions,
   jsonWorkflow,
   jsonViewState,
   textWorkflow,
@@ -80,13 +80,13 @@ export function useDesktopShellModel({
   directoryChildDiffActions,
   directoryInteractions,
 }: UseDesktopShellModelArgs): DesktopShellModel {
-  const isCompareCentricMode = mode === 'text' || mode === 'json'
+  const isDiffCentricMode = mode === 'text' || mode === 'json'
 
-  const compareOptionsTitle =
+  const diffOptionsTitle =
     mode === 'text' ? 'Text diff options' : 'JSON diff options'
 
-  const compareOptionsContent = (
-    <DesktopCompareOptionsContent
+  const diffOptionsContent = (
+    <DesktopDiffOptionsContent
       mode={mode}
       jsonProps={{
         ignoreOrder: jsonWorkflow.ignoreOrder,
@@ -125,7 +125,7 @@ export function useDesktopShellModel({
     textWorkflow.setTextNew(snapshot.newText)
 
     void textWorkflow
-      .runTextCompareWithValues({
+      .runTextDiffWithValues({
         oldText: snapshot.oldText,
         newText: snapshot.newText,
         oldSourcePath: textWorkflow.textOldSourcePath,
@@ -159,7 +159,7 @@ export function useDesktopShellModel({
     textWorkflow.setTextNew(nextNew)
 
     void textWorkflow
-      .runTextCompareWithValues({
+      .runTextDiffWithValues({
         oldText: nextOld,
         newText: nextNew,
         oldSourcePath: textWorkflow.textOldSourcePath,
@@ -255,8 +255,8 @@ export function useDesktopShellModel({
   const main = (
     <DesktopMainContent
       mode={mode}
-      showDirectoryReturnBanner={isCompareCentricMode && !!directoryChildDiffActions.directoryReturnContext}
-      onReturnToDirectoryCompare={directoryChildDiffActions.returnToDirectoryCompare}
+      showDirectoryReturnBanner={isDiffCentricMode && !!directoryChildDiffActions.directoryReturnContext}
+      onReturnToDirectoryDiff={directoryChildDiffActions.returnToDirectoryDiff}
       textSourceProps={{
         oldSourcePath: textWorkflow.textOldSourcePath,
         newSourcePath: textWorkflow.textNewSourcePath,
@@ -414,34 +414,34 @@ export function useDesktopShellModel({
     />
   )
 
-  const inspector = isCompareCentricMode ? (
+  const inspector = isDiffCentricMode ? (
     <div className="workspace-inspector-panel">
       <div className="workspace-inspector-header">
-        <h3>{compareOptionsTitle}</h3>
+        <h3>{diffOptionsTitle}</h3>
         <Tooltip label="Close options">
           <ActionIcon
             variant="default"
             size={26}
             aria-label="Close options"
-            onClick={onCloseCompareOptions}
+            onClick={onCloseDiffOptions}
           >
             <IconChevronDown size={14} />
           </ActionIcon>
         </Tooltip>
       </div>
-      <div className="workspace-inspector-body">{compareOptionsContent}</div>
+      <div className="workspace-inspector-body">{diffOptionsContent}</div>
     </div>
   ) : undefined
 
   return {
     layoutMode:
-      isCompareCentricMode || mode === 'directory'
+      isDiffCentricMode || mode === 'directory'
         ? 'workspace'
         : 'sidebar',
     sidebar,
     main,
     inspector,
-    inspectorOpen: isCompareCentricMode && compareOptionsOpened,
+    inspectorOpen: isDiffCentricMode && diffOptionsOpened,
     isDirty: textAdoptUndoStack.length > 0,
   }
 }

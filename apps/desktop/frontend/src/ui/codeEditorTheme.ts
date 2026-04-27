@@ -2,9 +2,9 @@ import { EditorView } from '@codemirror/view'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 
-type CompareEditorColorScheme = 'light' | 'dark'
+type DiffEditorColorScheme = 'light' | 'dark'
 
-export function createCompareCodeEditorTheme(colorScheme: CompareEditorColorScheme) {
+export function createDiffCodeEditorTheme(colorScheme: DiffEditorColorScheme) {
   const palette =
     colorScheme === 'dark'
       ? {
@@ -53,7 +53,7 @@ export function createCompareCodeEditorTheme(colorScheme: CompareEditorColorSche
   })
 }
 
-export function createCompareCodeHighlightStyle(colorScheme: CompareEditorColorScheme) {
+export function createDiffCodeHighlightStyle(colorScheme: DiffEditorColorScheme) {
   const palette =
     colorScheme === 'dark'
       ? {

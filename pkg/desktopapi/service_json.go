@@ -20,7 +20,7 @@ type jsonMachineResult struct {
 	Diffs []jsonMachineDiffItem `json:"diffs"`
 }
 
-func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, error) {
+func (s *Service) DiffJSONFiles(req DiffJSONRequest) (*DiffResponse, error) {
 	opts := runner.Options{
 		CompareOptions: runner.CompareOptions{
 			Format:      normalizeOutputFormat(req.Common.OutputFormat),
@@ -34,7 +34,7 @@ func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, er
 	}
 
 	res := runner.RunJSONFilesDetailed(opts)
-	return &CompareResponse{
+	return &DiffResponse{
 		ExitCode:  res.ExitCode,
 		DiffFound: res.DiffFound,
 		Output:    res.Output,
@@ -42,8 +42,8 @@ func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, er
 	}, nil
 }
 
-func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichResponse, error) {
-	rawResult, err := s.CompareJSONFiles(req)
+func (s *Service) DiffJSONRich(req DiffJSONRequest) (*DiffJSONRichResponse, error) {
+	rawResult, err := s.DiffJSONFiles(req)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 	diffReq := req
 	diffReq.Common.OutputFormat = "text"
 	diffReq.Common.TextStyle = "patch"
-	diffResult, err := s.CompareJSONFiles(diffReq)
+	diffResult, err := s.DiffJSONFiles(diffReq)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 	structuredReq := req
 	structuredReq.Common.OutputFormat = output.JSONFormat
 
-	structuredResult, err := s.CompareJSONFiles(structuredReq)
+	structuredResult, err := s.DiffJSONFiles(structuredReq)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 		return nil, err
 	}
 
-	return &CompareJSONRichResponse{
+	return &DiffJSONRichResponse{
 		Result:   *rawResult,
 		DiffText: pickDiffText(diffResult.Output, rawResult.Output),
 		Summary:  summarizeJSONRichDiffs(diffs),
@@ -77,7 +77,7 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 	}, nil
 }
 
-func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJSONRichResponse, error) {
+func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichResponse, error) {
 	var oldValue any
 	if err := json.Unmarshal([]byte(req.OldValue), &oldValue); err != nil {
 		return nil, fmt.Errorf("invalid old JSON: %w", err)
@@ -96,7 +96,7 @@ func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJ
 		UseColor:    guiUseColor(),
 	}
 	rawRun := runner.RunJSONValuesDetailed(oldValue, newValue, rawOpts)
-	rawResult := CompareResponse{
+	rawResult := DiffResponse{
 		ExitCode:  rawRun.ExitCode,
 		DiffFound: rawRun.DiffFound,
 		Output:    rawRun.Output,
@@ -119,7 +119,7 @@ func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJ
 		return nil, err
 	}
 
-	return &CompareJSONRichResponse{
+	return &DiffJSONRichResponse{
 		Result:   rawResult,
 		DiffText: pickDiffText(diffRun.Output, rawResult.Output),
 		Summary:  summarizeJSONRichDiffs(diffs),
