@@ -1,21 +1,17 @@
 package runner
 
 import (
-	"os"
-	"path/filepath"
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 )
 
 func TestRun_WithDiff_DefaultText(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro","age":"20"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
+	oldVal := decodeJSON(t, `{"user":{"name":"Taro","age":"20"}}`)
+	newVal := decodeJSON(t, `{"user":{"name":"Hanako","age":20}}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{Format: "text"},
-		OldPath:     oldPath,
-		NewPath:     newPath,
-	})
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{Format: "text"})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
 	}
@@ -28,14 +24,10 @@ func TestRun_WithDiff_DefaultText(t *testing.T) {
 }
 
 func TestRun_NoDiff_JSONFormat(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
+	oldVal := decodeJSON(t, `{"user":{"name":"Taro"}}`)
+	newVal := decodeJSON(t, `{"user":{"name":"Taro"}}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{Format: "json"},
-		OldPath:     oldPath,
-		NewPath:     newPath,
-	})
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{Format: "json"})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
 	}
@@ -48,16 +40,12 @@ func TestRun_NoDiff_JSONFormat(t *testing.T) {
 }
 
 func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+	oldVal := decodeJSON(t, `{"user":{"name":"Taro"}}`)
+	newVal := decodeJSON(t, `{"user":{"name":"Hanako"}}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:      "text",
-			IgnorePaths: []string{"user.name"},
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:      "text",
+		IgnorePaths: []string{"user.name"},
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -71,16 +59,12 @@ func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
 }
 
 func TestRun_IgnorePath_TextMode_FiltersOutput(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"email":"a@example.com","age":"20"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
+	oldVal := decodeJSON(t, `{"user":{"email":"a@example.com","age":"20"}}`)
+	newVal := decodeJSON(t, `{"user":{"age":20}}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:      "text",
-			IgnorePaths: []string{"user.email"},
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:      "text",
+		IgnorePaths: []string{"user.email"},
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -96,44 +80,8 @@ func TestRun_IgnorePath_TextMode_FiltersOutput(t *testing.T) {
 	}
 }
 
-func TestRun_InvalidPath(t *testing.T) {
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{Format: "text"},
-		OldPath:     "not-found-old.json",
-		NewPath:     "not-found-new.json",
-	})
-	if err == nil {
-		t.Fatalf("expected error, got nil")
-	}
-	if code != exitError {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitError)
-	}
-	if out != "" {
-		t.Fatalf("expected empty output on error, got: %q", out)
-	}
-}
-
 func TestRun_InvalidFormat(t *testing.T) {
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{Format: "yaml"},
-		OldPath:     "old.json",
-		NewPath:     "new.json",
-	})
-	if err == nil {
-		t.Fatalf("expected error, got nil")
-	}
-	if code != exitError {
-		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitError)
-	}
-	if out != "" {
-		t.Fatalf("expected empty output on error, got: %q", out)
-	}
-}
-
-func TestRun_MissingPaths(t *testing.T) {
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{Format: "text"},
-	})
+	code, out, err := RunJSONValues(map[string]any{}, map[string]any{}, DiffOptions{Format: "yaml"})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -146,16 +94,12 @@ func TestRun_MissingPaths(t *testing.T) {
 }
 
 func TestRun_IgnoreOrder_ReorderOnly_NoDifferences(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"items":[1,2,3]}`, "old.json")
-	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
+	oldVal := decodeJSON(t, `{"items":[1,2,3]}`)
+	newVal := decodeJSON(t, `{"items":[3,2,1]}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:      "text",
-			IgnoreOrder: true,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:      "text",
+		IgnoreOrder: true,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -169,16 +113,12 @@ func TestRun_IgnoreOrder_ReorderOnly_NoDifferences(t *testing.T) {
 }
 
 func TestRun_IgnoreOrder_UsesSemanticTextOutput(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"items":[{"k":1},{"k":2}]}`, "old.json")
-	newPath := writeTempJSON(t, `{"items":[{"k":2},{"k":3}]}`, "new.json")
+	oldVal := decodeJSON(t, `{"items":[{"k":1},{"k":2}]}`)
+	newVal := decodeJSON(t, `{"items":[{"k":2},{"k":3}]}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:      "text",
-			IgnoreOrder: true,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:      "text",
+		IgnoreOrder: true,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -195,16 +135,12 @@ func TestRun_IgnoreOrder_UsesSemanticTextOutput(t *testing.T) {
 }
 
 func TestRun_TextStyleSemantic_ForJSONUsesSemanticOutput(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+	oldVal := decodeJSON(t, `{"user":{"name":"Taro"}}`)
+	newVal := decodeJSON(t, `{"user":{"name":"Hanako"}}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:    "text",
-			TextStyle: TextStyleSemantic,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:    "text",
+		TextStyle: TextStyleSemantic,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -221,17 +157,13 @@ func TestRun_TextStyleSemantic_ForJSONUsesSemanticOutput(t *testing.T) {
 }
 
 func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"items":[1,2,3]}`, "old.json")
-	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
+	oldVal := decodeJSON(t, `{"items":[1,2,3]}`)
+	newVal := decodeJSON(t, `{"items":[3,2,1]}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:      "text",
-			TextStyle:   TextStylePatch,
-			IgnoreOrder: true,
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:      "text",
+		TextStyle:   TextStylePatch,
+		IgnoreOrder: true,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -248,16 +180,12 @@ func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
 }
 
 func TestRun_InvalidTextStyle_ReturnsError(t *testing.T) {
-	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
-	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+	oldVal := decodeJSON(t, `{"user":{"name":"Taro"}}`)
+	newVal := decodeJSON(t, `{"user":{"name":"Hanako"}}`)
 
-	code, out, err := RunJSONFiles(Options{
-		DiffOptions: DiffOptions{
-			Format:    "text",
-			TextStyle: "fancy",
-		},
-		OldPath: oldPath,
-		NewPath: newPath,
+	code, out, err := RunJSONValues(oldVal, newVal, DiffOptions{
+		Format:    "text",
+		TextStyle: "fancy",
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -273,12 +201,15 @@ func TestRun_InvalidTextStyle_ReturnsError(t *testing.T) {
 	}
 }
 
-func writeTempJSON(t *testing.T, content string, fileName string) string {
+func decodeJSON(t *testing.T, raw string) any {
 	t.Helper()
 
-	path := filepath.Join(t.TempDir(), fileName)
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
-		t.Fatalf("failed to write temp file: %v", err)
+	dec := json.NewDecoder(bytes.NewReader([]byte(raw)))
+	dec.UseNumber()
+
+	var value any
+	if err := dec.Decode(&value); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
 	}
-	return path
+	return value
 }

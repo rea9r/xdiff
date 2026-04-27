@@ -20,62 +20,6 @@ type jsonMachineResult struct {
 	Diffs []jsonMachineDiffItem `json:"diffs"`
 }
 
-func (s *Service) DiffJSONFiles(req DiffJSONRequest) (*DiffResponse, error) {
-	opts := runner.Options{
-		DiffOptions: runner.DiffOptions{
-			Format:      normalizeOutputFormat(req.Common.OutputFormat),
-			IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
-			TextStyle:   req.Common.TextStyle,
-			IgnoreOrder: req.IgnoreOrder,
-		},
-		OldPath: req.OldPath,
-		NewPath: req.NewPath,
-	}
-
-	res := runner.RunJSONFilesDetailed(opts)
-	return &DiffResponse{
-		ExitCode:  res.ExitCode,
-		DiffFound: res.DiffFound,
-		Output:    res.Output,
-		Error:     errString(res.Err),
-	}, nil
-}
-
-func (s *Service) DiffJSONRich(req DiffJSONRequest) (*DiffJSONRichResponse, error) {
-	rawResult, err := s.DiffJSONFiles(req)
-	if err != nil {
-		return nil, err
-	}
-
-	diffReq := req
-	diffReq.Common.OutputFormat = "text"
-	diffReq.Common.TextStyle = "patch"
-	diffResult, err := s.DiffJSONFiles(diffReq)
-	if err != nil {
-		return nil, err
-	}
-
-	structuredReq := req
-	structuredReq.Common.OutputFormat = output.JSONFormat
-
-	structuredResult, err := s.DiffJSONFiles(structuredReq)
-	if err != nil {
-		return nil, err
-	}
-
-	diffs, err := parseJSONMachineDiffs(structuredResult.Output)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DiffJSONRichResponse{
-		Result:   *rawResult,
-		DiffText: pickDiffText(diffResult.Output, rawResult.Output),
-		Summary:  summarizeJSONRichDiffs(diffs),
-		Diffs:    diffs,
-	}, nil
-}
-
 func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichResponse, error) {
 	var oldValue any
 	if err := json.Unmarshal([]byte(req.OldValue), &oldValue); err != nil {

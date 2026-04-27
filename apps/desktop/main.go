@@ -24,14 +24,6 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) DiffJSONFiles(req desktopapi.DiffJSONRequest) (*desktopapi.DiffResponse, error) {
-	return a.api.DiffJSONFiles(req)
-}
-
-func (a *App) DiffJSONRich(req desktopapi.DiffJSONRequest) (*desktopapi.DiffJSONRichResponse, error) {
-	return a.api.DiffJSONRich(req)
-}
-
 func (a *App) DiffJSONValuesRich(req desktopapi.DiffJSONValuesRequest) (*desktopapi.DiffJSONRichResponse, error) {
 	return a.api.DiffJSONValuesRich(req)
 }

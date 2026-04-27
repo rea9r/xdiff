@@ -6,12 +6,6 @@ const (
 	TextStyleSemantic = "semantic"
 )
 
-type Options struct {
-	DiffOptions
-	OldPath string
-	NewPath string
-}
-
 type DiffOptions struct {
 	Format           string
 	IgnorePaths      []string

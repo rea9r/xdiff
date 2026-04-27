@@ -1,100 +1,12 @@
 package runner
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
 	"github.com/rea9r/xdiff/internal/delta"
 	"github.com/rea9r/xdiff/internal/jsondiff"
 	"github.com/rea9r/xdiff/internal/output"
-	"github.com/rea9r/xdiff/internal/source"
 )
-
-type ValueLoader func(context.Context) (any, error)
-
-type loadResult struct {
-	value any
-	err   error
-}
-
-func RunJSONFiles(opts Options) (int, string, error) {
-	return RunJSONFilesDetailed(opts).Triple()
-}
-
-func RunJSONFilesDetailed(opts Options) RunResult {
-	if err := validateFileOptions(opts); err != nil {
-		return finalizeRun(nil, "", err)
-	}
-
-	return RunJSONLoadersDetailed(
-		func(_ context.Context) (any, error) {
-			return source.LoadJSONFile(opts.OldPath)
-		},
-		func(_ context.Context) (any, error) {
-			return source.LoadJSONFile(opts.NewPath)
-		},
-		opts.DiffOptions,
-	)
-}
-
-func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts DiffOptions) (int, string, error) {
-	return RunJSONLoadersDetailed(oldLoader, newLoader, opts).Triple()
-}
-
-func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts DiffOptions) RunResult {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	oldCh := make(chan loadResult, 1)
-	newCh := make(chan loadResult, 1)
-
-	go func() {
-		v, err := oldLoader(ctx)
-		oldCh <- loadResult{value: v, err: err}
-	}()
-
-	go func() {
-		v, err := newLoader(ctx)
-		newCh <- loadResult{value: v, err: err}
-	}()
-
-	var (
-		oldRes loadResult
-		newRes loadResult
-		gotOld bool
-		gotNew bool
-	)
-
-	for !gotOld || !gotNew {
-		select {
-		case res := <-oldCh:
-			oldRes = res
-			gotOld = true
-			if oldRes.err != nil {
-				cancel()
-				return finalizeRun(nil, "", oldRes.err)
-			}
-			if gotNew && newRes.err != nil {
-				return finalizeRun(nil, "", newRes.err)
-			}
-		case res := <-newCh:
-			newRes = res
-			gotNew = true
-			if gotOld {
-				if oldRes.err != nil {
-					cancel()
-					return finalizeRun(nil, "", oldRes.err)
-				}
-				if newRes.err != nil {
-					return finalizeRun(nil, "", newRes.err)
-				}
-			}
-		}
-	}
-
-	return RunJSONValuesDetailed(oldRes.value, newRes.value, opts)
-}
 
 func RunJSONValues(oldValue, newValue any, opts DiffOptions) (int, string, error) {
 	return RunJSONValuesDetailed(oldValue, newValue, opts).Triple()
@@ -141,13 +53,6 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts DiffOptions) RunResult {
 	}
 
 	return finalizeRun(diffs, out, nil)
-}
-
-func validateFileOptions(opts Options) error {
-	if opts.OldPath == "" || opts.NewPath == "" {
-		return errors.New("old and new file paths are required")
-	}
-	return validateDiffOptions(opts.DiffOptions)
 }
 
 func validateDiffOptions(opts DiffOptions) error {

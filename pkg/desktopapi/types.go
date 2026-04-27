@@ -9,13 +9,6 @@ type DiffCommon struct {
 	IgnoreEOL        bool     `json:"ignoreEOL"`
 }
 
-type DiffJSONRequest struct {
-	OldPath     string     `json:"oldPath"`
-	NewPath     string     `json:"newPath"`
-	Common      DiffCommon `json:"common"`
-	IgnoreOrder bool       `json:"ignoreOrder"`
-}
-
 type DiffJSONValuesRequest struct {
 	OldValue    string     `json:"oldValue"`
 	NewValue    string     `json:"newValue"`
