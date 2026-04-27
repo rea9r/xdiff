@@ -13,7 +13,7 @@ func TestRunWithValueLoaders_OldLoaderError(t *testing.T) {
 	code, out, err := RunJSONLoaders(
 		func(context.Context) (any, error) { return nil, wantErr },
 		func(context.Context) (any, error) { return map[string]any{}, nil },
-		CompareOptions{Format: "text"},
+		DiffOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -35,7 +35,7 @@ func TestRunWithValueLoaders_NewLoaderError(t *testing.T) {
 	code, out, err := RunJSONLoaders(
 		func(context.Context) (any, error) { return map[string]any{}, nil },
 		func(context.Context) (any, error) { return nil, wantErr },
-		CompareOptions{Format: "text"},
+		DiffOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -74,7 +74,7 @@ func TestRunWithValueLoaders_StartsBothLoadersConcurrently(t *testing.T) {
 		err  error
 	)
 	go func() {
-		code, out, err = RunJSONLoaders(oldLoader, newLoader, CompareOptions{
+		code, out, err = RunJSONLoaders(oldLoader, newLoader, DiffOptions{
 			Format: "text",
 		})
 		close(done)
@@ -122,7 +122,7 @@ func TestRunWithValueLoaders_BothErrorsPreferOldError(t *testing.T) {
 		func(context.Context) (any, error) {
 			return nil, newErr
 		},
-		CompareOptions{Format: "text"},
+		DiffOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -160,7 +160,7 @@ func TestRunWithValueLoaders_ReturnsOldErrorEarlyAndCancelsNewLoader(t *testing.
 		err  error
 	)
 	go func() {
-		code, out, err = RunJSONLoaders(oldLoader, newLoader, CompareOptions{
+		code, out, err = RunJSONLoaders(oldLoader, newLoader, DiffOptions{
 			Format: "text",
 		})
 		close(done)
@@ -207,7 +207,7 @@ func TestRunWithValueLoaders_NewFailsFirstOldFailsLater_ReturnsOldError(t *testi
 		func(context.Context) (any, error) {
 			return nil, newErr
 		},
-		CompareOptions{Format: "text"},
+		DiffOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -234,7 +234,7 @@ func TestRunWithValueLoaders_NewFailsFirstOldSucceeds_ReturnsNewError(t *testing
 		func(context.Context) (any, error) {
 			return nil, newErr
 		},
-		CompareOptions{Format: "text"},
+		DiffOptions{Format: "text"},
 	)
 	if err == nil {
 		t.Fatal("expected error, got nil")

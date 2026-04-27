@@ -12,9 +12,9 @@ func TestRun_WithDiff_DefaultText(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{Format: "text"},
-		OldPath:        oldPath,
-		NewPath:        newPath,
+		DiffOptions: DiffOptions{Format: "text"},
+		OldPath:     oldPath,
+		NewPath:     newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -32,9 +32,9 @@ func TestRun_NoDiff_JSONFormat(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{Format: "json"},
-		OldPath:        oldPath,
-		NewPath:        newPath,
+		DiffOptions: DiffOptions{Format: "json"},
+		OldPath:     oldPath,
+		NewPath:     newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -52,7 +52,7 @@ func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:      "text",
 			IgnorePaths: []string{"user.name"},
 		},
@@ -75,7 +75,7 @@ func TestRun_IgnorePath_TextMode_FiltersOutput(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:      "text",
 			IgnorePaths: []string{"user.email"},
 		},
@@ -98,9 +98,9 @@ func TestRun_IgnorePath_TextMode_FiltersOutput(t *testing.T) {
 
 func TestRun_InvalidPath(t *testing.T) {
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{Format: "text"},
-		OldPath:        "not-found-old.json",
-		NewPath:        "not-found-new.json",
+		DiffOptions: DiffOptions{Format: "text"},
+		OldPath:     "not-found-old.json",
+		NewPath:     "not-found-new.json",
 	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -115,9 +115,9 @@ func TestRun_InvalidPath(t *testing.T) {
 
 func TestRun_InvalidFormat(t *testing.T) {
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{Format: "yaml"},
-		OldPath:        "old.json",
-		NewPath:        "new.json",
+		DiffOptions: DiffOptions{Format: "yaml"},
+		OldPath:     "old.json",
+		NewPath:     "new.json",
 	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -132,7 +132,7 @@ func TestRun_InvalidFormat(t *testing.T) {
 
 func TestRun_MissingPaths(t *testing.T) {
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{Format: "text"},
+		DiffOptions: DiffOptions{Format: "text"},
 	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -150,7 +150,7 @@ func TestRun_IgnoreOrder_ReorderOnly_NoDifferences(t *testing.T) {
 	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:      "text",
 			IgnoreOrder: true,
 		},
@@ -173,7 +173,7 @@ func TestRun_IgnoreOrder_UsesSemanticTextOutput(t *testing.T) {
 	newPath := writeTempJSON(t, `{"items":[{"k":2},{"k":3}]}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:      "text",
 			IgnoreOrder: true,
 		},
@@ -199,7 +199,7 @@ func TestRun_TextStyleSemantic_ForJSONUsesSemanticOutput(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:    "text",
 			TextStyle: TextStyleSemantic,
 		},
@@ -225,7 +225,7 @@ func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
 	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:      "text",
 			TextStyle:   TextStylePatch,
 			IgnoreOrder: true,
@@ -242,7 +242,7 @@ func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
 	if out != "" {
 		t.Fatalf("expected empty output on error, got: %q", out)
 	}
-	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path or --ignore-order`) {
+	if !strings.Contains(err.Error(), `text style "patch" cannot be used with ignore-path or ignore-order`) {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
@@ -252,7 +252,7 @@ func TestRun_InvalidTextStyle_ReturnsError(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		CompareOptions: CompareOptions{
+		DiffOptions: DiffOptions{
 			Format:    "text",
 			TextStyle: "fancy",
 		},

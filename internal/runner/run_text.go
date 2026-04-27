@@ -1,40 +1,17 @@
 package runner
 
 import (
-	"os"
-
 	"github.com/rea9r/xdiff/internal/delta"
 	"github.com/rea9r/xdiff/internal/output"
 	"github.com/rea9r/xdiff/internal/textdiff"
 )
 
-func RunTextFiles(opts Options) (int, string, error) {
-	return RunTextFilesDetailed(opts).Triple()
-}
-
-func RunTextFilesDetailed(opts Options) RunResult {
-	if err := validateFileOptions(opts); err != nil {
-		return finalizeRun(nil, "", err)
-	}
-
-	oldData, err := os.ReadFile(opts.OldPath)
-	if err != nil {
-		return finalizeRun(nil, "", err)
-	}
-	newData, err := os.ReadFile(opts.NewPath)
-	if err != nil {
-		return finalizeRun(nil, "", err)
-	}
-
-	return RunTextValuesDetailed(string(oldData), string(newData), opts.CompareOptions)
-}
-
-func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, error) {
+func RunTextValues(oldText, newText string, opts DiffOptions) (int, string, error) {
 	return RunTextValuesDetailed(oldText, newText, opts).Triple()
 }
 
-func RunTextValuesDetailed(oldText, newText string, opts CompareOptions) RunResult {
-	if err := validateCompareOptions(opts); err != nil {
+func RunTextValuesDetailed(oldText, newText string, opts DiffOptions) RunResult {
+	if err := validateDiffOptions(opts); err != nil {
 		return finalizeRun(nil, "", err)
 	}
 

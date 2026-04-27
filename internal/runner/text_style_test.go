@@ -1,45 +1,33 @@
 package runner
 
 import (
-	"errors"
+	"strings"
 	"testing"
 )
 
-func TestResolveJSONTextStyle_PatchWithSemanticFilters_ReturnsUserHintError(t *testing.T) {
-	_, err := resolveJSONTextStyle(CompareOptions{
+func TestResolveJSONTextStyle_PatchWithSemanticFilters_ReturnsError(t *testing.T) {
+	_, err := resolveJSONTextStyle(DiffOptions{
 		TextStyle:   TextStylePatch,
 		IgnoreOrder: true,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-
-	var hintErr *UserHintError
-	if !errors.As(err, &hintErr) {
-		t.Fatalf("expected UserHintError, got %T", err)
-	}
-	if len(hintErr.Hints) == 0 {
-		t.Fatal("expected non-empty hints")
+	if !strings.Contains(err.Error(), "ignore-order") {
+		t.Fatalf("expected error message to mention ignore-order, got %q", err.Error())
 	}
 }
 
-func TestValidateCompareOptions_InvalidEnums_ReturnUserHintError(t *testing.T) {
-	tests := []CompareOptions{
+func TestValidateDiffOptions_InvalidEnums_ReturnError(t *testing.T) {
+	tests := []DiffOptions{
 		{Format: "yaml", TextStyle: TextStyleAuto},
 		{Format: "text", TextStyle: "fancy"},
 	}
 
 	for _, tt := range tests {
-		err := validateCompareOptions(tt)
+		err := validateDiffOptions(tt)
 		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-		var hintErr *UserHintError
-		if !errors.As(err, &hintErr) {
-			t.Fatalf("expected UserHintError, got %T", err)
-		}
-		if len(hintErr.Hints) == 0 {
-			t.Fatal("expected non-empty hints")
+			t.Fatalf("expected error for %+v", tt)
 		}
 	}
 }

@@ -11,7 +11,7 @@ func isSupportedTextStyle(style string) bool {
 	}
 }
 
-func resolveJSONTextStyle(opts CompareOptions) (string, error) {
+func resolveJSONTextStyle(opts DiffOptions) (string, error) {
 	switch opts.TextStyle {
 	case "", TextStyleAuto:
 		if len(opts.IgnorePaths) > 0 || opts.IgnoreOrder {
@@ -20,25 +20,17 @@ func resolveJSONTextStyle(opts CompareOptions) (string, error) {
 		return TextStylePatch, nil
 	case TextStylePatch:
 		if len(opts.IgnorePaths) > 0 || opts.IgnoreOrder {
-			return "", newUserHintError(
-				fmt.Sprintf("text style %q cannot be used with --ignore-path or --ignore-order", TextStylePatch),
-				"use --text-style semantic",
-				"or remove --ignore-path / --ignore-order",
-			)
+			return "", fmt.Errorf("text style %q cannot be used with ignore-path or ignore-order; use semantic", TextStylePatch)
 		}
 		return TextStylePatch, nil
 	case TextStyleSemantic:
 		return TextStyleSemantic, nil
 	default:
-		return "", newUserHintError(
-			fmt.Sprintf("invalid text style %q", opts.TextStyle),
-			"allowed values: auto, patch, semantic",
-			"try --text-style auto",
-		)
+		return "", fmt.Errorf("invalid text style %q (allowed: auto, patch, semantic)", opts.TextStyle)
 	}
 }
 
-func resolveTextDiffStyle(opts CompareOptions) (string, error) {
+func resolveTextDiffStyle(opts DiffOptions) (string, error) {
 	switch opts.TextStyle {
 	case "", TextStyleAuto:
 		if len(opts.IgnorePaths) > 0 {
@@ -47,20 +39,12 @@ func resolveTextDiffStyle(opts CompareOptions) (string, error) {
 		return TextStylePatch, nil
 	case TextStylePatch:
 		if len(opts.IgnorePaths) > 0 {
-			return "", newUserHintError(
-				fmt.Sprintf("text style %q cannot be used with --ignore-path", TextStylePatch),
-				"use --text-style semantic",
-				"or remove --ignore-path",
-			)
+			return "", fmt.Errorf("text style %q cannot be used with ignore-path; use semantic", TextStylePatch)
 		}
 		return TextStylePatch, nil
 	case TextStyleSemantic:
 		return TextStyleSemantic, nil
 	default:
-		return "", newUserHintError(
-			fmt.Sprintf("invalid text style %q", opts.TextStyle),
-			"allowed values: auto, patch, semantic",
-			"try --text-style auto",
-		)
+		return "", fmt.Errorf("invalid text style %q (allowed: auto, patch, semantic)", opts.TextStyle)
 	}
 }

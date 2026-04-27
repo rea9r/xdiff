@@ -7,12 +7,12 @@ const (
 )
 
 type Options struct {
-	CompareOptions
+	DiffOptions
 	OldPath string
 	NewPath string
 }
 
-type CompareOptions struct {
+type DiffOptions struct {
 	Format           string
 	IgnorePaths      []string
 	IgnoreOrder      bool

@@ -34,15 +34,15 @@ func RunJSONFilesDetailed(opts Options) RunResult {
 		func(_ context.Context) (any, error) {
 			return source.LoadJSONFile(opts.NewPath)
 		},
-		opts.CompareOptions,
+		opts.DiffOptions,
 	)
 }
 
-func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int, string, error) {
+func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts DiffOptions) (int, string, error) {
 	return RunJSONLoadersDetailed(oldLoader, newLoader, opts).Triple()
 }
 
-func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts CompareOptions) RunResult {
+func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts DiffOptions) RunResult {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -96,12 +96,12 @@ func RunJSONLoadersDetailed(oldLoader, newLoader ValueLoader, opts CompareOption
 	return RunJSONValuesDetailed(oldRes.value, newRes.value, opts)
 }
 
-func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, error) {
+func RunJSONValues(oldValue, newValue any, opts DiffOptions) (int, string, error) {
 	return RunJSONValuesDetailed(oldValue, newValue, opts).Triple()
 }
 
-func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResult {
-	if err := validateCompareOptions(opts); err != nil {
+func RunJSONValuesDetailed(oldValue, newValue any, opts DiffOptions) RunResult {
+	if err := validateDiffOptions(opts); err != nil {
 		return finalizeRun(nil, "", err)
 	}
 
@@ -149,23 +149,15 @@ func validateFileOptions(opts Options) error {
 	if opts.OldPath == "" || opts.NewPath == "" {
 		return errors.New("old and new file paths are required")
 	}
-	return validateCompareOptions(opts.CompareOptions)
+	return validateDiffOptions(opts.DiffOptions)
 }
 
-func validateCompareOptions(opts CompareOptions) error {
+func validateDiffOptions(opts DiffOptions) error {
 	if !output.IsSupportedFormat(opts.Format) {
-		return newUserHintError(
-			fmt.Sprintf("invalid output format %q", opts.Format),
-			"allowed values: text, json",
-			"try --output-format text",
-		)
+		return fmt.Errorf("invalid output format %q (allowed: text, json)", opts.Format)
 	}
 	if !isSupportedTextStyle(opts.TextStyle) {
-		return newUserHintError(
-			fmt.Sprintf("invalid text style %q", opts.TextStyle),
-			"allowed values: auto, patch, semantic",
-			"try --text-style auto",
-		)
+		return fmt.Errorf("invalid text style %q (allowed: auto, patch, semantic)", opts.TextStyle)
 	}
 	return nil
 }

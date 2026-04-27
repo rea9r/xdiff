@@ -18,7 +18,7 @@ import (
 )
 
 func (s *Service) DiffText(req DiffTextRequest) (*DiffResponse, error) {
-	opts := runner.CompareOptions{
+	opts := runner.DiffOptions{
 		Format:           normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths:      append([]string(nil), req.Common.IgnorePaths...),
 		TextStyle:        req.Common.TextStyle,

@@ -22,7 +22,7 @@ type jsonMachineResult struct {
 
 func (s *Service) DiffJSONFiles(req DiffJSONRequest) (*DiffResponse, error) {
 	opts := runner.Options{
-		CompareOptions: runner.CompareOptions{
+		DiffOptions: runner.DiffOptions{
 			Format:      normalizeOutputFormat(req.Common.OutputFormat),
 			IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
 			TextStyle:   req.Common.TextStyle,
@@ -88,7 +88,7 @@ func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichRe
 		return nil, fmt.Errorf("invalid new JSON: %w", err)
 	}
 
-	rawOpts := runner.CompareOptions{
+	rawOpts := runner.DiffOptions{
 		Format:      normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
 		TextStyle:   req.Common.TextStyle,
