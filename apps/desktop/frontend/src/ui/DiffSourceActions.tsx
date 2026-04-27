@@ -1,7 +1,7 @@
 import { ActionIcon, Tooltip } from '@mantine/core'
 import type { MouseEvent, ReactNode } from 'react'
 
-export const DIFF_PANE_ACTION_SIZE = 26
+const DIFF_PANE_ACTION_SIZE = 26
 
 type DiffPaneActionProps = {
   label: string

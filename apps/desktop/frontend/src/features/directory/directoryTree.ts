@@ -132,7 +132,7 @@ export function toggleDirectorySort(
   return { key, dir: currentDir === 'asc' ? 'desc' : 'asc' }
 }
 
-export function formatBytes(size: number): string {
+function formatBytes(size: number): string {
   if (size < 1024) {
     return `${size} B`
   }
@@ -151,13 +151,6 @@ export function formatDirectorySide(exists: boolean, kind: string, size: number)
   }
   if (kind === 'file') {
     return size > 0 ? `file · ${formatBytes(size)}` : 'file'
-  }
-  return kind
-}
-
-export function formatDirectoryKindLabel(kind: DirectoryDiffItem['leftKind']): string {
-  if (kind === 'dir') {
-    return 'directory'
   }
   return kind
 }

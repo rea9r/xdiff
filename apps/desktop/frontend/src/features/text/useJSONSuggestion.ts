@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export const JSON_SUGGESTION_DEBOUNCE_MS = 500
+const JSON_SUGGESTION_DEBOUNCE_MS = 500
 const MIN_DETECTABLE_LENGTH = 2
 
 export function isLikelyJSON(input: string): boolean {

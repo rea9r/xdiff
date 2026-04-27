@@ -16,7 +16,7 @@ export function showSuccessNotification(title: string, message: string) {
   })
 }
 
-export function showWarningNotification(title: string, message: string) {
+function showWarningNotification(title: string, message: string) {
   notifications.show({
     title,
     message,
