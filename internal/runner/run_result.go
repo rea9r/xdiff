@@ -7,6 +7,7 @@ type RunResult struct {
 	Output    string
 	Err       error
 	DiffFound bool
+	Diffs     []delta.Diff
 }
 
 func (r RunResult) Triple() (int, string, error) {
@@ -20,6 +21,7 @@ func finalizeRun(diffs []delta.Diff, out string, err error) RunResult {
 			Output:    out,
 			Err:       err,
 			DiffFound: len(diffs) > 0,
+			Diffs:     diffs,
 		}
 	}
 
@@ -33,5 +35,6 @@ func finalizeRun(diffs []delta.Diff, out string, err error) RunResult {
 		Output:    out,
 		Err:       nil,
 		DiffFound: len(diffs) > 0,
+		Diffs:     diffs,
 	}
 }

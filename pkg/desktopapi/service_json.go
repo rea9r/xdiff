@@ -3,22 +3,11 @@ package desktopapi
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
+	"github.com/rea9r/xdiff/internal/delta"
 	"github.com/rea9r/xdiff/internal/output"
 	"github.com/rea9r/xdiff/internal/runner"
 )
-
-type jsonMachineDiffItem struct {
-	Type     string `json:"type"`
-	Path     string `json:"path"`
-	OldValue any    `json:"old_value,omitempty"`
-	NewValue any    `json:"new_value,omitempty"`
-}
-
-type jsonMachineResult struct {
-	Diffs []jsonMachineDiffItem `json:"diffs"`
-}
 
 func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichResponse, error) {
 	var oldValue any
@@ -31,59 +20,50 @@ func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichRe
 		return nil, fmt.Errorf("invalid new JSON: %w", err)
 	}
 
-	rawOpts := runner.DiffOptions{
+	opts := runner.DiffOptions{
 		Format:      normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
 		TextStyle:   req.Common.TextStyle,
 		IgnoreOrder: req.IgnoreOrder,
 	}
-	rawRun := runner.RunJSONValuesDetailed(oldValue, newValue, rawOpts)
+	run := runner.RunJSONValuesDetailed(oldValue, newValue, opts)
 	rawResult := DiffResponse{
-		ExitCode:  rawRun.ExitCode,
-		DiffFound: rawRun.DiffFound,
-		Output:    rawRun.Output,
-		Error:     errString(rawRun.Err),
+		ExitCode:  run.ExitCode,
+		DiffFound: run.DiffFound,
+		Output:    run.Output,
+		Error:     errString(run.Err),
 	}
 
-	structuredOpts := rawOpts
-	structuredOpts.Format = output.JSONFormat
-	structuredRun := runner.RunJSONValuesDetailed(oldValue, newValue, structuredOpts)
-
-	diffOpts := rawOpts
-	diffOpts.Format = output.TextFormat
-	diffOpts.TextStyle = "patch"
-	diffRun := runner.RunJSONValuesDetailed(oldValue, newValue, diffOpts)
-
-	diffs, err := parseJSONMachineDiffs(structuredRun.Output)
-	if err != nil {
-		return nil, err
-	}
-
+	structured := buildStructuredDiffs(run.Diffs)
 	return &DiffJSONRichResponse{
 		Result:   rawResult,
-		DiffText: pickDiffText(diffRun.Output, rawResult.Output),
-		Summary:  summarizeJSONRichDiffs(diffs),
-		Diffs:    diffs,
+		DiffText: pickDiffText(buildPatchDiffText(oldValue, newValue, opts, run.DiffFound), rawResult.Output),
+		Summary:  summarizeJSONRichDiffs(structured),
+		Diffs:    structured,
 	}, nil
 }
 
-func parseJSONMachineDiffs(raw string) ([]JSONRichDiffItem, error) {
-	diffs := make([]JSONRichDiffItem, 0)
-	if strings.TrimSpace(raw) == "" {
-		return diffs, nil
+func buildPatchDiffText(oldValue, newValue any, opts runner.DiffOptions, diffFound bool) string {
+	if opts.IgnoreOrder || len(opts.IgnorePaths) > 0 {
+		return ""
 	}
-
-	var parsed jsonMachineResult
-	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-		return nil, fmt.Errorf("failed to parse structured JSON diff output: %w", err)
+	if !diffFound {
+		return "No differences.\n"
 	}
+	return output.RenderUnifiedJSON(oldValue, newValue)
+}
 
-	diffs = make([]JSONRichDiffItem, 0, len(parsed.Diffs))
-	for _, item := range parsed.Diffs {
-		diffs = append(diffs, JSONRichDiffItem(item))
+func buildStructuredDiffs(diffs []delta.Diff) []JSONRichDiffItem {
+	out := make([]JSONRichDiffItem, 0, len(diffs))
+	for _, d := range diffs {
+		out = append(out, JSONRichDiffItem{
+			Type:     string(d.Type),
+			Path:     d.Path,
+			OldValue: d.OldValue,
+			NewValue: d.NewValue,
+		})
 	}
-
-	return diffs, nil
+	return out
 }
 
 func summarizeJSONRichDiffs(diffs []JSONRichDiffItem) JSONRichSummary {
