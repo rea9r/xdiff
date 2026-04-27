@@ -2387,3 +2387,48 @@ button {
   background: #2F3236;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
+
+.app-error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--xdiff-space-4);
+  background: var(--mantine-color-body);
+}
+
+.app-error-boundary-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xdiff-space-3);
+  max-width: 720px;
+  width: 100%;
+  padding: var(--xdiff-space-6);
+  border: 1px solid var(--xdiff-viewer-border-strong);
+  border-radius: var(--xdiff-radius-md);
+  background: var(--xdiff-viewer-surface);
+}
+
+.app-error-boundary-card h2 {
+  margin: 0;
+  font-size: var(--xdiff-text-lg);
+}
+
+.app-error-boundary-message {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--xdiff-text-md);
+}
+
+.app-error-boundary-stack {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: var(--xdiff-space-3);
+  border: 1px solid var(--xdiff-viewer-border);
+  border-radius: var(--xdiff-radius-sm);
+  background: var(--xdiff-viewer-code-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--xdiff-text-xs);
+  white-space: pre;
+}
