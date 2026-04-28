@@ -206,6 +206,14 @@ export function DirectoryDiffResultPanel({
     event.currentTarget.focus({ preventScroll: true })
   }, [])
 
+  // Toolbar / breadcrumb buttons sit outside the keyboard-nav wrap. Without this,
+  // clicking one steals focus and arrow keys stop moving the selection until the
+  // user clicks back into the table — at which point the lingering hover row reads
+  // as a duplicate selection alongside the freshly-moved highlight.
+  const preserveFocus = useCallback((event: ReactMouseEvent) => {
+    event.preventDefault()
+  }, [])
+
   return (
     <SectionCard>
       <div className={`directory-result-shell ${directoryViewMode === 'tree' ? 'is-tree-mode' : ''}`.trim()}>
@@ -223,6 +231,7 @@ export function DirectoryDiffResultPanel({
                         : null
                     if (parent) void onNavigateDirectoryPath(parent.path)
                   }}
+                  onMouseDown={preserveFocus}
                   disabled={
                     loading || !canDiffDirectories || directoryBreadcrumbs.length < 2
                   }
@@ -240,6 +249,7 @@ export function DirectoryDiffResultPanel({
                         type="button"
                         className="directory-breadcrumb-link"
                         onClick={() => void onNavigateDirectoryPath(crumb.path)}
+                        onMouseDown={preserveFocus}
                         disabled={loading || !canDiffDirectories}
                       >
                         {crumb.label}
@@ -350,6 +360,7 @@ export function DirectoryDiffResultPanel({
                   directoryViewMode === 'list' ? 'directory-quick-filter-active' : ''
                 }`}
                 onClick={() => onSetDirectoryViewMode('list')}
+                onMouseDown={preserveFocus}
                 role="tab"
                 aria-selected={directoryViewMode === 'list'}
               >
@@ -362,6 +373,7 @@ export function DirectoryDiffResultPanel({
                   directoryViewMode === 'tree' ? 'directory-quick-filter-active' : ''
                 }`}
                 onClick={() => onSetDirectoryViewMode('tree')}
+                onMouseDown={preserveFocus}
                 role="tab"
                 aria-selected={directoryViewMode === 'tree'}
               >
@@ -383,6 +395,7 @@ export function DirectoryDiffResultPanel({
                   directoryQuickFilter === filterKey ? 'directory-quick-filter-active' : ''
                 }`}
                 onClick={() => onSetDirectoryQuickFilter(filterKey)}
+                onMouseDown={preserveFocus}
               >
                 {directoryQuickFilterLabel(filterKey)} ({directoryQuickFilterCounts[filterKey]})
               </button>
