@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { ActionIcon } from '@mantine/core'
 import {
+  IconArrowUp,
   IconBinaryTree2,
   IconChevronDown,
   IconChevronRight,
@@ -212,6 +213,24 @@ export function DirectoryDiffResultPanel({
           <div className="directory-header-bar">
             <div className="directory-header-context">
               <div className="directory-current-path" aria-label="Current path">
+                <button
+                  type="button"
+                  className="directory-breadcrumb-up"
+                  onClick={() => {
+                    const parent =
+                      directoryBreadcrumbs.length >= 2
+                        ? directoryBreadcrumbs[directoryBreadcrumbs.length - 2]
+                        : null
+                    if (parent) void onNavigateDirectoryPath(parent.path)
+                  }}
+                  disabled={
+                    loading || !canDiffDirectories || directoryBreadcrumbs.length < 2
+                  }
+                  aria-label="Go up one directory"
+                  title="Go up (Backspace)"
+                >
+                  <IconArrowUp size={13} />
+                </button>
                 {directoryBreadcrumbs.map((crumb, index) => (
                   <Fragment key={crumb.path || 'root'}>
                     {crumb.path === currentPath ? (
@@ -227,7 +246,11 @@ export function DirectoryDiffResultPanel({
                       </button>
                     )}
                     {index < directoryBreadcrumbs.length - 1 ? (
-                      <span className="directory-breadcrumb-sep">/</span>
+                      <IconChevronRight
+                        size={12}
+                        className="directory-breadcrumb-sep"
+                        aria-hidden="true"
+                      />
                     ) : null}
                   </Fragment>
                 ))}

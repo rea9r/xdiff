@@ -2062,11 +2062,16 @@ button {
 .directory-breadcrumb-link {
   border: none;
   background: transparent;
-  color: inherit;
-  padding: 0;
+  color: var(--xdiff-accent-fg);
+  padding: 1px var(--xdiff-space-2);
   margin: 0;
+  border-radius: var(--xdiff-radius-sm);
   cursor: pointer;
   font: inherit;
+}
+
+.directory-breadcrumb-link:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--xdiff-accent) 14%, transparent);
 }
 
 .directory-breadcrumb-link:disabled {
@@ -2076,10 +2081,38 @@ button {
 
 .directory-breadcrumb-current {
   font-weight: 600;
+  color: var(--mantine-color-text);
+  padding: 1px var(--xdiff-space-2);
 }
 
 .directory-breadcrumb-sep {
   color: var(--xdiff-viewer-text-dimmed);
+  flex: 0 0 auto;
+}
+
+.directory-breadcrumb-up {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--xdiff-viewer-border);
+  background: transparent;
+  color: var(--xdiff-accent-fg);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin-right: var(--xdiff-space-2);
+  border-radius: var(--xdiff-radius-sm);
+  cursor: pointer;
+}
+
+.directory-breadcrumb-up:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--xdiff-accent) 14%, transparent);
+  border-color: var(--xdiff-accent);
+}
+
+.directory-breadcrumb-up:disabled {
+  cursor: default;
+  opacity: 0.4;
 }
 
 .directory-root-bar {
