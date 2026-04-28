@@ -400,7 +400,6 @@ export function useDesktopShellModel({
         selectedDirectoryItemPath: directoryViewState.selectedDirectoryItemPath,
         sortedDirectoryItems: directoryViewState.sortedDirectoryItems,
         flattenedDirectoryTreeRows: directoryViewState.flattenedDirectoryTreeRows,
-        selectedDirectoryItemForDetail: directoryViewState.selectedDirectoryItemForDetail,
         directoryBreadcrumbs: directoryViewState.directoryBreadcrumbs,
         loading,
         onBrowseDirectoryRoot: directoryWorkflow.browseDirectoryRoot,

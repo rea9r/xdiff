@@ -169,14 +169,6 @@ export function useDirectoryDiffViewState({
     () => flattenDirectoryTreeRows(filteredDirectoryTreeRoots),
     [filteredDirectoryTreeRoots],
   )
-  const selectedDirectoryTreeItem = useMemo(
-    () =>
-      flattenedDirectoryTreeRows.find((row) => row.node.path === selectedDirectoryItemPath)?.node.item ??
-      null,
-    [flattenedDirectoryTreeRows, selectedDirectoryItemPath],
-  )
-  const selectedDirectoryItemForDetail =
-    directoryViewMode === 'tree' ? selectedDirectoryTreeItem : selectedDirectoryItem
   const directoryQuickFilterCounts = useMemo<Record<DirectoryQuickFilter, number>>(() => {
     const counts: Record<DirectoryQuickFilter, number> = { ...EMPTY_DIRECTORY_QUICK_FILTER_COUNTS }
     counts.all = nameFilteredDirectoryItems.length
@@ -356,7 +348,6 @@ export function useDirectoryDiffViewState({
     sortedDirectoryItems,
     flattenedDirectoryTreeRows,
     selectedDirectoryItem,
-    selectedDirectoryItemForDetail,
     directoryQuickFilterCounts,
     directoryBreadcrumbs,
     toggleDirectoryTreeNode,

@@ -2005,16 +2005,12 @@ button {
 
 .directory-result-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: var(--xdiff-space-3);
   min-height: 0;
   height: 100%;
   min-width: 0;
   flex: 1;
-}
-
-.directory-result-shell.is-tree-mode {
-  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .directory-result-header {
@@ -2471,41 +2467,11 @@ button {
   font-size: var(--xdiff-badge-font-size);
 }
 
-.directory-detail-card {
-  border: 1px solid var(--xdiff-viewer-border);
-  border-radius: var(--xdiff-radius-md);
-  background: transparent;
-  padding: var(--xdiff-space-3) var(--xdiff-space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--xdiff-space-3);
-}
-
-.directory-detail-pane {
-  min-width: 0;
-  max-height: 140px;
-  overflow: auto;
-}
-
-.directory-detail-header {
-  display: flex;
-  align-items: center;
-  gap: var(--xdiff-space-2);
-  margin-bottom: var(--xdiff-space-2);
-}
-
-.directory-detail-title {
-  font-weight: 600;
-  font-size: var(--xdiff-directory-font-size);
-}
-
 .directory-list-tree-viewport {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
   overflow: auto;
-  border: 1px solid var(--xdiff-viewer-border);
-  border-radius: var(--xdiff-radius-md);
   background: transparent;
 }
 
@@ -2648,30 +2614,8 @@ button {
   letter-spacing: 0.04em;
 }
 
-.directory-detail-grid {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: var(--xdiff-space-2) var(--xdiff-space-3);
-  font-size: var(--xdiff-directory-font-size);
-  line-height: var(--xdiff-directory-line-height);
-}
-
-.directory-detail-label {
-  color: var(--xdiff-viewer-text-dimmed);
-  font-size: var(--xdiff-directory-small-font-size);
-}
-
-.directory-detail-action {
-  padding-top: var(--xdiff-space-3);
-  border-top: 1px solid var(--xdiff-viewer-border);
-}
-
 @media (max-width: 900px) {
   .directory-root-bar {
-    grid-template-columns: 1fr;
-  }
-
-  .directory-detail-grid {
     grid-template-columns: 1fr;
   }
 }

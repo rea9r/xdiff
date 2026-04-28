@@ -78,7 +78,6 @@ describe('DirectoryDiffResultPanel', () => {
           selectedDirectoryItemPath=""
           sortedDirectoryItems={items}
           flattenedDirectoryTreeRows={[]}
-          selectedDirectoryItemForDetail={null}
           directoryBreadcrumbs={[{ label: 'Root', path: '' }]}
           loading={false}
           onBrowseDirectoryRoot={vi.fn()}

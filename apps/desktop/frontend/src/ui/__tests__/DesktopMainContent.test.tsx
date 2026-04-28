@@ -188,7 +188,6 @@ const directoryResultProps = {
   selectedDirectoryItemPath: '',
   sortedDirectoryItems: [directoryItem],
   flattenedDirectoryTreeRows: [],
-  selectedDirectoryItemForDetail: null,
   directoryBreadcrumbs: [{ label: 'Root', path: '' }],
   loading: false,
   onBrowseDirectoryRoot: noop,

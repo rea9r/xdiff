@@ -67,7 +67,6 @@ export type DirectoryDiffResultPanelProps = {
   selectedDirectoryItemPath: string
   sortedDirectoryItems: DirectoryDiffItem[]
   flattenedDirectoryTreeRows: DirectoryTreeRow[]
-  selectedDirectoryItemForDetail: DirectoryDiffItem | null
   directoryBreadcrumbs: Array<{ label: string; path: string }>
   loading: boolean
   onBrowseDirectoryRoot: (target: 'left' | 'right') => void | Promise<void>
@@ -116,7 +115,6 @@ export function DirectoryDiffResultPanel({
   selectedDirectoryItemPath,
   sortedDirectoryItems,
   flattenedDirectoryTreeRows,
-  selectedDirectoryItemForDetail,
   directoryBreadcrumbs,
   loading,
   onBrowseDirectoryRoot,
@@ -166,14 +164,10 @@ export function DirectoryDiffResultPanel({
     directoryResult?.currentPath,
   ])
 
-  const detailActionReason = selectedDirectoryItemForDetail
-    ? getDirectoryItemActionReason(selectedDirectoryItemForDetail)
-    : null
   const currentPath = directoryResult?.currentPath ?? directoryCurrentPath
   const visibleCount =
     directoryViewMode === 'tree' ? flattenedDirectoryTreeRows.length : sortedDirectoryItems.length
   const canDiffDirectories = !!directoryLeftRoot && !!directoryRightRoot
-  const shouldShowDirectoryDetail = !!selectedDirectoryItemForDetail
   const selectedListIndex = useMemo(
     () => sortedDirectoryItems.findIndex((item) => item.relativePath === selectedDirectoryItemPath),
     [selectedDirectoryItemPath, sortedDirectoryItems],
@@ -226,7 +220,7 @@ export function DirectoryDiffResultPanel({
 
   return (
     <SectionCard>
-      <div className={`directory-result-shell ${directoryViewMode === 'tree' ? 'is-tree-mode' : ''}`.trim()}>
+      <div className="directory-result-shell">
         <div className="directory-result-header">
           <div className="directory-header-bar">
             <div className="directory-header-context">
@@ -430,10 +424,11 @@ export function DirectoryDiffResultPanel({
           </div>
         </div>
 
+        {canExplain ? (
+          <DirectoryAISummaryCard items={aiItems} changedCount={aiChangedCount} />
+        ) : null}
+
         <div className="directory-list-tree-viewport">
-          {canExplain ? (
-            <DirectoryAISummaryCard items={aiItems} changedCount={aiChangedCount} />
-          ) : null}
           {directoryResult?.error ? (
             <pre className="result-output">{directoryResult.error}</pre>
           ) : directoryResult ? (
@@ -715,61 +710,6 @@ export function DirectoryDiffResultPanel({
             <pre className="result-output">(no directory result yet)</pre>
           )}
         </div>
-
-        {shouldShowDirectoryDetail ? (
-          <div className="directory-detail-pane directory-detail-card">
-            <div className="directory-detail-header">
-              <span className="directory-entry-path directory-detail-title">
-                {selectedDirectoryItemForDetail.relativePath || '(root)'}
-              </span>
-              <StatusBadge tone={toneForDirectoryStatus(selectedDirectoryItemForDetail.status)}>
-                {formatDirectoryStatusLabel(selectedDirectoryItemForDetail.status)}
-              </StatusBadge>
-            </div>
-            <div className="directory-detail-grid">
-              <div className="directory-detail-label">Left path</div>
-              <div className="directory-entry-path">{selectedDirectoryItemForDetail.leftPath || '(missing)'}</div>
-              <div className="directory-detail-label">Right path</div>
-              <div className="directory-entry-path">{selectedDirectoryItemForDetail.rightPath || '(missing)'}</div>
-              <div className="directory-detail-label">Mode hint</div>
-              <div>{selectedDirectoryItemForDetail.diffModeHint}</div>
-              {selectedDirectoryItemForDetail.message ? (
-                <>
-                  <div className="directory-detail-label">Message</div>
-                  <div>{selectedDirectoryItemForDetail.message}</div>
-                </>
-              ) : null}
-            </div>
-            <div className="directory-detail-action">
-              {selectedDirectoryItemForDetail.isDir &&
-              selectedDirectoryItemForDetail.status !== 'type-mismatch' ? (
-                <button
-                  type="button"
-                  className="directory-action-button button-secondary button-compact"
-                  onClick={() => void onNavigateDirectoryPath(selectedDirectoryItemForDetail.relativePath)}
-                  disabled={
-                    loading || directoryTreeLoadingPath === selectedDirectoryItemForDetail.relativePath
-                  }
-                >
-                  Enter directory
-                </button>
-              ) : canOpenDirectoryItem(selectedDirectoryItemForDetail) ? (
-                <button
-                  type="button"
-                  className="directory-action-button button-secondary button-compact"
-                  onClick={() => void onOpenDirectoryEntryDiff(selectedDirectoryItemForDetail)}
-                  disabled={directoryOpenBusyPath === selectedDirectoryItemForDetail.relativePath}
-                >
-                  {directoryOpenBusyPath === selectedDirectoryItemForDetail.relativePath
-                    ? 'Opening...'
-                    : 'Open diff'}
-                </button>
-              ) : (
-                <div className="muted">{detailActionReason}</div>
-              )}
-            </div>
-          </div>
-        ) : null}
       </div>
     </SectionCard>
   )

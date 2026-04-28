@@ -8,8 +8,13 @@ type SectionCardProps = {
 
 export function SectionCard({ title, children }: SectionCardProps) {
   return (
-    <Card withBorder radius="md" padding="md">
-      <Stack gap="sm">
+    <Card
+      withBorder
+      radius="md"
+      padding="md"
+      style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+    >
+      <Stack gap="sm" style={{ flex: 1, minHeight: 0 }}>
         {title ? <Text fw={600}>{title}</Text> : null}
         {children}
       </Stack>
