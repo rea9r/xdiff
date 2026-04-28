@@ -275,16 +275,14 @@ func (s *Service) runSetup(ctx context.Context, state *aiSetupState, model strin
 		p.Message = "Downloading model"
 	})
 
+	agg := newPullAggregator()
 	err := client.PullOllamaModel(ctx, baseURL, model, func(progress aiclient.PullProgress) {
-		var pct float64
-		if progress.Total > 0 {
-			pct = float64(progress.Completed) / float64(progress.Total) * 100
-		}
+		completed, total, pct := agg.observe(progress.Status, progress.Total, progress.Completed)
 		state.update(func(p *AISetupProgress) {
 			p.Phase = aiPhasePulling
 			p.Message = progress.Status
-			p.PullCompleted = progress.Completed
-			p.PullTotal = progress.Total
+			p.PullCompleted = completed
+			p.PullTotal = total
 			p.PullPercent = pct
 		})
 	})
@@ -384,4 +382,62 @@ func languageDirective(lang string) string {
 		return "Respond in: " + lang + "\n" +
 			"Important: write every sentence of the response in " + lang + ". Do not switch languages.\n"
 	}
+}
+
+// pullAggregator turns Ollama's per-layer pull progress into a single,
+// monotonically-increasing percentage. Ollama streams `{status, total,
+// completed}` frames where `total/completed` reset on each new layer
+// (manifest, weights blob, config, template, …). Naively summing across
+// layers still dips because a new layer's `total` enters the sum before
+// any of its bytes have been pulled, so the percentage drops every time a
+// layer is registered. The aggregator therefore also clamps the returned
+// percentage to never regress.
+type pullAggregator struct {
+	totals     map[string]int64
+	completeds map[string]int64
+	lastPct    float64
+}
+
+func newPullAggregator() *pullAggregator {
+	return &pullAggregator{
+		totals:     map[string]int64{},
+		completeds: map[string]int64{},
+	}
+}
+
+// observe records a frame for the given status (e.g. "pulling <digest>") and
+// returns the accumulated (completed, total, percent) across every layer seen
+// so far. Status frames without a `total` (such as "verifying sha256 digest")
+// are ignored so they do not perturb the running total. The returned percent
+// is monotonically non-decreasing — when a newly-registered layer would dilute
+// the cumulative ratio, the previous percent is kept instead.
+func (a *pullAggregator) observe(status string, total, completed int64) (int64, int64, float64) {
+	if total > 0 {
+		if total > a.totals[status] {
+			a.totals[status] = total
+		}
+		if completed > a.completeds[status] {
+			a.completeds[status] = completed
+		}
+		if a.completeds[status] > a.totals[status] {
+			a.completeds[status] = a.totals[status]
+		}
+	}
+	var sumTotal, sumCompleted int64
+	for _, t := range a.totals {
+		sumTotal += t
+	}
+	for _, c := range a.completeds {
+		sumCompleted += c
+	}
+	var pct float64
+	if sumTotal > 0 {
+		pct = float64(sumCompleted) / float64(sumTotal) * 100
+	}
+	if pct < a.lastPct {
+		pct = a.lastPct
+	} else {
+		a.lastPct = pct
+	}
+	return sumCompleted, sumTotal, pct
 }
