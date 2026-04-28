@@ -14,10 +14,11 @@ import {
   IconBinaryTree2,
   IconChevronDown,
   IconChevronRight,
+  IconFile,
+  IconFolderFilled,
   IconFolderOpen,
   IconList,
 } from '@tabler/icons-react'
-import { DirectoryEntryIcon } from './directoryFileIcon'
 import type { DiffDirectoriesResponse, DirectoryDiffItem } from '../../types'
 import { SectionCard } from '../../ui/SectionCard'
 import { StatusBadge } from '../../ui/StatusBadge'
@@ -518,7 +519,7 @@ export function DirectoryDiffResultPanel({
                                   void onNavigateDirectoryPath(item.relativePath)
                                 }}
                               >
-                                <DirectoryEntryIcon name={item.name} isDir={item.isDir} />
+                                {item.isDir ? <IconFolderFilled size={14} /> : <IconFile size={14} />}
                                 <span
                                   className="directory-entry-path"
                                   title={`${item.leftPath || '(missing)'}\n${item.rightPath || '(missing)'}`}
@@ -651,7 +652,7 @@ export function DirectoryDiffResultPanel({
                             ) : (
                               <span className="directory-tree-chevron-spacer" />
                             )}
-                            <DirectoryEntryIcon name={node.name} isDir={node.isDir} />
+                            {node.isDir ? <IconFolderFilled size={14} /> : <IconFile size={14} />}
                             <span className="directory-entry-path">{node.name}</span>
                             <span className="directory-tree-status directory-status-cell">
                               <StatusBadge tone={toneForDirectoryStatus(node.status)}>
