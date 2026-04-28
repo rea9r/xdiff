@@ -73,7 +73,6 @@ export function useDirectoryDiffModel(deps: DirectoryDiffModelDeps) {
     isDirectoryMode: deps.mode === 'directory',
     directoryLeftRoot,
     directoryRightRoot,
-    directoryNameFilter,
     directoryCurrentPath,
     directoryResult,
     directoryViewMode,
@@ -126,7 +125,6 @@ export function useDirectoryDiffModel(deps: DirectoryDiffModelDeps) {
 
   const interactions = useDirectoryDiffInteractions({
     diffDirectories: deps.diffDirectories,
-    directoryNameFilter,
     directoryResult,
     sortedDirectoryItems,
     selectedDirectoryItem,

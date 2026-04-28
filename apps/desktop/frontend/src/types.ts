@@ -79,7 +79,6 @@ export type DiffDirectoriesRequest = {
   currentPath: string
   recursive: boolean
   showSame: boolean
-  nameFilter: string
 }
 
 type DirectoryDiffSummary = {

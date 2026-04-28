@@ -7,7 +7,9 @@ import type {
 import { usePersistedState } from '../../usePersistedState'
 import {
   buildDirectoryBreadcrumbs,
+  filterDirectoryItemsByName,
   filterDirectoryItemsByQuickFilter,
+  filterDirectoryTreeNodesByName,
   filterDirectoryTreeNodesByQuickFilter,
   flattenDirectoryTreeRows,
   directoryItemsToTreeNodes,
@@ -139,9 +141,13 @@ export function useDirectoryDiffViewState({
   const directoryTreeCacheRef = useRef<Record<string, DirectoryDiffItem[]>>({})
 
   const directoryItems = directoryResult?.items ?? []
+  const nameFilteredDirectoryItems = useMemo(
+    () => filterDirectoryItemsByName(directoryItems, directoryNameFilter),
+    [directoryItems, directoryNameFilter],
+  )
   const filteredDirectoryItems = useMemo(
-    () => filterDirectoryItemsByQuickFilter(directoryItems, directoryQuickFilter),
-    [directoryItems, directoryQuickFilter],
+    () => filterDirectoryItemsByQuickFilter(nameFilteredDirectoryItems, directoryQuickFilter),
+    [nameFilteredDirectoryItems, directoryQuickFilter],
   )
   const sortedDirectoryItems = useMemo(
     () => sortDirectoryItemsForList(filteredDirectoryItems, directorySortKey, directorySortDirection),
@@ -151,9 +157,13 @@ export function useDirectoryDiffViewState({
     () => sortedDirectoryItems.find((item) => item.relativePath === selectedDirectoryItemPath) ?? null,
     [sortedDirectoryItems, selectedDirectoryItemPath],
   )
+  const nameFilteredTreeRoots = useMemo(
+    () => filterDirectoryTreeNodesByName(directoryTreeRoots, directoryNameFilter),
+    [directoryTreeRoots, directoryNameFilter],
+  )
   const filteredDirectoryTreeRoots = useMemo(
-    () => filterDirectoryTreeNodesByQuickFilter(directoryTreeRoots, directoryQuickFilter),
-    [directoryTreeRoots, directoryQuickFilter],
+    () => filterDirectoryTreeNodesByQuickFilter(nameFilteredTreeRoots, directoryQuickFilter),
+    [nameFilteredTreeRoots, directoryQuickFilter],
   )
   const flattenedDirectoryTreeRows = useMemo(
     () => flattenDirectoryTreeRows(filteredDirectoryTreeRoots),
@@ -167,22 +177,17 @@ export function useDirectoryDiffViewState({
   )
   const selectedDirectoryItemForDetail =
     directoryViewMode === 'tree' ? selectedDirectoryTreeItem : selectedDirectoryItem
-  const directoryQuickFilterCounts = useMemo(
-    () => ({
-      all: directoryResult?.currentSummary.total ?? EMPTY_DIRECTORY_QUICK_FILTER_COUNTS.all,
-      changed: directoryResult?.currentSummary.changed ?? EMPTY_DIRECTORY_QUICK_FILTER_COUNTS.changed,
-      'left-only':
-        directoryResult?.currentSummary.leftOnly ?? EMPTY_DIRECTORY_QUICK_FILTER_COUNTS['left-only'],
-      'right-only':
-        directoryResult?.currentSummary.rightOnly ?? EMPTY_DIRECTORY_QUICK_FILTER_COUNTS['right-only'],
-      'type-mismatch':
-        directoryResult?.currentSummary.typeMismatch ??
-        EMPTY_DIRECTORY_QUICK_FILTER_COUNTS['type-mismatch'],
-      error: directoryResult?.currentSummary.error ?? EMPTY_DIRECTORY_QUICK_FILTER_COUNTS.error,
-      same: directoryResult?.currentSummary.same ?? EMPTY_DIRECTORY_QUICK_FILTER_COUNTS.same,
-    }),
-    [directoryResult],
-  )
+  const directoryQuickFilterCounts = useMemo<Record<DirectoryQuickFilter, number>>(() => {
+    const counts: Record<DirectoryQuickFilter, number> = { ...EMPTY_DIRECTORY_QUICK_FILTER_COUNTS }
+    counts.all = nameFilteredDirectoryItems.length
+    for (const item of nameFilteredDirectoryItems) {
+      const key = item.status as Exclude<DirectoryQuickFilter, 'all'>
+      if (key in counts) {
+        counts[key]++
+      }
+    }
+    return counts
+  }, [nameFilteredDirectoryItems])
   const directoryBreadcrumbs = useMemo(
     () => buildDirectoryBreadcrumbs(directoryResult?.currentPath ?? directoryCurrentPath),
     [directoryResult?.currentPath, directoryCurrentPath],
@@ -250,7 +255,7 @@ export function useDirectoryDiffViewState({
     directoryTreeCacheRef.current = {}
     setDirectoryTreeRoots([])
     setDirectoryExpandedPaths([])
-  }, [directoryLeftRoot, directoryRightRoot, directoryNameFilter])
+  }, [directoryLeftRoot, directoryRightRoot])
 
   const loadDirectoryChildren = async (relativePath: string): Promise<DirectoryDiffItem[]> => {
     const cached = directoryTreeCacheRef.current[relativePath]
@@ -268,7 +273,6 @@ export function useDirectoryDiffViewState({
       currentPath: relativePath,
       recursive: true,
       showSame: true,
-      nameFilter: directoryNameFilter,
     } satisfies DiffDirectoriesRequest)
 
     if (res.error) {

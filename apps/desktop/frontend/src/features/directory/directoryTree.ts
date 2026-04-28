@@ -120,6 +120,42 @@ export function filterDirectoryItemsByQuickFilter(
   return items.filter((item) => item.status === quickFilter)
 }
 
+export function filterDirectoryItemsByName(
+  items: DirectoryDiffItem[],
+  query: string,
+): DirectoryDiffItem[] {
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed) {
+    return items
+  }
+  return items.filter((item) => item.name.toLowerCase().includes(trimmed))
+}
+
+function filterTreeNodesByLoweredName(
+  nodes: DirectoryTreeNode[],
+  loweredQuery: string,
+): DirectoryTreeNode[] {
+  return nodes.flatMap((node) => {
+    const filteredChildren = filterTreeNodesByLoweredName(node.children ?? [], loweredQuery)
+    const keepNode = node.name.toLowerCase().includes(loweredQuery) || filteredChildren.length > 0
+    if (!keepNode) {
+      return []
+    }
+    return [{ ...node, children: filteredChildren }]
+  })
+}
+
+export function filterDirectoryTreeNodesByName(
+  nodes: DirectoryTreeNode[],
+  query: string,
+): DirectoryTreeNode[] {
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed) {
+    return nodes
+  }
+  return filterTreeNodesByLoweredName(nodes, trimmed)
+}
+
 export function toggleDirectorySort(
   key: DirectorySortKey,
   currentKey: DirectorySortKey,

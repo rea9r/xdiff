@@ -41,7 +41,6 @@ describe('useDirectoryDiffWorkflow', () => {
         isDirectoryMode: true,
         directoryLeftRoot: '/left',
         directoryRightRoot: '/right',
-        directoryNameFilter: '',
         directoryCurrentPath: 'a/b',
         directoryResult: null,
         directoryViewMode: 'tree',
@@ -66,7 +65,6 @@ describe('useDirectoryDiffWorkflow', () => {
       currentPath: 'a/b',
       recursive: true,
       showSame: true,
-      nameFilter: '',
     })
     expect(setDirectoryResult).toHaveBeenCalled()
     expect(setDirectoryCurrentPath).toHaveBeenCalledWith('a/b')
@@ -95,7 +93,6 @@ describe('useDirectoryDiffWorkflow', () => {
         isDirectoryMode: true,
         directoryLeftRoot: '',
         directoryRightRoot: '',
-        directoryNameFilter: '',
         directoryCurrentPath: '',
         directoryResult: null,
         directoryViewMode: 'list',
@@ -129,7 +126,6 @@ describe('useDirectoryDiffWorkflow', () => {
         isDirectoryMode: true,
         directoryLeftRoot: '/left',
         directoryRightRoot: '/right',
-        directoryNameFilter: '',
         directoryCurrentPath: 'old/path',
         directoryResult: createResponse('new/path'),
         directoryViewMode: 'list',

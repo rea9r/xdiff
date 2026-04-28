@@ -12,7 +12,6 @@ type UseDirectoryDiffWorkflowOptions = {
   isDirectoryMode: boolean
   directoryLeftRoot: string
   directoryRightRoot: string
-  directoryNameFilter: string
   directoryCurrentPath: string
   directoryResult: DiffDirectoriesResponse | null
   directoryViewMode: DirectoryViewMode
@@ -33,7 +32,6 @@ export function useDirectoryDiffWorkflow({
   isDirectoryMode,
   directoryLeftRoot,
   directoryRightRoot,
-  directoryNameFilter,
   directoryCurrentPath,
   directoryResult,
   directoryViewMode,
@@ -65,7 +63,6 @@ export function useDirectoryDiffWorkflow({
         currentPath: nextCurrentPath,
         recursive: true,
         showSame: true,
-        nameFilter: directoryNameFilter,
       } satisfies DiffDirectoriesRequest)
 
       setDirectoryResult(res)
@@ -91,7 +88,6 @@ export function useDirectoryDiffWorkflow({
       diffDirectories,
       directoryCurrentPath,
       directoryLeftRoot,
-      directoryNameFilter,
       directoryRightRoot,
       directoryViewMode,
       setDirectoryCurrentPath,

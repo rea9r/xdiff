@@ -16,7 +16,6 @@ import {
 
 type UseDirectoryDiffInteractionsOptions = {
   diffDirectories?: (req: DiffDirectoriesRequest) => Promise<DiffDirectoriesResponse>
-  directoryNameFilter: string
   directoryResult: DiffDirectoriesResponse | null
   sortedDirectoryItems: DirectoryDiffItem[]
   selectedDirectoryItem: DirectoryDiffItem | null
@@ -38,7 +37,6 @@ type UseDirectoryDiffInteractionsOptions = {
 
 export function useDirectoryDiffInteractions({
   diffDirectories,
-  directoryNameFilter,
   directoryResult,
   sortedDirectoryItems,
   selectedDirectoryItem,
@@ -292,7 +290,6 @@ export function useDirectoryDiffInteractions({
         currentPath,
         recursive: true,
         showSame: true,
-        nameFilter: directoryNameFilter,
       } satisfies DiffDirectoriesRequest)
 
       setMode('directory')
@@ -317,7 +314,6 @@ export function useDirectoryDiffInteractions({
     },
     [
       diffDirectories,
-      directoryNameFilter,
       setDirectoryCurrentPath,
       setDirectoryLeftRoot,
       setDirectoryRecentPairs,
