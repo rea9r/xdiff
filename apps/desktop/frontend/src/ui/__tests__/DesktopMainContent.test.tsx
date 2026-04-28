@@ -203,6 +203,7 @@ const directoryResultProps = {
   onDirectoryRowDoubleClick: noop,
   onDirectoryTreeRowDoubleClick: noop,
   onDirectoryTableKeyDown: noop,
+  onDirectoryTreeKeyDown: noop,
 }
 
 describe('DesktopMainContent', () => {

@@ -416,6 +416,8 @@ export function useDesktopShellModel({
         onDirectoryTreeRowDoubleClick: directoryInteractions.handleDirectoryTreeRowDoubleClick,
         onDirectoryTableKeyDown: (event) =>
           void directoryInteractions.handleDirectoryTableKeyDown(event),
+        onDirectoryTreeKeyDown: (event) =>
+          void directoryInteractions.handleDirectoryTreeKeyDown(event),
       }}
     />
   )

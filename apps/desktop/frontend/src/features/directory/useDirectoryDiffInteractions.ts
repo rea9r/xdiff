@@ -7,7 +7,12 @@ import type {
   Mode,
 } from '../../types'
 import { upsertRecentDirectoryPair } from '../../persistence'
-import { canOpenDirectoryItem, type DirectoryTreeNode, type DirectoryViewMode } from './directoryTree'
+import {
+  canOpenDirectoryItem,
+  type DirectoryTreeNode,
+  type DirectoryTreeRow,
+  type DirectoryViewMode,
+} from './directoryTree'
 
 type UseDirectoryDiffInteractionsOptions = {
   diffDirectories?: (req: DiffDirectoriesRequest) => Promise<DiffDirectoriesResponse>
@@ -15,6 +20,8 @@ type UseDirectoryDiffInteractionsOptions = {
   directoryResult: DiffDirectoriesResponse | null
   sortedDirectoryItems: DirectoryDiffItem[]
   selectedDirectoryItem: DirectoryDiffItem | null
+  selectedDirectoryItemPath: string
+  flattenedDirectoryTreeRows: DirectoryTreeRow[]
   resetDirectoryNavigationState: () => void
   openDirectoryEntryDiff: (item: DirectoryDiffItem) => Promise<void>
   toggleDirectoryTreeNode: (node: DirectoryTreeNode) => Promise<void>
@@ -35,6 +42,8 @@ export function useDirectoryDiffInteractions({
   directoryResult,
   sortedDirectoryItems,
   selectedDirectoryItem,
+  selectedDirectoryItemPath,
+  flattenedDirectoryTreeRows,
   resetDirectoryNavigationState,
   openDirectoryEntryDiff,
   toggleDirectoryTreeNode,
@@ -106,6 +115,15 @@ export function useDirectoryDiffInteractions({
         return
       }
 
+      const isOwnedKey =
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'Enter' ||
+        event.key === 'Backspace'
+      if (isOwnedKey) {
+        event.currentTarget.focus({ preventScroll: true })
+      }
+
       const currentIndex = selectedDirectoryItem
         ? sortedDirectoryItems.findIndex((item) => item.relativePath === selectedDirectoryItem.relativePath)
         : -1
@@ -142,6 +160,118 @@ export function useDirectoryDiffInteractions({
       selectedDirectoryItem,
       setSelectedDirectoryItemPath,
       sortedDirectoryItems,
+    ],
+  )
+
+  const handleDirectoryTreeKeyDown = useCallback(
+    async (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement | null
+      if (!target) {
+        return
+      }
+      const tagName = target.tagName.toLowerCase()
+      if (
+        tagName === 'input' ||
+        tagName === 'textarea' ||
+        tagName === 'select' ||
+        target.isContentEditable
+      ) {
+        return
+      }
+
+      if (flattenedDirectoryTreeRows.length === 0) {
+        return
+      }
+
+      const isOwnedKey =
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowRight' ||
+        event.key === 'Enter' ||
+        event.key === 'Backspace'
+      if (isOwnedKey) {
+        event.currentTarget.focus({ preventScroll: true })
+      }
+
+      const currentIndex = selectedDirectoryItemPath
+        ? flattenedDirectoryTreeRows.findIndex((row) => row.node.path === selectedDirectoryItemPath)
+        : -1
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        const nextIndex =
+          currentIndex < 0 ? 0 : Math.min(currentIndex + 1, flattenedDirectoryTreeRows.length - 1)
+        setSelectedDirectoryItemPath(flattenedDirectoryTreeRows[nextIndex].node.path)
+        return
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1
+        setSelectedDirectoryItemPath(flattenedDirectoryTreeRows[nextIndex].node.path)
+        return
+      }
+
+      if (event.key === 'ArrowRight') {
+        if (currentIndex < 0) {
+          return
+        }
+        const row = flattenedDirectoryTreeRows[currentIndex]
+        if (!row.node.isDir || row.node.item.status === 'type-mismatch') {
+          return
+        }
+        event.preventDefault()
+        if (!row.node.expanded) {
+          await toggleDirectoryTreeNode(row.node)
+        } else if (
+          currentIndex + 1 < flattenedDirectoryTreeRows.length &&
+          flattenedDirectoryTreeRows[currentIndex + 1].depth > row.depth
+        ) {
+          setSelectedDirectoryItemPath(flattenedDirectoryTreeRows[currentIndex + 1].node.path)
+        }
+        return
+      }
+
+      if (event.key === 'ArrowLeft') {
+        if (currentIndex < 0) {
+          return
+        }
+        const row = flattenedDirectoryTreeRows[currentIndex]
+        event.preventDefault()
+        if (row.node.isDir && row.node.expanded) {
+          await toggleDirectoryTreeNode(row.node)
+          return
+        }
+        // Otherwise jump to the nearest ancestor row in the flattened view.
+        for (let i = currentIndex - 1; i >= 0; i--) {
+          if (flattenedDirectoryTreeRows[i].depth < row.depth) {
+            setSelectedDirectoryItemPath(flattenedDirectoryTreeRows[i].node.path)
+            break
+          }
+        }
+        return
+      }
+
+      if (event.key === 'Enter' && currentIndex >= 0) {
+        event.preventDefault()
+        await handleDirectoryTreeRowDoubleClick(flattenedDirectoryTreeRows[currentIndex].node)
+        return
+      }
+
+      if (event.key === 'Backspace' && directoryResult?.currentPath) {
+        event.preventDefault()
+        navigateDirectoryPath(directoryResult.parentPath || '')
+      }
+    },
+    [
+      directoryResult,
+      flattenedDirectoryTreeRows,
+      handleDirectoryTreeRowDoubleClick,
+      navigateDirectoryPath,
+      selectedDirectoryItemPath,
+      setSelectedDirectoryItemPath,
+      toggleDirectoryTreeNode,
     ],
   )
 
@@ -204,6 +334,7 @@ export function useDirectoryDiffInteractions({
     handleDirectoryRowDoubleClick,
     handleDirectoryTreeRowDoubleClick,
     handleDirectoryTableKeyDown,
+    handleDirectoryTreeKeyDown,
     runDirectoryFromRecent,
   }
 }

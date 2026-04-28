@@ -93,6 +93,7 @@ describe('DirectoryDiffResultPanel', () => {
           onDirectoryRowDoubleClick={vi.fn()}
           onDirectoryTreeRowDoubleClick={vi.fn()}
           onDirectoryTableKeyDown={vi.fn()}
+          onDirectoryTreeKeyDown={vi.fn()}
         />
       </MantineProvider>,
     )

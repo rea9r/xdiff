@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useMemo, useState, type KeyboardEventHandler } from 'react'
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type KeyboardEventHandler,
+} from 'react'
 import { ActionIcon } from '@mantine/core'
 import {
   IconBinaryTree2,
@@ -70,6 +77,7 @@ export type DirectoryDiffResultPanelProps = {
   onDirectoryRowDoubleClick: (item: DirectoryDiffItem) => void | Promise<void>
   onDirectoryTreeRowDoubleClick: (node: DirectoryTreeNode) => void | Promise<void>
   onDirectoryTableKeyDown: KeyboardEventHandler<HTMLDivElement>
+  onDirectoryTreeKeyDown: KeyboardEventHandler<HTMLDivElement>
 }
 
 function DirectorySortIndicator({
@@ -118,6 +126,7 @@ export function DirectoryDiffResultPanel({
   onDirectoryRowDoubleClick,
   onDirectoryTreeRowDoubleClick,
   onDirectoryTableKeyDown,
+  onDirectoryTreeKeyDown,
 }: DirectoryDiffResultPanelProps) {
   const [visibleListRows, setVisibleListRows] = useState(DEFAULT_DIRECTORY_VISIBLE_ROWS)
   const [visibleTreeRows, setVisibleTreeRows] = useState(DEFAULT_DIRECTORY_VISIBLE_ROWS)
@@ -175,6 +184,12 @@ export function DirectoryDiffResultPanel({
   )
   const hasMoreListItems = visibleListItems.length < sortedDirectoryItems.length
   const hasMoreTreeItems = visibleTreeItems.length < flattenedDirectoryTreeRows.length
+
+  const focusWrapOnMount = useCallback((el: HTMLDivElement | null) => {
+    if (el) {
+      el.focus({ preventScroll: true })
+    }
+  }, [])
 
   return (
     <SectionCard>
@@ -355,6 +370,7 @@ export function DirectoryDiffResultPanel({
               <div
                 className="directory-table-wrap"
                 tabIndex={0}
+                ref={focusWrapOnMount}
                 onKeyDown={onDirectoryTableKeyDown}
                 onFocus={() => {
                   if (!selectedDirectoryItemPath && sortedDirectoryItems.length > 0) {
@@ -501,7 +517,17 @@ export function DirectoryDiffResultPanel({
                 ) : null}
               </div>
             ) : (
-              <div className="directory-tree-wrap">
+              <div
+                className="directory-tree-wrap"
+                tabIndex={0}
+                ref={focusWrapOnMount}
+                onKeyDown={onDirectoryTreeKeyDown}
+                onFocus={() => {
+                  if (!selectedDirectoryItemPath && flattenedDirectoryTreeRows.length > 0) {
+                    onSelectDirectoryItemPath(flattenedDirectoryTreeRows[0].node.path)
+                  }
+                }}
+              >
                 {visibleTreeItems.length === 0 ? (
                   <div className="muted">No entries to show.</div>
                 ) : (
