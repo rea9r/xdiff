@@ -1,8 +1,8 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { IconCopy, IconSparkles } from '@tabler/icons-react'
+import { IconCopy } from '@tabler/icons-react'
 import type { DiffResponse, JSONRichDiffItem } from '../../types'
-import { AIExplainDrawer } from '../ai/AIExplainDrawer'
+import { AIInlineSummary } from '../ai/AIInlineSummary'
 import { renderResult } from '../../utils/appHelpers'
 import { DiffNavControls } from '../../ui/DiffNavControls'
 import { DiffResultToolbar } from '../../ui/DiffResultToolbar'
@@ -277,10 +277,15 @@ export function JSONDiffResultPanel({
   const hasJSONResult = !!jsonResult
   const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   const canExplain = hasJSONResult && !!raw && !jsonResult?.error
   const currentSearchMatchCount =
     jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length
+  const aiHintParts: string[] = []
+  if (jsonSummary?.added) aiHintParts.push(`+${jsonSummary.added}`)
+  if (jsonSummary?.removed) aiHintParts.push(`-${jsonSummary.removed}`)
+  if (jsonSummary?.changed) aiHintParts.push(`~${jsonSummary.changed}`)
+  if (jsonSummary?.typeChanged) aiHintParts.push(`type ${jsonSummary.typeChanged}`)
+  const aiHint = aiHintParts.length > 0 ? aiHintParts.join(' / ') : undefined
 
   useDiffKeyboardShortcuts({
     enabled: hasJSONResult,
@@ -369,18 +374,6 @@ export function JSONDiffResultPanel({
           summary={<DiffStatusBadges items={jsonSummaryItems} />}
           secondary={
             <>
-              <Tooltip label="Explain diff with local AI">
-                <ActionIcon
-                  variant="default"
-                  size={28}
-                  aria-label="Explain diff with local AI"
-                  className="text-result-action"
-                  onClick={() => setAiDrawerOpen(true)}
-                  disabled={!canExplain}
-                >
-                  <IconSparkles size={15} />
-                </ActionIcon>
-              </Tooltip>
               <Tooltip label="Copy raw output">
                 <ActionIcon
                   variant="default"
@@ -455,6 +448,15 @@ export function JSONDiffResultPanel({
         />
       }
     >
+      {canExplain ? (
+        <AIInlineSummary
+          cacheKey={raw}
+          diffText={raw}
+          ctaLabel="Explain this diff with local AI"
+          ctaHint={aiHint}
+          mode="json"
+        />
+      ) : null}
       {showDiff && jsonDiffTextItems ? (
         <RichDiffViewer
           items={jsonDiffTextItems}
@@ -580,12 +582,6 @@ export function JSONDiffResultPanel({
       ) : (
         <pre className="result-output">{raw}</pre>
       )}
-      <AIExplainDrawer
-        opened={aiDrawerOpen}
-        onClose={() => setAiDrawerOpen(false)}
-        diffText={raw}
-        mode="json"
-      />
     </DiffResultShell>
   )
 }

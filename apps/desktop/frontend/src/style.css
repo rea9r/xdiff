@@ -2469,7 +2469,7 @@ button {
   background: transparent;
 }
 
-.directory-ai-cta {
+.ai-inline-cta {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2488,7 +2488,7 @@ button {
   text-align: left;
 }
 
-.directory-ai-cta:hover {
+.ai-inline-cta:hover {
   background: linear-gradient(
     90deg,
     color-mix(in srgb, var(--mantine-color-blue-6) 18%, transparent),
@@ -2496,18 +2496,18 @@ button {
   );
 }
 
-.directory-ai-cta-label {
+.ai-inline-cta-label {
   flex: 1;
   font-weight: 500;
 }
 
-.directory-ai-cta-hint {
+.ai-inline-cta-hint {
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-xs);
   font-variant-numeric: tabular-nums;
 }
 
-.directory-ai-card {
+.ai-inline-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2516,14 +2516,14 @@ button {
   background: color-mix(in srgb, var(--mantine-color-blue-6) 5%, transparent);
 }
 
-.directory-ai-card-header {
+.ai-inline-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.directory-ai-card-toggle {
+.ai-inline-card-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2539,16 +2539,16 @@ button {
   text-align: left;
 }
 
-.directory-ai-card-toggle:hover {
+.ai-inline-card-toggle:hover {
   background: color-mix(in srgb, var(--mantine-color-blue-6) 12%, transparent);
 }
 
-.directory-ai-card-chevron {
+.ai-inline-card-chevron {
   transition: transform 120ms ease;
   flex: none;
 }
 
-.directory-ai-card-body {
+.ai-inline-card-body {
   display: flex;
   flex-direction: column;
   gap: 6px;

@@ -1,15 +1,14 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import {
   IconArrowBackUp,
   IconArrowForwardUp,
   IconCopy,
-  IconSparkles,
   IconSpace,
   IconSpaceOff,
 } from '@tabler/icons-react'
 import type { DiffResponse } from '../../types'
-import { AIExplainDrawer } from '../ai/AIExplainDrawer'
+import { AIInlineSummary } from '../ai/AIInlineSummary'
 import { renderResult } from '../../utils/appHelpers'
 import { DiffNavControls } from '../../ui/DiffNavControls'
 import { DiffResultToolbar } from '../../ui/DiffResultToolbar'
@@ -161,8 +160,11 @@ export function TextDiffResultPanel({
   const textDiffBlockIds = new Set(textDiffBlocks.map((block) => block.id))
   const activeTextDiffBlockId = activeTextDiffBlock?.id ?? null
   const searchInputRef = useRef<HTMLInputElement | null>(null)
-  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   const canExplain = hasTextResult && !!raw && !textResult?.error
+  const aiHint =
+    diffCounts.added > 0 || diffCounts.removed > 0
+      ? `+${diffCounts.added} / -${diffCounts.removed}`
+      : undefined
 
   const showAdoptHistoryControls = !!onAdoptBlock && (canUndoAdopt || canRedoAdopt)
   const isMac =
@@ -272,18 +274,6 @@ export function TextDiffResultPanel({
                   {ignoreWhitespace ? <IconSpaceOff size={15} /> : <IconSpace size={15} />}
                 </ActionIcon>
               </Tooltip>
-              <Tooltip label="Explain diff with local AI">
-                <ActionIcon
-                  variant="default"
-                  size={28}
-                  aria-label="Explain diff with local AI"
-                  className="text-result-action"
-                  onClick={() => setAiDrawerOpen(true)}
-                  disabled={!canExplain}
-                >
-                  <IconSparkles size={15} />
-                </ActionIcon>
-              </Tooltip>
               <Tooltip label="Copy raw output">
                 <ActionIcon
                   variant="default"
@@ -367,6 +357,15 @@ export function TextDiffResultPanel({
         />
       }
     >
+      {canExplain ? (
+        <AIInlineSummary
+          cacheKey={raw}
+          diffText={raw}
+          ctaLabel="Explain this diff with local AI"
+          ctaHint={aiHint}
+          mode="text"
+        />
+      ) : null}
       {showRich && textRichItems ? (
         <RichDiffViewer
           items={textRichItems}
@@ -390,12 +389,6 @@ export function TextDiffResultPanel({
       ) : (
         <pre className="result-output">{raw}</pre>
       )}
-      <AIExplainDrawer
-        opened={aiDrawerOpen}
-        onClose={() => setAiDrawerOpen(false)}
-        diffText={raw}
-        mode="text"
-      />
     </DiffResultShell>
   )
 }
