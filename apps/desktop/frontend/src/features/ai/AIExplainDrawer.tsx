@@ -29,12 +29,12 @@ import {
   IconWallet,
 } from '@tabler/icons-react'
 import { ExplanationMarkdown } from './ExplanationMarkdown'
+import { useAISetup } from './AISetupProvider'
 import { useDesktopBridge } from '../../useDesktopBridge'
 import { EventsOff, EventsOn } from '../../../wailsjs/runtime/runtime'
 import type {
   AIProviderStatus,
   AISetupPhase,
-  AISetupProgress,
   ExplainDiffMode,
   HardwareTier,
 } from '../../types'
@@ -85,11 +85,6 @@ const TIERS: Tier[] = [
     description: 'Best output. Needs more RAM.',
   },
 ]
-
-const POLL_INTERVAL_MS = 500
-const ETA_MIN_SAMPLES = 5
-const ETA_MAX_SAMPLES = 10
-const READY_FLASH_MS = 900
 
 const LANGUAGE_STORAGE_KEY = 'xdiff.ai.explainLanguage'
 const LANGUAGE_OPTIONS = [
@@ -243,12 +238,19 @@ export function AIExplainDrawer({
   const {
     aiProviderStatus,
     explainDiffStream,
-    startAISetup,
-    aiSetupProgress,
-    cancelAISetup,
     deleteOllamaModel,
     openOllamaDownloadPage,
   } = useDesktopBridge()
+
+  const {
+    progress: setupProgress,
+    isSettingUp,
+    etaMs,
+    isReadyFlash: showReadyFlash,
+    start: startSetupFlow,
+    cancel: cancelSetupFlow,
+    dismissError: dismissSetupError,
+  } = useAISetup()
 
   const [status, setStatus] = useState<AIProviderStatus | null>(null)
   const [explanation, setExplanation] = useState('')
@@ -258,11 +260,7 @@ export function AIExplainDrawer({
   const [activeModel, setActiveModel] = useState<string>('')
   const [usedProvider, setUsedProvider] = useState<string | null>(null)
   const [usedModel, setUsedModel] = useState<string | null>(null)
-  const [setupProgress, setSetupProgress] = useState<AISetupProgress | null>(null)
-  const [isSettingUp, setIsSettingUp] = useState(false)
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null)
-  const [showReadyFlash, setShowReadyFlash] = useState(false)
-  const [etaMs, setEtaMs] = useState<number | null>(null)
   const [addingModel, setAddingModel] = useState(false)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [confirmDeleteModel, setConfirmDeleteModel] = useState<string | null>(null)
@@ -270,8 +268,7 @@ export function AIExplainDrawer({
   const [language, setLanguage] = useState<string>(loadStoredLanguage)
 
   const lastDiffRef = useRef<string>('')
-  const samplesRef = useRef<{ t: number; bytes: number }[]>([])
-  const prevPhaseRef = useRef<AISetupPhase | undefined>(undefined)
+  const prevSetupPhaseRef = useRef<AISetupPhase | undefined>(undefined)
   const revertTimeoutRef = useRef<number | null>(null)
   const activeStreamIdRef = useRef<string | null>(null)
 
@@ -438,116 +435,39 @@ export function AIExplainDrawer({
     void runExplain()
   }, [opened, status?.available, activeModel, diffText, runExplain, showReadyFlash])
 
-  // Poll setup progress while a setup run is in flight.
+  // React to setup phase transitions sourced from the provider.
+  // - On 'ready': close the inline add-model panel, refresh status, and pick
+  //   the freshly-pulled model as active so the next explain uses it.
   useEffect(() => {
-    if (!isSettingUp) return
-    let cancelled = false
-    const tick = async () => {
-      try {
-        const p = await aiSetupProgress()
-        if (cancelled) return
-        setSetupProgress(p)
-        if (p.phase === 'ready') {
-          setIsSettingUp(false)
-          setAddingModel(false)
-          const next = await refreshStatus()
-          if (next.available && next.models && next.models.length > 0) {
-            const pickedModel = p.model || next.models[0]
-            setActiveModel(pickedModel)
-            lastDiffRef.current = ''
-          }
-        } else if (p.phase === 'error') {
-          setIsSettingUp(false)
-        }
-      } catch (e) {
-        if (cancelled) return
-        setIsSettingUp(false)
-        setSetupProgress({ phase: 'error', error: formatUnknownError(e) })
-      }
-    }
-    const id = window.setInterval(() => void tick(), POLL_INTERVAL_MS)
-    void tick()
-    return () => {
-      cancelled = true
-      window.clearInterval(id)
-    }
-  }, [isSettingUp, aiSetupProgress, refreshStatus])
-
-  // ETA: rolling window of (timestamp, completed-bytes) samples while pulling.
-  useEffect(() => {
-    if (!setupProgress || setupProgress.phase !== 'pulling') {
-      samplesRef.current = []
-      setEtaMs(null)
-      return
-    }
-    const completed = setupProgress.pullCompleted ?? 0
-    const total = setupProgress.pullTotal ?? 0
-    if (total <= 0) {
-      setEtaMs(null)
-      return
-    }
-    samplesRef.current.push({ t: Date.now(), bytes: completed })
-    if (samplesRef.current.length > ETA_MAX_SAMPLES) {
-      samplesRef.current.shift()
-    }
-    if (samplesRef.current.length < ETA_MIN_SAMPLES) {
-      setEtaMs(null)
-      return
-    }
-    const first = samplesRef.current[0]
-    const last = samplesRef.current[samplesRef.current.length - 1]
-    const dt = last.t - first.t
-    const dBytes = last.bytes - first.bytes
-    if (dt <= 0 || dBytes <= 0) {
-      setEtaMs(null)
-      return
-    }
-    const remaining = total - completed
-    setEtaMs(remaining / (dBytes / dt))
-  }, [setupProgress])
-
-  // Brief "Ready" flash when phase transitions into ready, then clear.
-  useEffect(() => {
-    const prev = prevPhaseRef.current
+    const prev = prevSetupPhaseRef.current
     const cur = setupProgress?.phase
-    prevPhaseRef.current = cur
+    prevSetupPhaseRef.current = cur
     if (prev !== 'ready' && cur === 'ready') {
-      setShowReadyFlash(true)
-      const id = window.setTimeout(() => {
-        setShowReadyFlash(false)
-        setSetupProgress(null)
-      }, READY_FLASH_MS)
-      return () => window.clearTimeout(id)
+      setAddingModel(false)
+      void (async () => {
+        const next = await refreshStatus()
+        if (next.available && next.models && next.models.length > 0) {
+          const pickedModel = setupProgress?.model || next.models[0]
+          setActiveModel(pickedModel)
+          lastDiffRef.current = ''
+        }
+      })()
     }
-  }, [setupProgress?.phase])
+  }, [setupProgress?.phase, setupProgress?.model, refreshStatus])
 
   const handleStartSetup = useCallback(async () => {
     const tier = TIERS.find((t) => t.id === selectedTier) ?? TIERS.find((t) => t.id === recommendedTier)
     const model = tier?.modelId
     setError(null)
-    setSetupProgress({ phase: 'starting', message: 'Preparing local AI', model })
-    samplesRef.current = []
-    setEtaMs(null)
-    setIsSettingUp(true)
-    try {
-      await startAISetup({ model })
-    } catch (e) {
-      setIsSettingUp(false)
-      setSetupProgress({ phase: 'error', error: formatUnknownError(e) })
-    }
-  }, [selectedTier, recommendedTier, startAISetup])
+    await startSetupFlow({ model })
+    // The pull runs in the background; surface progress via the header chip
+    // and the inline card. Closing the drawer keeps the screen uncluttered.
+    onClose()
+  }, [selectedTier, recommendedTier, startSetupFlow, onClose])
 
   const handleCancelSetup = useCallback(async () => {
-    try {
-      await cancelAISetup()
-    } catch {
-      /* noop */
-    }
-    setIsSettingUp(false)
-    setSetupProgress(null)
-    samplesRef.current = []
-    setEtaMs(null)
-  }, [cancelAISetup])
+    await cancelSetupFlow()
+  }, [cancelSetupFlow])
 
   const handleInstall = useCallback(async () => {
     try {
@@ -558,9 +478,9 @@ export function AIExplainDrawer({
   }, [openOllamaDownloadPage])
 
   const handleRetryStatus = useCallback(() => {
-    setSetupProgress(null)
+    dismissSetupError()
     void refreshStatus()
-  }, [refreshStatus])
+  }, [dismissSetupError, refreshStatus])
 
   const handleLanguageChange = useCallback(
     (value: string | null) => {

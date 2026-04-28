@@ -2496,15 +2496,60 @@ button {
   );
 }
 
+.ai-inline-cta.is-progress {
+  position: relative;
+  cursor: default;
+}
+
+.ai-inline-cta.is-progress:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--mantine-color-blue-6) 12%, transparent),
+    color-mix(in srgb, var(--mantine-color-violet-6) 10%, transparent)
+  );
+}
+
+.ai-inline-cta-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    var(--mantine-color-blue-5) var(--ai-cta-progress, 0%),
+    transparent var(--ai-cta-progress, 0%)
+  );
+  pointer-events: none;
+}
+
 .ai-inline-cta-label {
   flex: 1;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .ai-inline-cta-hint {
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-xs);
   font-variant-numeric: tabular-nums;
+}
+
+.ai-inline-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--mantine-color-blue-6) 10%, transparent);
+}
+
+.ai-inline-progress-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .ai-inline-card {

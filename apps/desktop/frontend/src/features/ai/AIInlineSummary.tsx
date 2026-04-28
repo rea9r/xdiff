@@ -6,6 +6,7 @@ import {
   Button,
   Group,
   Loader,
+  Progress,
   Select,
   Stack,
   Text,
@@ -19,6 +20,7 @@ import { formatUnknownError } from '../../utils/appHelpers'
 import { ExplanationMarkdown } from './ExplanationMarkdown'
 import { AIExplainDrawer } from './AIExplainDrawer'
 import { AIModelPicker } from './AIModelPicker'
+import { useAISetup } from './AISetupProvider'
 
 const LANGUAGE_STORAGE_KEY = 'xdiff.ai.explainLanguage'
 const ACTIVE_MODEL_STORAGE_KEY = 'xdiff.ai.activeModel'
@@ -70,6 +72,7 @@ export function AIInlineSummary({
   buildingLabel,
 }: AIInlineSummaryProps) {
   const { aiProviderStatus, explainDiffStream } = useDesktopBridge()
+  const { progress: setupProgress, cancel: cancelSetup } = useAISetup()
 
   const [opened, setOpened] = useState(false)
   const [status, setStatus] = useState<AIProviderStatus | null>(null)
@@ -90,6 +93,7 @@ export function AIInlineSummary({
   const lastInternalCacheKeyRef = useRef<string>('')
   const prepareRef = useRef(prepare)
   prepareRef.current = prepare
+  const prevSetupPhaseRef = useRef<string | undefined>(undefined)
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -102,6 +106,17 @@ export function AIInlineSummary({
       return null
     }
   }, [aiProviderStatus])
+
+  // When a global setup completes, refresh local status so the new model
+  // shows up in the picker. The reconcile effect below handles auto-pick.
+  useEffect(() => {
+    const prev = prevSetupPhaseRef.current
+    const cur = setupProgress?.phase
+    prevSetupPhaseRef.current = cur
+    if (prev !== 'ready' && cur === 'ready') {
+      void refreshStatus()
+    }
+  }, [setupProgress?.phase, refreshStatus])
 
   // Reconcile activeModel with the installed model list.
   // - If nothing installed: clear it.
@@ -294,7 +309,42 @@ export function AIInlineSummary({
     })()
   }, [activeModel, internalCacheKey, refreshStatus, runExplain])
 
+  const setupPhase = setupProgress?.phase
+  const setupInProgress =
+    setupPhase === 'starting' || setupPhase === 'waiting' || setupPhase === 'pulling'
+  const setupPullPercent = Math.round(setupProgress?.pullPercent ?? 0)
+
   if (!opened) {
+    if (setupInProgress) {
+      const ctaLabelText =
+        setupPhase === 'pulling'
+          ? `Pulling ${setupProgress?.model ?? 'model'} · ${setupPullPercent}%`
+          : setupPhase === 'starting'
+            ? 'Starting Ollama…'
+            : 'Waiting for Ollama…'
+      return (
+        <button
+          type="button"
+          className="ai-inline-cta is-progress"
+          onClick={() => setOpened(true)}
+          aria-label={ctaLabelText}
+        >
+          <Loader size={12} color="currentColor" />
+          <span className="ai-inline-cta-label">{ctaLabelText}</span>
+          <span
+            className="ai-inline-cta-bar"
+            aria-hidden="true"
+            style={
+              {
+                '--ai-cta-progress': `${
+                  setupPhase === 'pulling' ? setupPullPercent : 0
+                }%`,
+              } as React.CSSProperties
+            }
+          />
+        </button>
+      )
+    }
     return (
       <button
         type="button"
@@ -378,6 +428,39 @@ export function AIInlineSummary({
         </div>
 
         <div className="ai-inline-card-body">
+          {setupInProgress ? (
+            <div className="ai-inline-progress-row">
+              <Loader size="xs" />
+              <div className="ai-inline-progress-text">
+                <Text size="xs" fw={500}>
+                  {setupPhase === 'pulling'
+                    ? `Pulling ${setupProgress?.model ?? 'model'}`
+                    : setupPhase === 'starting'
+                      ? 'Starting Ollama'
+                      : 'Waiting for Ollama'}
+                </Text>
+                {setupPhase === 'pulling' && (setupProgress?.pullTotal ?? 0) > 0 ? (
+                  <Progress value={setupProgress?.pullPercent ?? 0} size="xs" mt={4} />
+                ) : null}
+              </div>
+              <Text
+                size="xs"
+                c="dimmed"
+                style={{ fontVariantNumeric: 'tabular-nums', flex: 'none' }}
+              >
+                {setupPhase === 'pulling' ? `${setupPullPercent}%` : ''}
+              </Text>
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="gray"
+                onClick={() => void cancelSetup()}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : null}
+
           {!status && !statusError ? (
             <Group gap="xs">
               <Loader size="xs" />
@@ -400,7 +483,7 @@ export function AIInlineSummary({
             </Alert>
           ) : null}
 
-          {status && !status.available ? (
+          {status && !status.available && !setupInProgress ? (
             <Alert color="blue" variant="light" title="Local AI not set up">
               <Stack gap={6}>
                 <Text size="sm">

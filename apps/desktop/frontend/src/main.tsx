@@ -7,6 +7,7 @@ import '@mantine/notifications/styles.css'
 import { App } from './App'
 import { AppErrorBoundary } from './ui/AppErrorBoundary'
 import { CodeFontScaleProvider } from './useCodeFontScale'
+import { AISetupProvider } from './features/ai/AISetupProvider'
 import { appTheme } from './theme'
 import './style.css'
 
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <Notifications position="bottom-right" />
       <AppErrorBoundary>
         <CodeFontScaleProvider>
-          <App />
+          <AISetupProvider>
+            <App />
+          </AISetupProvider>
         </CodeFontScaleProvider>
       </AppErrorBoundary>
     </MantineProvider>
