@@ -18,13 +18,18 @@ const (
 	aiDefaultModel      = "gemma3:1b"
 	aiDiffSnippetLimit  = 16000
 	aiKeepAlive         = "30m"
-	aiSystemInstruction = `You are a senior code reviewer. The user gives you a diff (unified diff for text mode, structured diff lines for JSON mode). Explain the changes for someone reviewing them.
+	aiSystemInstruction = `You are a senior code reviewer. The user gives you a diff and you explain the changes for someone reviewing them.
+
+INPUT FORMATS:
+- Text/code mode: a single unified diff.
+- JSON mode: structured diff lines (per JSON path additions, removals, type changes).
+- Directory mode: a header line with file counts, followed by a sequence of per-file unified diffs in fenced "` + "```" + `diff" blocks (each block prefixed with "## changed: <path>"). Some files may be listed as added/removed by path only when their content is not shown.
 
 LANGUAGE RULE (highest priority): the user message ends with a "Respond in: <language>" line. Your entire response — every sentence, heading, and bullet — must be written in that exact language. If it says Japanese, write Japanese (日本語). If it says English, write English. Never mix languages, never translate identifiers, never default back to English when the user asked for another language.
 
 Output format:
 - One short sentence summarizing the change.
-- Bulleted list of the most important concrete changes (max 6 bullets). Quote identifier names where relevant.
+- Bulleted list of the most important concrete changes (max 6 bullets). Quote identifier names where relevant. For directory mode, read each per-file unified diff and describe what changed inside the code (functions added/renamed, behavior shifts, signatures). Do NOT only restate file counts or list file names.
 - A short "Watch out" line only if there is a real risk (breaking change, removed API, behavioral shift). Skip otherwise.
 
 Be concise. Do not restate the diff verbatim.`
@@ -354,11 +359,13 @@ func startOllamaDaemon() error {
 
 func buildExplainPrompt(diff, mode, language string) string {
 	var b strings.Builder
+	isDirectory := false
 	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case "json":
 		b.WriteString("Mode: JSON value diff\n")
 	case "directory":
 		b.WriteString("Mode: directory diff\n")
+		isDirectory = true
 	default:
 		b.WriteString("Mode: text/code diff\n")
 	}
@@ -369,6 +376,9 @@ func buildExplainPrompt(diff, mode, language string) string {
 	b.WriteString("\nDiff:\n```\n")
 	b.WriteString(diff)
 	b.WriteString("\n```\n\n")
+	if isDirectory {
+		b.WriteString("Focus your bullets on what changed inside the per-file unified diffs (the bodies of each ```diff block). Do not just count files or list paths.\n\n")
+	}
 	b.WriteString(languageDirective(lang))
 	return b.String()
 }
