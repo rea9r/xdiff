@@ -1,5 +1,8 @@
 # xdiff
 
+[![CI](https://github.com/rea9r/xdiff/actions/workflows/ci.yml/badge.svg)](https://github.com/rea9r/xdiff/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Interactive desktop GUI for diffing text, JSON, and directories. Built with Wails (Go) + React + Mantine.
 
 ## What it does
@@ -30,3 +33,11 @@ go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run --conf
 ```
 
 CI runs the same `go test`, the desktop frontend tests/build, and `golangci-lint` on every push and PR.
+
+## Releases
+
+Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.yml), which builds the desktop app for macOS (arm64 / amd64), Windows (amd64), and Linux (amd64) and publishes a draft GitHub Release with the archives attached. macOS builds are currently unsigned — see the TODO in `release.yml` for the codesign / notarize wiring.
+
+## License
+
+[MIT](LICENSE) © rea9r

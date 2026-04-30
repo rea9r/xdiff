@@ -218,6 +218,6 @@ func main() {
 		},
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("xdiff desktop failed to start: %v", err)
 	}
 }

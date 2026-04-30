@@ -24,6 +24,10 @@ const (
 	DefaultLlamafileBaseURL = "http://localhost:8080"
 	pingTimeout             = 700 * time.Millisecond
 	chatTimeout             = 90 * time.Second
+	// pullTimeout caps a single model pull. Typical Ollama pulls finish in
+	// minutes; this is a safety net so a stuck connection doesn't hang the
+	// goroutine indefinitely when the caller's context never cancels.
+	pullTimeout = 30 * time.Minute
 	// maxThinkingChunks bounds reasoning output to detect runaway loops.
 	// Healthy explanations on small models emit ~1000–2000 thinking chunks;
 	// stuck loops emit 5000+ identical-pattern chunks until the request
@@ -66,7 +70,7 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		http:     &http.Client{Timeout: chatTimeout},
-		pullHTTP: &http.Client{},
+		pullHTTP: &http.Client{Timeout: pullTimeout},
 	}
 }
 
