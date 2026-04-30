@@ -2184,7 +2184,7 @@ button {
 .directory-results-table td {
   padding: var(--xdiff-directory-cell-padding-y) var(--xdiff-directory-cell-padding-x);
   border-bottom: 1px solid var(--xdiff-viewer-border);
-  vertical-align: top;
+  vertical-align: middle;
   text-align: left;
   font-size: var(--xdiff-directory-font-size);
   line-height: var(--xdiff-directory-line-height);
