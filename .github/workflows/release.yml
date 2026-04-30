@@ -23,9 +23,6 @@ jobs:
           - platform: darwin-arm64
             runner: macos-14
             wails_platform: darwin/arm64
-          - platform: darwin-amd64
-            runner: macos-13
-            wails_platform: darwin/amd64
 
     steps:
       - name: Checkout
