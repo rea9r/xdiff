@@ -125,19 +125,20 @@
 }
 
 :root[data-mantine-color-scheme='light'] {
-  --mantine-color-body: #EFF2F7;
-  --mantine-color-default: #EFF2F7;
+  --mantine-color-body: #FFFFFF;
+  --mantine-color-default: #FFFFFF;
   --mantine-color-default-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
 
   --xdiff-viewer-border: #D6DAE2;
   --xdiff-viewer-border-strong: #B5BBC7;
-  --xdiff-viewer-surface: #EFF2F7;
-  --xdiff-viewer-surface-subtle: #EFF2F7;
-  --xdiff-viewer-surface-muted: #E2E5EC;
+  --xdiff-viewer-surface: #FFFFFF;
+  --xdiff-viewer-surface-subtle: #FFFFFF;
+  --xdiff-viewer-surface-muted: #F4F5F8;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
-  --xdiff-viewer-input-bg: #DAE0E8;
-  --xdiff-viewer-textarea-bg: #EFF2F7;
-  --xdiff-viewer-code-bg: #E8EBF1;
+  --xdiff-viewer-input-bg: #EFF2F7;
+  --xdiff-viewer-textarea-bg: #FFFFFF;
+  --xdiff-viewer-code-bg: #F4F5F8;
+  --xdiff-folder-icon: var(--mantine-color-blue-4);
 }
 
 :root[data-mantine-color-scheme='dark'] {
@@ -162,6 +163,7 @@
   --xdiff-accent: var(--mantine-color-blue-4);
   --xdiff-accent-strong: var(--mantine-color-blue-5);
   --xdiff-accent-fg: var(--mantine-color-blue-3);
+  --xdiff-folder-icon: var(--mantine-color-blue-3);
   --xdiff-search-hit-border: var(--mantine-color-blue-7);
   --xdiff-search-hit-active-border: var(--mantine-color-blue-5);
 
@@ -2165,9 +2167,7 @@ button {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  border: 1px solid var(--xdiff-viewer-border);
-  border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-code-bg);
+  background: transparent;
 }
 
 .directory-table-wrap:focus {
@@ -2260,7 +2260,7 @@ button {
 }
 
 .directory-item-name.is-dir > svg {
-  color: var(--xdiff-accent-fg);
+  color: var(--xdiff-folder-icon);
 }
 
 .directory-entry-sub {
@@ -2375,9 +2375,7 @@ button {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  border: 1px solid var(--xdiff-viewer-border);
-  border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-code-bg);
+  background: transparent;
   padding: var(--xdiff-space-2);
 }
 
@@ -2427,7 +2425,7 @@ button {
 }
 
 .directory-tree-name.is-dir > svg {
-  color: var(--xdiff-accent-fg);
+  color: var(--xdiff-folder-icon);
 }
 
 .directory-tree-indent {
