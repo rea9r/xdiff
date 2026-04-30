@@ -36,7 +36,7 @@ CI runs the same `go test`, the desktop frontend tests/build, and `golangci-lint
 
 ## Releases
 
-Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.yml), which builds the desktop app for macOS (arm64 / amd64), Windows (amd64), and Linux (amd64) and publishes a draft GitHub Release with the archives attached. macOS builds are currently unsigned — see the TODO in `release.yml` for the codesign / notarize wiring.
+Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.yml), which builds the desktop app for macOS (arm64 / amd64) and publishes a draft GitHub Release with the `.app` zips attached. macOS builds are currently unsigned — see the TODO in `release.yml` for the codesign / notarize wiring. Windows / Linux can be re-added to the matrix later.
 
 ## License
 

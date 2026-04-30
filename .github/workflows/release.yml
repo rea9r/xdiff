@@ -26,12 +26,6 @@ jobs:
           - platform: darwin-amd64
             runner: macos-13
             wails_platform: darwin/amd64
-          - platform: windows-amd64
-            runner: windows-latest
-            wails_platform: windows/amd64
-          - platform: linux-amd64
-            runner: ubuntu-latest
-            wails_platform: linux/amd64
 
     steps:
       - name: Checkout
@@ -51,12 +45,6 @@ jobs:
           cache-dependency-path: apps/desktop/frontend/package-lock.json
           registry-url: https://registry.npmjs.org
 
-      - name: Install Linux build deps
-        if: matrix.platform == 'linux-amd64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
-
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
 
@@ -68,37 +56,20 @@ jobs:
         env:
           # TODO: when an Apple Developer ID is available, set
           #   APPLE_ID, APPLE_ID_PASSWORD, APPLE_TEAM_ID and pass
-          #   `-platform ${{ matrix.wails_platform }} -clean -trimpath`
-          #   plus codesign / notarize flags here.
+          #   codesign / notarize flags here.
           GOFLAGS: -trimpath
         run: wails build -clean -platform ${{ matrix.wails_platform }}
 
       - name: Package macOS artifact
-        if: startsWith(matrix.platform, 'darwin-')
         run: |
           cd build/bin
           zip -r "xdiff-${GITHUB_REF_NAME}-${{ matrix.platform }}.zip" xdiff-desktop.app
-
-      - name: Package Windows artifact
-        if: matrix.platform == 'windows-amd64'
-        shell: pwsh
-        run: |
-          cd build/bin
-          Compress-Archive -Path xdiff-desktop.exe -DestinationPath "xdiff-$env:GITHUB_REF_NAME-${{ matrix.platform }}.zip"
-
-      - name: Package Linux artifact
-        if: matrix.platform == 'linux-amd64'
-        run: |
-          cd build/bin
-          tar -czf "xdiff-${GITHUB_REF_NAME}-${{ matrix.platform }}.tar.gz" xdiff-desktop
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: xdiff-${{ matrix.platform }}
-          path: |
-            apps/desktop/build/bin/xdiff-*.zip
-            apps/desktop/build/bin/xdiff-*.tar.gz
+          path: apps/desktop/build/bin/xdiff-*.zip
           if-no-files-found: error
 
   release:
@@ -116,8 +87,6 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/xdiff-*.zip
-            artifacts/xdiff-*.tar.gz
+          files: artifacts/xdiff-*.zip
           generate_release_notes: true
           draft: true
