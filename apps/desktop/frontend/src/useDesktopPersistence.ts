@@ -6,13 +6,51 @@ import type {
   LoadTextFileResponse,
   Mode,
 } from './types'
-import { ignorePathsToText } from './utils/appHelpers'
-import { defaultJSONCommon, defaultTextCommon } from './useDesktopModeState'
+import { useJSONPersistence } from './features/json/useJSONPersistence'
+import { useTextPersistence } from './features/text/useTextPersistence'
+import { useDirectoryPersistence } from './features/directory/useDirectoryPersistence'
 import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
 type StateSetter<T> = Dispatch<SetStateAction<T>>
 
-type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
+export type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
+
+export function commitTabUpdate(
+  commit: DesktopStatePersistor['commit'],
+  tabId: string,
+  updater: (session: DesktopTabSession) => DesktopTabSession,
+): void {
+  commit((prev) => {
+    const idx = prev.tabs.findIndex((t) => t.id === tabId)
+    if (idx < 0) {
+      return prev
+    }
+    const newTabs = [...prev.tabs]
+    newTabs[idx] = updater(prev.tabs[idx])
+    return { ...prev, tabs: newTabs }
+  })
+}
+
+export async function safeLoadText(
+  loadTextFile: LoadTextFileFn | undefined,
+  path: string,
+): Promise<string> {
+  if (!loadTextFile) {
+    return ''
+  }
+  const trimmed = path.trim()
+  if (!trimmed) {
+    return ''
+  }
+  try {
+    const loaded: LoadTextFileResponse = await loadTextFile({
+      path: trimmed,
+    } satisfies LoadTextFileRequest)
+    return loaded.content
+  } catch {
+    return ''
+  }
+}
 
 type UseDesktopPersistenceOptions = {
   initialSession: DesktopTabSession
@@ -75,201 +113,55 @@ export function useDesktopPersistence({
   text,
   directory,
 }: UseDesktopPersistenceOptions) {
-  const hydratedRef = useRef(false)
-
-  const {
-    oldSourcePath: jsonOldSourcePath,
-    newSourcePath: jsonNewSourcePath,
-    ignoreOrder,
-    common: jsonCommon,
-    setIgnoreOrder,
-    setCommon: setJSONCommon,
-    setIgnorePathsDraft: setJSONIgnorePathsDraft,
-    setOldSourcePath: setJSONOldSourcePath,
-    setNewSourcePath: setJSONNewSourcePath,
-    setOldText: setJSONOldText,
-    setNewText: setJSONNewText,
-  } = json
-
-  const {
-    oldSourcePath: textOldSourcePath,
-    newSourcePath: textNewSourcePath,
-    common: textCommon,
-    diffLayout: textDiffLayout,
-    setCommon: setTextCommon,
-    setDiffLayout: setTextDiffLayout,
-    setOldSourcePath: setTextOldSourcePath,
-    setNewSourcePath: setTextNewSourcePath,
-    setOldText: setTextOld,
-    setNewText: setTextNew,
-  } = text
-
-  const {
-    leftRoot: directoryLeftRoot,
-    rightRoot: directoryRightRoot,
-    currentPath: directoryCurrentPath,
-    viewMode: directoryViewMode,
-    setLeftRoot: setDirectoryLeftRoot,
-    setRightRoot: setDirectoryRightRoot,
-    setCurrentPath: setDirectoryCurrentPath,
-    setViewMode: setDirectoryViewMode,
-  } = directory
+  const hydratedModeRef = useRef(false)
 
   useEffect(() => {
-    if (hydratedRef.current) {
+    if (hydratedModeRef.current) {
       return
     }
-
-    let active = true
-
-    const hydrate = async () => {
-      try {
-        if (isMode(initialSession.lastUsedMode)) {
-          setMode(initialSession.lastUsedMode)
-        }
-
-        setIgnoreOrder(!!initialSession.json.ignoreOrder)
-        const mergedJSONCommon = { ...defaultJSONCommon, ...initialSession.json.common }
-        setJSONCommon(mergedJSONCommon)
-        setJSONIgnorePathsDraft(ignorePathsToText(mergedJSONCommon.ignorePaths))
-        setJSONOldSourcePath(initialSession.json.oldSourcePath || '')
-        setJSONNewSourcePath(initialSession.json.newSourcePath || '')
-
-        setTextCommon({ ...defaultTextCommon, ...initialSession.text.common })
-        setTextDiffLayout(initialSession.text.diffLayout === 'unified' ? 'unified' : 'split')
-        setTextOldSourcePath(initialSession.text.oldSourcePath || '')
-        setTextNewSourcePath(initialSession.text.newSourcePath || '')
-
-        setDirectoryLeftRoot(initialSession.directory.leftRoot || '')
-        setDirectoryRightRoot(initialSession.directory.rightRoot || '')
-        setDirectoryCurrentPath(initialSession.directory.currentPath || '')
-        setDirectoryViewMode(initialSession.directory.viewMode === 'tree' ? 'tree' : 'list')
-
-        if (loadTextFile) {
-          const safeLoad = async (path: string): Promise<string> => {
-            const trimmed = path.trim()
-            if (!trimmed) {
-              return ''
-            }
-            try {
-              const loaded: LoadTextFileResponse = await loadTextFile({
-                path: trimmed,
-              } satisfies LoadTextFileRequest)
-              return loaded.content
-            } catch {
-              return ''
-            }
-          }
-
-          const [jsonOld, jsonNew, textOldLoaded, textNewLoaded] = await Promise.all([
-            safeLoad(initialSession.json.oldSourcePath || ''),
-            safeLoad(initialSession.json.newSourcePath || ''),
-            safeLoad(initialSession.text.oldSourcePath || ''),
-            safeLoad(initialSession.text.newSourcePath || ''),
-          ])
-
-          if (!active) {
-            return
-          }
-
-          setJSONOldText(jsonOld)
-          setJSONNewText(jsonNew)
-          setTextOld(textOldLoaded)
-          setTextNew(textNewLoaded)
-        }
-      } catch {
-        // keep app usable even when hydration fails
-      } finally {
-        if (active) {
-          hydratedRef.current = true
-        }
-      }
+    if (isMode(initialSession.lastUsedMode)) {
+      setMode(initialSession.lastUsedMode)
     }
-
-    void hydrate()
-    return () => {
-      active = false
-    }
-  }, [
-    initialSession,
-    loadTextFile,
-    setDirectoryCurrentPath,
-    setDirectoryLeftRoot,
-    setDirectoryRightRoot,
-    setDirectoryViewMode,
-    setIgnoreOrder,
-    setJSONCommon,
-    setJSONIgnorePathsDraft,
-    setJSONNewSourcePath,
-    setJSONNewText,
-    setJSONOldSourcePath,
-    setJSONOldText,
-    setMode,
-    setTextCommon,
-    setTextDiffLayout,
-    setTextNew,
-    setTextNewSourcePath,
-    setTextOld,
-    setTextOldSourcePath,
-  ])
+    hydratedModeRef.current = true
+  }, [initialSession, setMode])
 
   useEffect(() => {
-    if (!hydratedRef.current) {
+    if (!hydratedModeRef.current) {
       return
     }
 
     const timer = window.setTimeout(() => {
-      commit((prev) => {
-        const targetIndex = prev.tabs.findIndex((t) => t.id === tabId)
-        if (targetIndex < 0) {
-          return prev
-        }
-        const updatedSession: DesktopTabSession = {
-          ...prev.tabs[targetIndex],
-          lastUsedMode: mode,
-          json: {
-            oldSourcePath: jsonOldSourcePath,
-            newSourcePath: jsonNewSourcePath,
-            ignoreOrder,
-            common: jsonCommon,
-          },
-          text: {
-            oldSourcePath: textOldSourcePath,
-            newSourcePath: textNewSourcePath,
-            common: textCommon,
-            diffLayout: textDiffLayout,
-          },
-          directory: {
-            leftRoot: directoryLeftRoot,
-            rightRoot: directoryRightRoot,
-            currentPath: directoryCurrentPath,
-            viewMode: directoryViewMode,
-          },
-        }
-        const newTabs = [...prev.tabs]
-        newTabs[targetIndex] = updatedSession
-        return { ...prev, tabs: newTabs }
-      })
+      commitTabUpdate(commit, tabId, (session) => ({
+        ...session,
+        lastUsedMode: mode,
+      }))
     }, 200)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [
-    commit,
+  }, [commit, tabId, mode])
+
+  useJSONPersistence({
+    initialJSONSession: initialSession.json,
     tabId,
-    mode,
-    jsonOldSourcePath,
-    jsonNewSourcePath,
-    ignoreOrder,
-    jsonCommon,
-    textOldSourcePath,
-    textNewSourcePath,
-    textCommon,
-    textDiffLayout,
-    directoryLeftRoot,
-    directoryRightRoot,
-    directoryCurrentPath,
-    directoryViewMode,
-  ])
+    commit,
+    loadTextFile,
+    ...json,
+  })
+
+  useTextPersistence({
+    initialTextSession: initialSession.text,
+    tabId,
+    commit,
+    loadTextFile,
+    ...text,
+  })
+
+  useDirectoryPersistence({
+    initialDirectorySession: initialSession.directory,
+    tabId,
+    commit,
+    ...directory,
+  })
 }
