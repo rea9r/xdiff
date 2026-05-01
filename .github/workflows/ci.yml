@@ -70,11 +70,20 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Cache Wails bindings
+        id: bindings-cache
+        uses: actions/cache@v4
+        with:
+          path: apps/desktop/frontend/wailsjs
+          key: wailsjs-v2.11.0-${{ hashFiles('apps/desktop/main.go', 'pkg/desktopapi/**/*.go', 'apps/desktop/go.sum') }}
+
       - name: Install Wails CLI
+        if: steps.bindings-cache.outputs.cache-hit != 'true'
         working-directory: apps/desktop
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
 
       - name: Generate Wails bindings
+        if: steps.bindings-cache.outputs.cache-hit != 'true'
         working-directory: apps/desktop
         run: '"$(go env GOPATH)/bin/wails" generate module -tags wailsbindings'
 
